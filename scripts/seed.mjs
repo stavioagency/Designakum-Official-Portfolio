@@ -131,6 +131,7 @@ for (const email of [
   "support@designakum.sa",
   "faisal@designakum.sa",
   "noura@designakum.sa",
+  "alex@designakum.sa",
 ]) {
   const row = await one("SELECT id FROM users WHERE email = ?", email);
   if (row) await run("DELETE FROM users WHERE id = ?", row.id);
@@ -173,18 +174,20 @@ await run(
 async function createClient(c) {
   const userId = id("usr");
   await run(
-    `INSERT INTO users (id, email, password_hash, display_name, role, status, plan, created_at, updated_at)
-     VALUES (?, ?, ?, ?, 'client', 'active', ?, ?, ?)`,
-    userId, c.email, hash(c.password), c.name, c.plan, now(), now(),
+    `INSERT INTO users (id, email, password_hash, display_name, role, status, plan, locale, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 'client', 'active', ?, ?, ?, ?)`,
+    userId, c.email, hash(c.password), c.name, c.plan, c.locale ?? "ar", now(), now(),
   );
 
   const pfId = id("pf");
   await run(
     `INSERT INTO portfolios (id, user_id, slug, name, title, tagline, bio, avatar_url, monogram,
        whatsapp, whatsapp_label, theme, locale, footer_note, published, views, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, 'تواصل معي عبر واتساب', ?, 'ar', ?, 1, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
     pfId, userId, c.slug, c.name, c.title, c.tagline, c.bio, c.monogram,
-    c.whatsapp, c.theme, c.footer, c.views, now(), now(),
+    c.whatsapp,
+    c.locale === "en" ? "Message me on WhatsApp" : "تواصل معي عبر واتساب",
+    c.theme, c.locale ?? "ar", c.footer, c.views, now(), now(),
   );
 
   for (const [i, s] of c.slides.entries())
@@ -311,6 +314,44 @@ await createClient({
   ],
 });
 
+// An English-interface customer, so the bilingual paths are exercised by the seed
+// rather than only by a test that creates one.
+await createClient({
+  email: "alex@designakum.sa",
+  password: "Alex#2026",
+  name: "Alex Carter",
+  slug: "alex",
+  locale: "en",
+  title: "Product Designer",
+  tagline: "Interfaces people don't have to think about",
+  bio: "I design product interfaces for small teams — the kind of work where one clear screen replaces three confusing ones.",
+  monogram: "A",
+  whatsapp: "966520000000",
+  theme: "ocean",
+  footer: "All rights reserved — Alex Carter",
+  views: 318,
+  plan: "monthly",
+  subscription: "monthly",
+  slides: [
+    { image: poster({ from: "#22d3ee", to: "#0891b2", title: "Clear by default", sub: "Interfaces that explain themselves" }), headline: "", subline: "" },
+    { image: poster({ from: "#67e8f9", to: "#0e7490", title: "Built to ship", sub: "Design that survives contact with engineering" }), headline: "", subline: "" },
+  ],
+  projects: [
+    { title: "Fleet dashboard", category: "Product design", description: "A control room for a logistics team.", image: tile({ from: "#22d3ee", to: "#0891b2", glyph: "FL" }) },
+    { title: "Onboarding rebuild", category: "UX", description: "Cut a nine-step signup to three.", image: tile({ from: "#67e8f9", to: "#0e7490", glyph: "ON" }) },
+    { title: "Design system", category: "Systems", description: "One library across four products.", image: tile({ from: "#a5f3fc", to: "#155e75", glyph: "DS" }) },
+  ],
+  stats: [
+    { label: "Rating", value: "4.9", icon: "star" },
+    { label: "Projects", value: "60+", icon: "briefcase" },
+    { label: "Clients", value: "20+", icon: "users" },
+  ],
+  socials: [
+    { platform: "linkedin", url: "https://linkedin.com/in/alexcarter" },
+    { platform: "dribbble", url: "https://dribbble.com/alexcarter" },
+  ],
+});
+
 /* ------------------------------------------------- sample console workload */
 
 const faisal = await one("SELECT id FROM users WHERE email = 'faisal@designakum.sa'");
@@ -344,10 +385,13 @@ await run(
 
 // A live announcement for client dashboards.
 await run(
-  `INSERT INTO announcements (id, title, body, severity, active, starts_at, ends_at, created_by, created_at, updated_at)
-   VALUES (?, 'أصبح بإمكانك قصّ صورك داخل المحرر', ?, 'success', 1, NULL, NULL, ?, ?, ?)`,
+  `INSERT INTO announcements (id, title, body, title_en, body_en, severity, active,
+     starts_at, ends_at, created_by, created_at, updated_at)
+   VALUES (?, 'أصبح بإمكانك قصّ صورك داخل المحرر', ?, ?, ?, 'success', 1, NULL, NULL, ?, ?, ?)`,
   id("ann"),
   "حدّثنا رفع الصور: اسحب الصورة لتحديد الإطار واستخدم الشريط للتكبير قبل الحفظ.",
+  "You can crop your images inside the editor now",
+  "Image upload has been reworked: drag to frame the picture and use the slider to zoom before saving.",
   ownerId, now(), now(),
 );
 
@@ -369,6 +413,7 @@ console.log(`
   موظف دعم      support@designakum.sa  Support#2026x    →  /console
   عميل          faisal@designakum.sa   Faisal#2026      →  /p/faisal
   عميلة         noura@designakum.sa    Noura#2026       →  /p/noura
+  عميل (إنجليزي) alex@designakum.sa     Alex#2026        →  /p/alex
 
   رمز دعوة تجريبي: DZKM1-WELCM
 `);

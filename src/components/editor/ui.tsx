@@ -102,7 +102,13 @@ export function Field({
   );
 }
 
-export function AddButton({ children }: { children: React.ReactNode }) {
+export function AddButton({
+  children,
+  pendingLabel = "جارٍ الإضافة…",
+}: {
+  children: React.ReactNode;
+  pendingLabel?: string;
+}) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -111,18 +117,24 @@ export function AddButton({ children }: { children: React.ReactNode }) {
       className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-4 text-[14px] font-medium text-mist-300 transition hover:border-white/30 hover:bg-white/5 hover:text-white disabled:opacity-50"
     >
       <Plus className="h-4.5 w-4.5" />
-      {pending ? "جارٍ الإضافة…" : children}
+      {pending ? pendingLabel : children}
     </button>
   );
 }
 
-export function DeleteSubmit({ confirmText }: { confirmText: string }) {
+export function DeleteSubmit({
+  confirmText,
+  label = "حذف",
+}: {
+  confirmText: string;
+  label?: string;
+}) {
   const { pending } = useFormStatus();
   return (
     <button
       type="submit"
-      title="حذف"
-      aria-label="حذف"
+      title={label}
+      aria-label={label}
       disabled={pending}
       onClick={(e) => {
         if (!confirm(confirmText)) e.preventDefault();

@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { BASE, BROWSER_UA, contains, db, visit } from "./helpers.mjs";
+import { BASE, BROWSER_UA, contains, db, sessionFor, visit } from "./helpers.mjs";
 
 const GATE_AR = "اختر لغتك المفضّلة";
 const GATE_EN = "Choose your language";
@@ -84,6 +84,66 @@ describe("the interface follows the choice", () => {
         !contains(page, "ابدأ الآن"),
         `${path} still shows the Arabic call to action to an English visitor`,
       );
+    }
+  });
+});
+
+describe("an English account is English all the way down", () => {
+  test("the seeded English customer has no Arabic left in their own content", async () => {
+    const connection = db();
+    const user = await connection
+      .prepare("SELECT id, locale FROM users WHERE email = 'alex@designakum.sa'")
+      .get();
+    assert.ok(user, "the seed should include an English-interface customer");
+    assert.equal(user.locale, "en");
+
+    const portfolio = await connection
+      .prepare(
+        "SELECT id, locale, tagline, footer_note, whatsapp_label FROM portfolios WHERE user_id = ?",
+      )
+      .get(user.id);
+    connection.close();
+
+    assert.equal(portfolio.locale, "en");
+    for (const [field, value] of Object.entries({
+      tagline: portfolio.tagline,
+      footer_note: portfolio.footer_note,
+      whatsapp_label: portfolio.whatsapp_label,
+    })) {
+      assert.ok(
+        !/[\u0600-\u06FF]/.test(value),
+        `${field} still carries Arabic for an English account: ${value}`,
+      );
+    }
+  });
+
+  test("their public page renders LTR with no Arabic chrome", async () => {
+    const page = await visit("/p/alex", { locale: "en" });
+    assert.equal(page.status, 200);
+    assert.match(page.body, /dir="ltr"/, "an English portfolio should render left-to-right");
+
+    // The portfolio's own language decides, so an Arabic visitor sees it in
+    // English too — it is the designer's page, not the visitor's.
+    const arabicVisitor = await visit("/p/alex", { locale: "ar" });
+    assert.match(arabicVisitor.body, /lang="en"/);
+  });
+
+  test("their dashboard has no Arabic interface text", async () => {
+    const cookie = await sessionFor("alex@designakum.sa");
+    for (const path of ["/dashboard", "/dashboard/billing", "/dashboard/support"]) {
+      const page = await visit(path, { cookie, locale: "en" });
+      assert.equal(page.status, 200, `${path} should render`);
+
+      // Strip scripts, the CSS-hidden Arabic wordmark, and the language switcher
+      // — all three are Arabic on purpose in an English interface.
+      const text = page.body
+        .replace(/<script[\s\S]*?<\/script>/g, " ")
+        .replace(/<span class="brand-name-ar">[^<]*<\/span>/g, " ")
+        .replace(/<form[^>]*>[\s\S]*?<\/form>/g, " ")
+        .replace(/<[^>]+>/g, " ");
+
+      const arabic = [...new Set(text.split(/\s+/).filter((w) => /[\u0600-\u06FF]/.test(w)))];
+      assert.deepEqual(arabic, [], `${path} still shows Arabic: ${arabic.join(" ")}`);
     }
   });
 });

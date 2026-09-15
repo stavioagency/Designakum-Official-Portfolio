@@ -1,4 +1,6 @@
 import "server-only";
+import { DEFAULT_LOCALE, dict } from "./i18n";
+import type { Locale } from "./types";
 import { all, get, now, run } from "./db";
 import { newId, slugify } from "./ids";
 import { dayKey, markUniqueVisitor, recordPortfolioEvent } from "./analytics";
@@ -100,22 +102,27 @@ export async function createPortfolio(input: {
   slug?: string;
   name: string;
   title?: string;
+  locale?: Locale;
 }): Promise<Portfolio>{
   const ts = now();
+  const locale = input.locale ?? DEFAULT_LOCALE;
+  const d = dict(locale).portfolio;
   const id = newId("pf");
   const slug = await uniqueSlug(input.slug || input.name);
   await run(
     `INSERT INTO portfolios
        (id, user_id, slug, name, title, tagline, bio, monogram, whatsapp_label, theme, locale, footer_note, published, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, '', '', ?, 'تواصل معي عبر واتساب', ?, 'ar', ?, 0, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, '', '', ?, ?, ?, ?, ?, 0, ?, ?)`,
     id,
     input.userId,
     slug,
     input.name,
     input.title ?? "",
     input.name.trim().charAt(0).toUpperCase(),
+    d.whatsapp,
     DEFAULT_THEME,
-    `جميع الحقوق محفوظة لـ ${input.name}`,
+    locale,
+    `${d.rights} — ${input.name}`,
     ts,
     ts,
   );

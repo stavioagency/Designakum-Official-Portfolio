@@ -16,16 +16,30 @@ type Point = { x: number; y: number };
  * that the surrounding form submits — so the server only ever receives the image
  * the client actually chose to show.
  */
+export interface ImageChrome {
+  choose: string;
+  replace: string;
+  clear: string;
+  cropTitle: string;
+  cropHint: string;
+  zoom: string;
+  cancel: string;
+  confirmCrop: string;
+  pending: string;
+}
+
 export function ImageField({
   name,
   current,
-  label = "الصورة",
+  label,
   aspect = 16 / 9,
   hint,
+  chrome,
 }: {
   name: string;
   current?: string;
-  label?: string;
+  label: string;
+  chrome: ImageChrome;
   /** Width ÷ height of the crop frame. */
   aspect?: number;
   hint?: string;
@@ -76,7 +90,7 @@ export function ImageField({
             className="btn btn-ghost !px-3.5 !py-2 !text-[12.5px]"
           >
             {shown ? <ImageIcon className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-            {shown ? "استبدال" : "اختر صورة"}
+            {shown ? chrome.replace : chrome.choose}
           </button>
 
           {shown && (
@@ -93,7 +107,7 @@ export function ImageField({
               className="btn btn-danger !px-3 !py-2 !text-[12.5px]"
             >
               <Trash className="h-4 w-4" />
-              إزالة
+              {chrome.clear}
             </button>
           )}
         </div>
@@ -121,6 +135,7 @@ export function ImageField({
         <Cropper
           src={source}
           aspect={aspect}
+          chrome={chrome}
           onCancel={() => {
             URL.revokeObjectURL(source);
             setSource(null);
@@ -141,11 +156,13 @@ function Cropper({
   aspect,
   onDone,
   onCancel,
+  chrome,
 }: {
   src: string;
   aspect: number;
   onDone: (file: File) => void;
   onCancel: () => void;
+  chrome: ImageChrome;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -230,8 +247,8 @@ function Cropper({
   return (
     <Modal onClose={onCancel}>
       <div className="card w-full max-w-lg p-5">
-        <h3 className="mb-1 text-[15px] font-semibold">قصّ الصورة</h3>
-        <p className="mb-4 text-[12.5px] text-mist-500">اسحب الصورة لتحريكها، واستخدم الشريط للتكبير.</p>
+        <h3 className="mb-1 text-[15px] font-semibold">{chrome.cropTitle}</h3>
+        <p className="mb-4 text-[12.5px] text-mist-500">{chrome.cropHint}</p>
 
         <div
           ref={frameRef}
@@ -273,7 +290,7 @@ function Cropper({
         </div>
 
         <label className="mt-4 flex items-center gap-3">
-          <span className="text-[12px] text-mist-500">تكبير</span>
+          <span className="text-[12px] text-mist-500">{chrome.zoom}</span>
           <input
             type="range"
             min={1}
@@ -287,11 +304,11 @@ function Cropper({
 
         <div className="mt-5 flex items-center justify-end gap-2">
           <button type="button" onClick={onCancel} className="btn btn-ghost">
-            إلغاء
+            {chrome.cancel}
           </button>
           <button type="button" onClick={confirm} disabled={!image || busy} className="btn btn-primary">
             <Check className="h-4 w-4" />
-            {busy ? "لحظة…" : "اعتماد الصورة"}
+            {busy ? chrome.pending : chrome.confirmCrop}
           </button>
         </div>
       </div>

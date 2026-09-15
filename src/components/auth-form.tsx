@@ -80,11 +80,11 @@ export function AuthForm({
           <>
             <div>
               <label className="label" htmlFor="name">{d.name}</label>
-              <input id="name" name="name" className="field" placeholder="فيصل فهد" required />
+              <input id="name" name="name" className="field" placeholder={d.namePlaceholder} required />
             </div>
             <div>
               <label className="label" htmlFor="title">{d.title}</label>
-              <input id="title" name="title" className="field" placeholder="مصمم جرافيك | F9 Designer" />
+              <input id="title" name="title" className="field" placeholder={d.titlePlaceholder} />
             </div>
             <div>
               <label className="label" htmlFor="invite">{d.invite}</label>

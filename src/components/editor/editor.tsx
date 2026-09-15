@@ -34,6 +34,26 @@ export function Editor({
   const [tab, setTab] = useState<TabKey>("profile");
   const { portfolio, slides, projects, stats, socials } = bundle;
 
+  const imageChrome = {
+    choose: copy.common.choose,
+    replace: copy.common.replace,
+    clear: copy.common.clear,
+    cropTitle: copy.common.cropTitle,
+    cropHint: copy.common.cropHint,
+    zoom: copy.common.zoom,
+    cancel: copy.common.cancel,
+    confirmCrop: copy.common.confirmCrop,
+    pending: copy.common.pending,
+  };
+
+  const chrome = {
+    save: copy.common.save,
+    adding: copy.common.adding,
+    remove: copy.common.remove,
+    moveUp: copy.common.moveUp,
+    moveDown: copy.common.moveDown,
+  };
+
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px] xl:items-start">
       <div className="min-w-0 space-y-5">
@@ -59,6 +79,7 @@ export function Editor({
           <CollectionSection
             table="slides"
             portfolioId={portfolio.id}
+            chrome={chrome}
             items={slides}
             heading={copy.slides.heading}
             description={copy.slides.description}
@@ -69,6 +90,7 @@ export function Editor({
             renderFields={(slide) => (
               <>
                 <ImageField
+                  chrome={imageChrome}
                   name="image"
                   current={slide.image_url}
                   label={copy.slides.image}
@@ -92,6 +114,7 @@ export function Editor({
           <CollectionSection
             table="projects"
             portfolioId={portfolio.id}
+            chrome={chrome}
             items={projects}
             heading={copy.projects.heading}
             description={copy.projects.description}
@@ -101,7 +124,13 @@ export function Editor({
             itemTitle={(item) => item.title || copy.projects.untitled}
             renderFields={(project) => (
               <>
-                <ImageField name="image" current={project.image_url} label={copy.projects.image} aspect={1} />
+                <ImageField
+                  chrome={imageChrome}
+                  name="image"
+                  current={project.image_url}
+                  label={copy.projects.image}
+                  aspect={1}
+                />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label={copy.projects.name}>
                     <input name="title" defaultValue={project.title} className="field" />
@@ -130,6 +159,7 @@ export function Editor({
           <CollectionSection
             table="stats"
             portfolioId={portfolio.id}
+            chrome={chrome}
             items={stats}
             heading={copy.stats.heading}
             description={copy.stats.description}
@@ -168,6 +198,7 @@ export function Editor({
           <CollectionSection
             table="socials"
             portfolioId={portfolio.id}
+            chrome={chrome}
             items={socials}
             heading={copy.socials.heading}
             description={copy.socials.description}

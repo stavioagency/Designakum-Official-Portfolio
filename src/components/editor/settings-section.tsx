@@ -88,7 +88,9 @@ export function SettingsSection({
             </div>
           </Field>
           <div className="flex flex-wrap items-center gap-3">
-            <Submit className="btn btn-ghost">{t.saveSlug}</Submit>
+            <Submit className="btn btn-ghost" pendingLabel={copy.common.saving}>
+              {t.saveSlug}
+            </Submit>
             <Status state={slugState} />
           </div>
         </form>
@@ -207,7 +209,9 @@ export function SettingsSection({
             </Field>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <Submit>{hasPassword ? t.changePassword : t.setPassword}</Submit>
+            <Submit pendingLabel={copy.common.saving}>
+              {hasPassword ? t.changePassword : t.setPassword}
+            </Submit>
             <Status state={passwordState} />
           </div>
         </form>

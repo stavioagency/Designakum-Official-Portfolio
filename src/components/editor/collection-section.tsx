@@ -12,6 +12,15 @@ import { AddButton, DeleteSubmit, IconSubmit, Status, Submit } from "./ui";
 
 export type CollectionTable = "slides" | "projects" | "stats" | "socials";
 
+/** The words on the buttons around an item, in the reader's language. */
+export interface CollectionChrome {
+  save: string;
+  adding: string;
+  remove: string;
+  moveUp: string;
+  moveDown: string;
+}
+
 type Item = { id: string };
 
 function ItemToolbar({
@@ -21,6 +30,7 @@ function ItemToolbar({
   index,
   total,
   confirmText,
+  chrome,
 }: {
   table: CollectionTable;
   portfolioId: string;
@@ -28,6 +38,7 @@ function ItemToolbar({
   index: number;
   total: number;
   confirmText: string;
+  chrome: CollectionChrome;
 }) {
   const [, move] = useActionState(moveItemAction, null);
   const [, remove] = useActionState(removeItemAction, null);
@@ -46,7 +57,7 @@ function ItemToolbar({
         <form action={move}>
           {hidden}
           <input type="hidden" name="direction" value="up" />
-          <IconSubmit title="تحريك للأعلى">
+          <IconSubmit title={chrome.moveUp}>
             <ChevronUp className="h-4 w-4" />
           </IconSubmit>
         </form>
@@ -55,14 +66,14 @@ function ItemToolbar({
         <form action={move}>
           {hidden}
           <input type="hidden" name="direction" value="down" />
-          <IconSubmit title="تحريك للأسفل">
+          <IconSubmit title={chrome.moveDown}>
             <ChevronDown className="h-4 w-4" />
           </IconSubmit>
         </form>
       )}
       <form action={remove}>
         {hidden}
-        <DeleteSubmit confirmText={confirmText} />
+        <DeleteSubmit confirmText={confirmText} label={chrome.remove} />
       </form>
     </div>
   );
@@ -76,6 +87,7 @@ function ItemCard({
   total,
   title,
   confirmText,
+  chrome,
   children,
 }: {
   table: CollectionTable;
@@ -85,6 +97,7 @@ function ItemCard({
   total: number;
   title: string;
   confirmText: string;
+  chrome: CollectionChrome;
   children: React.ReactNode;
 }) {
   const [state, save] = useActionState(saveItemAction, null);
@@ -105,6 +118,7 @@ function ItemCard({
           index={index}
           total={total}
           confirmText={confirmText}
+          chrome={chrome}
         />
       </div>
 
@@ -114,7 +128,7 @@ function ItemCard({
         <input type="hidden" name="itemId" value={item.id} />
         {children}
         <div className="flex flex-wrap items-center gap-3">
-          <Submit className="btn btn-ghost">حفظ</Submit>
+          <Submit className="btn btn-ghost">{chrome.save}</Submit>
           <Status state={state} />
         </div>
       </form>
@@ -133,6 +147,7 @@ export function CollectionSection<T extends Item>({
   confirmText,
   itemTitle,
   renderFields,
+  chrome,
 }: {
   table: CollectionTable;
   portfolioId: string;
@@ -144,6 +159,7 @@ export function CollectionSection<T extends Item>({
   confirmText: string;
   itemTitle: (item: T, index: number) => string;
   renderFields: (item: T) => React.ReactNode;
+  chrome: CollectionChrome;
 }) {
   const [addState, add] = useActionState(addItemAction, null);
 
@@ -168,6 +184,7 @@ export function CollectionSection<T extends Item>({
           total={items.length}
           title={itemTitle(item, index)}
           confirmText={confirmText}
+          chrome={chrome}
         >
           {renderFields(item)}
         </ItemCard>
@@ -176,7 +193,7 @@ export function CollectionSection<T extends Item>({
       <form action={add}>
         <input type="hidden" name="portfolioId" value={portfolioId} />
         <input type="hidden" name="table" value={table} />
-        <AddButton>{addLabel}</AddButton>
+        <AddButton pendingLabel={chrome.adding}>{addLabel}</AddButton>
       </form>
       <Status state={addState} />
     </div>

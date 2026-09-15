@@ -38,6 +38,7 @@ export async function provisionClient(input: {
     slug: await uniqueSlug(input.slug || input.name || input.email.split("@")[0]),
     name: input.name,
     title: input.title || starterTitle(locale),
+    locale,
   });
 
   await seedStarterContent(portfolio, locale);

@@ -88,7 +88,7 @@ export function CustomerReplyForm({
           minLength={2}
         />
         <div className="flex flex-wrap items-center gap-3">
-          <Submit>{copy.send}</Submit>
+          <Submit pendingLabel={copy.send}>{copy.send}</Submit>
           <Status state={replyState} />
         </div>
       </form>

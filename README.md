@@ -22,6 +22,7 @@ Both read `DATABASE_URL`; `npm run migrate` falls back to the one in `.env.local
 | Support agent | `support@designakum.sa` | `Support#2026x` | `/console` (reduced) |
 | Client (paid) | `faisal@designakum.sa` | `Faisal#2026` | `/dashboard` → `/p/faisal` |
 | Client (free) | `noura@designakum.sa` | `Noura#2026` | `/dashboard` → `/p/noura` |
+| Client (English interface) | `alex@designakum.sa` | `Alex#2026` | `/dashboard` → `/p/alex` |
 
 The seed also leaves one open report, one open ticket, a live announcement and an
 unused invitation code (`DZKM1-WELCM`) so the console has real work in it.

@@ -32,7 +32,23 @@ export function ProfileSection({
 
         <div className="grid gap-5 sm:grid-cols-[180px_1fr]">
           <div className="space-y-2">
-            <ImageField name="avatar" current={portfolio.avatar_url} label={t.avatar} aspect={1} />
+            <ImageField
+              name="avatar"
+              current={portfolio.avatar_url}
+              label={t.avatar}
+              aspect={1}
+              chrome={{
+                choose: copy.common.choose,
+                replace: copy.common.replace,
+                clear: copy.common.clear,
+                cropTitle: copy.common.cropTitle,
+                cropHint: copy.common.cropHint,
+                zoom: copy.common.zoom,
+                cancel: copy.common.cancel,
+                confirmCrop: copy.common.confirmCrop,
+                pending: copy.common.pending,
+              }}
+            />
             <Field label={t.monogram} hint={t.monogramHint}>
               <input name="monogram" defaultValue={portfolio.monogram} maxLength={2} className="field text-center" />
             </Field>
@@ -111,7 +127,7 @@ export function ProfileSection({
         </Field>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Submit>{copy.common.save}</Submit>
+          <Submit pendingLabel={copy.common.saving}>{copy.common.save}</Submit>
           <Status state={state} />
         </div>
       </form>
