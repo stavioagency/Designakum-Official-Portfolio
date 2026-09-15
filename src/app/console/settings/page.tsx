@@ -17,8 +17,8 @@ export const dynamic = "force-dynamic";
 export default async function SettingsPage() {
   await guardPage("settings.manage");
   const me = (await currentUser())!;
-  const settings = readSettings();
-  const staff = staffMembers();
+  const settings = await readSettings();
+  const staff = await staffMembers();
 
   const assetSlots = [
     ...BRAND_ASSETS.map((asset) => ({

@@ -36,7 +36,7 @@ export async function saveSettingsAction(_prev: ActionState, fd: FormData): Prom
 
     if (!group.length) return { error: "لا توجد إعدادات لحفظها" };
 
-    const before = readSettings();
+    const before = await readSettings();
     const changed: Record<string, unknown> = {};
 
     for (const key of group) {
@@ -46,14 +46,14 @@ export async function saveSettingsAction(_prev: ActionState, fd: FormData): Prom
 
       const value = coerceSetting(key, isBoolean ? (raw === null ? "0" : "1") : String(raw));
       if (value !== before[key]) {
-        writeSetting(key, value, actor.id);
+        await writeSetting(key, value, actor.id);
         changed[key] = value;
       }
     }
 
     if (!Object.keys(changed).length) return { ok: "لا تغييرات" };
 
-    audit({
+    await audit({
       actor,
       action: "settings.updated",
       targetType: "settings",

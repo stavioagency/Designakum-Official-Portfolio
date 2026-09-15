@@ -15,7 +15,7 @@ export async function storeImage(file: File, user: User): Promise<string> {
 
   const id = newId("ast");
   const bytes = new Uint8Array(await file.arrayBuffer());
-  run(
+  await run(
     "INSERT INTO assets (id, owner_id, mime, bytes, created_at) VALUES (?, ?, ?, ?, ?)",
     id,
     user.id,
@@ -38,8 +38,8 @@ export interface StoredAsset {
  * portfolio is suspended its pictures have usually been hotlinked elsewhere. The
  * owner's account and portfolio state travel with the row so the route can refuse.
  */
-export function readAsset(id: string) {
-  return get<StoredAsset>(
+export async function readAsset(id: string) {
+  return await get<StoredAsset>(
     `SELECT a.mime, a.bytes, u.status AS owner_status,
             (SELECT MAX(p.suspended) FROM portfolios p WHERE p.user_id = a.owner_id) AS portfolio_suspended
        FROM assets a

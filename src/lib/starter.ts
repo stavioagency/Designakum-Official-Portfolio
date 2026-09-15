@@ -4,9 +4,9 @@ import { newId } from "./ids";
 import type { Portfolio } from "./types";
 
 /** Give a brand-new portfolio something presentable to look at on first login. */
-export function seedStarterContent(portfolio: Portfolio) {
-  const slide = (headline: string, subline: string, position: number) =>
-    run(
+export async function seedStarterContent(portfolio: Portfolio) {
+  const slide = async (headline: string, subline: string, position: number) =>
+    await run(
       "INSERT INTO slides (id, portfolio_id, image_url, headline, subline, caption, position) VALUES (?, ?, '', ?, ?, '', ?)",
       newId("sld"),
       portfolio.id,
@@ -15,11 +15,11 @@ export function seedStarterContent(portfolio: Portfolio) {
       position,
     );
 
-  slide("أهلاً وسهلاً بكم", portfolio.title || "مصمم جرافيك", 0);
-  slide("أعمال تليق بعلامتك", "خلّك دائمًا مميز مع تصميم يناسبك", 1);
+  await slide("أهلاً وسهلاً بكم", portfolio.title || "مصمم جرافيك", 0);
+  await slide("أعمال تليق بعلامتك", "خلّك دائمًا مميز مع تصميم يناسبك", 1);
 
-  const stat = (label: string, value: string, icon: string, position: number) =>
-    run(
+  const stat = async (label: string, value: string, icon: string, position: number) =>
+    await run(
       "INSERT INTO stats (id, portfolio_id, label, value, icon, position) VALUES (?, ?, ?, ?, ?, ?)",
       newId("stt"),
       portfolio.id,
@@ -29,17 +29,17 @@ export function seedStarterContent(portfolio: Portfolio) {
       position,
     );
 
-  stat("التقييم", "4.9", "star", 0);
-  stat("الأعمال", "+120", "briefcase", 1);
-  stat("العملاء", "+40", "users", 2);
+  await stat("التقييم", "4.9", "star", 0);
+  await stat("الأعمال", "+120", "briefcase", 1);
+  await stat("العملاء", "+40", "users", 2);
 
-  run(
+  await run(
     "INSERT INTO socials (id, portfolio_id, platform, url, position) VALUES (?, ?, 'instagram', '', 0)",
     newId("soc"),
     portfolio.id,
   );
 
-  run(
+  await run(
     "UPDATE portfolios SET tagline = ?, bio = ? WHERE id = ?",
     "خلّك دائمًا مميز مع تصميم يناسبك",
     "مصمم يهتم بالتفاصيل الصغيرة قبل الكبيرة. أعمل على الهويات البصرية، تصاميم السوشال ميديا، والمطبوعات — بنتيجة نظيفة تخدم رسالتك وتوصلها بوضوح.",

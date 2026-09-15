@@ -6,10 +6,10 @@ import type { PricingCopy } from "@/components/pricing";
 import type { Locale } from "./types";
 
 /** Every figure the pricing UI shows, derived once from the plan definitions. */
-export function pricingCopy(locale: Locale): PricingCopy {
-  const plans = planDefinitions();
-  const saving = yearlySaving();
-  const limits = FREE_LIMITS();
+export async function pricingCopy(locale: Locale): Promise<PricingCopy>{
+  const plans = await planDefinitions();
+  const saving = await yearlySaving();
+  const limits = await FREE_LIMITS();
 
   return {
     d: dict(locale).pricing,

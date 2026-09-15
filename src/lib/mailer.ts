@@ -25,8 +25,8 @@ export const emailConfigured = configured;
  */
 export async function sendMail(mail: Mail): Promise<{ delivered: boolean; error?: string }> {
   const id = newId("mail");
-  const record = (delivered: boolean, error = "") =>
-    run(
+  const record = async (delivered: boolean, error = "") =>
+    await run(
       `INSERT INTO mail_outbox (id, recipient, subject, body, kind, delivered, error, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       id,
@@ -40,7 +40,7 @@ export async function sendMail(mail: Mail): Promise<{ delivered: boolean; error?
     );
 
   if (!configured()) {
-    record(false, "no email provider configured");
+    await record(false, "no email provider configured");
     return { delivered: false, error: "email_not_configured" };
   }
 
@@ -52,7 +52,7 @@ export async function sendMail(mail: Mail): Promise<{ delivered: boolean; error?
       );
     }
 
-    const settings = readSettings();
+    const settings = await readSettings();
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -72,11 +72,11 @@ export async function sendMail(mail: Mail): Promise<{ delivered: boolean; error?
       throw new Error(`provider responded ${response.status}: ${await response.text()}`);
     }
 
-    record(true);
+    await record(true);
     return { delivered: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    record(false, message.slice(0, 500));
+    await record(false, message.slice(0, 500));
     reportError(error, { area: "mailer", recipient: mail.to, subject: mail.subject });
     return { delivered: false, error: message };
   }

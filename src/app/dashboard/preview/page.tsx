@@ -14,7 +14,7 @@ export default async function PreviewPage() {
   const user = await currentUser();
   if (!user) redirect("/login");
 
-  const portfolio = getPortfolioForUser(user.id);
+  const portfolio = await getPortfolioForUser(user.id);
   if (!portfolio) redirect("/console");
 
   return (
@@ -35,7 +35,7 @@ export default async function PreviewPage() {
 
       <div className="mt-6">
         <PreviewFrame>
-          <PortfolioView bundle={loadBundle(portfolio)} />
+          <PortfolioView bundle={await loadBundle(portfolio)} />
         </PreviewFrame>
       </div>
     </main>

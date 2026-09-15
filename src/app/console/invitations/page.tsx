@@ -24,8 +24,8 @@ export const dynamic = "force-dynamic";
 export default async function InvitationsPage() {
   await guardPage("invitations.manage");
 
-  const invitations = listInvitations();
-  const stats = invitationStats();
+  const invitations = await listInvitations();
+  const stats = await invitationStats();
   const origin = await requestOrigin();
 
   const stateOf = (invitation: (typeof invitations)[number]) => {

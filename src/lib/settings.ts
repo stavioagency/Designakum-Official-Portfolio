@@ -120,8 +120,8 @@ export type Settings = { [K in SettingKey]: (typeof SETTING_DEFAULTS)[K] };
 type StoredRow = { key: string; value: string };
 
 /** Reads every setting, overlaying stored overrides on the defaults. */
-export function readSettings(): Settings {
-  const stored = all<StoredRow>("SELECT key, value FROM settings");
+export async function readSettings(): Promise<Settings>{
+  const stored = await all<StoredRow>("SELECT key, value FROM settings");
   const merged = { ...SETTING_DEFAULTS } as Record<string, unknown>;
 
   for (const row of stored) {
@@ -135,12 +135,12 @@ export function readSettings(): Settings {
   return merged as Settings;
 }
 
-export function readSetting<K extends SettingKey>(key: K): Settings[K] {
-  return readSettings()[key];
+export async function readSetting<K extends SettingKey>(key: K): Promise<Settings[K]>{
+  return (await readSettings())[key];
 }
 
-export function writeSetting<K extends SettingKey>(key: K, value: Settings[K], actorId: string) {
-  run(
+export async function writeSetting<K extends SettingKey>(key: K, value: Settings[K], actorId: string) {
+  await run(
     `INSERT INTO settings (key, value, updated_at, updated_by) VALUES (?, ?, ?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at,
        updated_by = excluded.updated_by`,

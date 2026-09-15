@@ -24,13 +24,13 @@ export default async function LandingPage() {
     return <MaintenanceNotice message={maintenance.message} staff={maintenance.staff} />;
   }
 
-  const [user, locale] = await Promise.all([currentUser(), currentLocale()]);
-  const settings = readSettings();
+  const [user, locale] = await Promise.all([await currentUser(), await currentLocale()]);
+  const settings = await readSettings();
   const d = dict(locale);
-  const copy = pricingCopy(locale);
+  const copy = await pricingCopy(locale);
 
   const showcase = settings["features.public_showcase"]
-    ? listPortfolios()
+    ? (await listPortfolios())
         .filter((p) => p.published === 1 && p.suspended === 0)
         .slice(0, 6)
     : [];
@@ -110,7 +110,7 @@ export default async function LandingPage() {
         </section>
 
         <div className="mt-24">
-          <Pricing copy={copy} currentPlan={user ? entitlementsFor(user).plan : undefined} />
+          <Pricing copy={copy} currentPlan={user ? (await entitlementsFor(user)).plan : undefined} />
         </div>
 
         {showcase.length > 0 && (

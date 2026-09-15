@@ -14,5 +14,5 @@ export async function GET(request: Request) {
   // Only same-site paths, so the state parameter can never become an open redirect.
   const returnTo = requested.startsWith("/") && !requested.startsWith("//") ? requested : "/dashboard";
 
-  redirect(beginGoogleAuth(origin, returnTo));
+  redirect(await beginGoogleAuth(origin, returnTo));
 }

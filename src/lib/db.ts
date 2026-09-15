@@ -1,83 +1,144 @@
-import { DatabaseSync } from "node:sqlite";
-import fs from "node:fs";
-import path from "node:path";
-import { SCHEMA_SQL } from "./schema";
-
-const DATA_DIR = path.join(process.cwd(), "data");
-const DB_PATH = process.env.DATABASE_PATH ?? path.join(DATA_DIR, "platform.db");
+import "server-only";
+import { Pool, type PoolClient } from "pg";
 
 declare global {
   // eslint-disable-next-line no-var
-  var __portfolioDb: DatabaseSync | undefined;
+  var __designakumPool: Pool | undefined;
 }
 
+function createPool(): Pool {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error(
+      "DATABASE_URL is not set. Copy the connection string from Supabase " +
+        "(Project Settings → Database → Connection string → Transaction pooler).",
+    );
+  }
+
+  return new Pool({
+    connectionString,
+    // Supabase terminates TLS with its own certificate chain; verifying it from a
+    // serverless runtime needs the CA bundle, which the pooler URL does not carry.
+    ssl: connectionString.includes("supabase") ? { rejectUnauthorized: false } : undefined,
+    // Serverless invocations are short-lived and numerous; a small pool per
+    // instance keeps us well inside the pooler's connection budget.
+    max: Number(process.env.DATABASE_POOL_MAX ?? 5),
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 10_000,
+  });
+}
+
+// Reused across hot reloads in development so a file save does not leak a pool.
+export const pool: Pool = globalThis.__designakumPool ?? createPool();
+if (process.env.NODE_ENV !== "production") globalThis.__designakumPool = pool;
 
 /**
- * Columns added after the first release. `CREATE TABLE IF NOT EXISTS` never
- * touches an existing table, so new columns are added here instead — each guarded
- * by a pragma check, which makes the whole step idempotent.
+ * The queries in this codebase were written with `?` placeholders. Rewriting all
+ * of them to `$1, $2, …` by hand would be a large, error-prone diff for no gain,
+ * so the driver's numbering is applied here instead — skipping anything inside a
+ * string literal, which is where a literal question mark could legitimately live.
  */
-const ADDED_COLUMNS: [table: string, column: string, definition: string][] = [
-  ["users", "google_id", "TEXT"],
-  ["users", "avatar_url", "TEXT NOT NULL DEFAULT ''"],
-  ["users", "auth_provider", "TEXT NOT NULL DEFAULT 'password'"],
-  ["users", "locale", "TEXT NOT NULL DEFAULT 'ar'"],
-  ["users", "two_factor_secret", "TEXT NOT NULL DEFAULT ''"],
-  ["users", "two_factor_enabled", "INTEGER NOT NULL DEFAULT 0"],
-  ["users", "last_seen_at", "INTEGER"],
-  ["portfolios", "suspended", "INTEGER NOT NULL DEFAULT 0"],
-  ["portfolios", "suspended_reason", "TEXT NOT NULL DEFAULT ''"],
-  ["portfolios", "suspended_at", "INTEGER"],
-  ["portfolios", "suspended_until", "INTEGER"],
-  ["subscriptions", "amount", "INTEGER NOT NULL DEFAULT 0"],
-  ["subscriptions", "source", "TEXT NOT NULL DEFAULT 'paid'"],
-  ["subscriptions", "started_at", "INTEGER"],
-  ["subscriptions", "canceled_at", "INTEGER"],
-];
+export function toPositional(sql: string): string {
+  let out = "";
+  let index = 0;
+  let quote: string | null = null;
 
-function migrate(db: DatabaseSync) {
-  for (const [table, column, definition] of ADDED_COLUMNS) {
-    const columns = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
-    if (!columns.some((c) => c.name === column)) {
-      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  for (let i = 0; i < sql.length; i++) {
+    const char = sql[i];
+
+    if (quote) {
+      out += char;
+      if (char === quote) quote = null;
+      continue;
     }
+    if (char === "'" || char === '"') {
+      quote = char;
+      out += char;
+      continue;
+    }
+    if (char === "?") {
+      out += `$${++index}`;
+      continue;
+    }
+    out += char;
   }
-  // Plans were renamed when real pricing landed: free/pro/business → free/monthly/yearly.
-  db.exec("UPDATE users SET plan = 'monthly' WHERE plan = 'pro'");
-  db.exec("UPDATE users SET plan = 'yearly' WHERE plan = 'business'");
-  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google ON users(google_id) WHERE google_id IS NOT NULL");
-}
 
-function open(): DatabaseSync {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  const db = new DatabaseSync(DB_PATH);
-  db.exec(SCHEMA_SQL);
-  migrate(db);
-  return db;
+  return out;
 }
-
-export const db: DatabaseSync = globalThis.__portfolioDb ?? open();
-if (process.env.NODE_ENV !== "production") globalThis.__portfolioDb = db;
 
 type Row = Record<string, unknown>;
 
 /**
- * node:sqlite hands back null-prototype objects, which React refuses to send
- * across the server/client boundary — so every row is copied into a plain one.
+ * `bigint` columns arrive as strings from the driver, because a 64-bit integer
+ * does not always fit a JavaScript number. Every bigint in this schema is either a
+ * millisecond timestamp or a counter, both comfortably inside Number.MAX_SAFE_INTEGER,
+ * so they are converted once here rather than at every call site.
  */
-const plain = <T,>(row: unknown): T => ({ ...(row as object) }) as T;
-
-export function all<T = Row>(sql: string, ...params: unknown[]): T[] {
-  return (db.prepare(sql).all(...(params as never[])) as unknown[]).map((r) => plain<T>(r));
+function coerce<T>(row: Row): T {
+  const out: Row = {};
+  for (const [key, value] of Object.entries(row)) {
+    out[key] = typeof value === "string" && /^-?\d+$/.test(value) && key !== "id" && isNumericColumn(key)
+      ? Number(value)
+      : value;
+  }
+  return out as T;
 }
 
-export function get<T = Row>(sql: string, ...params: unknown[]): T | undefined {
-  const row = db.prepare(sql).get(...(params as never[]));
-  return row === undefined ? undefined : plain<T>(row);
+const NUMERIC_SUFFIXES = [
+  "_at",
+  "_end",
+  "count",
+  "views",
+  "seq",
+  "position",
+  "amount",
+  "months",
+  "max_uses",
+  "used_count",
+  "byte_size",
+  "published",
+  "suspended",
+  "active",
+  "internal",
+  "revoked",
+  "delivered",
+  "two_factor_enabled",
+  "cancel_at_period_end",
+  "window_start",
+  "n",
+];
+
+const isNumericColumn = (key: string) =>
+  NUMERIC_SUFFIXES.some((suffix) => key === suffix || key.endsWith(suffix));
+
+export async function all<T = Row>(sql: string, ...params: unknown[]): Promise<T[]> {
+  const result = await pool.query(toPositional(sql), params as unknown[]);
+  return result.rows.map((row) => coerce<T>(row));
 }
 
-export function run(sql: string, ...params: unknown[]) {
-  return db.prepare(sql).run(...(params as never[]));
+export async function get<T = Row>(sql: string, ...params: unknown[]): Promise<T | undefined> {
+  const result = await pool.query(toPositional(sql), params as unknown[]);
+  return result.rows.length ? coerce<T>(result.rows[0]) : undefined;
+}
+
+export async function run(sql: string, ...params: unknown[]): Promise<void> {
+  await pool.query(toPositional(sql), params as unknown[]);
+}
+
+/** Runs several statements atomically — used where a partial write would corrupt state. */
+export async function transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await fn(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export function now() {

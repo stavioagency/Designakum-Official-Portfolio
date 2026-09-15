@@ -24,20 +24,19 @@ export const PLANS: Record<Exclude<Plan, "free">, PlanDefinition> = {
  * Prices are owner-editable, so every figure the product shows or charges is read
  * through here rather than from the constant above.
  */
-export function planDefinitions(): Record<Exclude<Plan, "free">, PlanDefinition> {
-  const settings = readSettings();
+export async function planDefinitions(): Promise<Record<Exclude<Plan, "free">, PlanDefinition>>{
+  const settings = await readSettings();
   return {
     monthly: { ...PLANS.monthly, amount: settings["pricing.monthly_halalas"] },
     yearly: { ...PLANS.yearly, amount: settings["pricing.yearly_halalas"] },
   };
 }
 
-export const riyals = (halalas: number) =>
-  (halalas / 100).toLocaleString("en-US", { maximumFractionDigits: 2 });
+export const riyals = (halalas: number) => (halalas / 100).toLocaleString("en-US", { maximumFractionDigits: 2 });
 
 /** What a year of the monthly plan would cost, and what the yearly plan saves. */
-export function yearlySaving() {
-  const plans = planDefinitions();
+export async function yearlySaving() {
+  const plans = await planDefinitions();
   const twelveMonths = plans.monthly.amount * 12;
   const saved = twelveMonths - plans.yearly.amount;
   const percent = twelveMonths > 0 ? (saved / twelveMonths) * 100 : 0;
@@ -61,8 +60,8 @@ export interface Entitlements {
   customDomain: boolean;
 }
 
-function freeLimits(): Omit<Entitlements, "plan" | "active"> {
-  const settings = readSettings();
+async function freeLimits(): Promise<Omit<Entitlements, "plan" | "active">>{
+  const settings = await readSettings();
   return {
     maxProjects: settings["limits.free_projects"],
     maxSlides: settings["limits.free_slides"],
@@ -84,17 +83,17 @@ export const FREE_LIMITS = freeLimits;
 
 /* ------------------------------------------------------------ subscriptions */
 
-export function latestSubscription(userId: string): Subscription | undefined {
-  return get<Subscription>(
-    // rowid breaks ties when two rows land in the same millisecond.
-    "SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1",
+export async function latestSubscription(userId: string): Promise<Subscription | undefined>{
+  return await get<Subscription>(
+    // `seq` breaks ties when two rows land in the same millisecond.
+    "SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC, seq DESC LIMIT 1",
     userId,
   );
 }
 
-export function subscriptionHistory(userId: string) {
-  return all<Subscription>(
-    "SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC, rowid DESC",
+export async function subscriptionHistory(userId: string) {
+  return await all<Subscription>(
+    "SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC, seq DESC",
     userId,
   );
 }
@@ -104,36 +103,36 @@ export function subscriptionHistory(userId: string) {
  * run out — no cron needed for the common case, and a provider webhook can still
  * push a status change in at any time.
  */
-export function activeSubscription(userId: string): Subscription | null {
-  const subscription = latestSubscription(userId);
+export async function activeSubscription(userId: string): Promise<Subscription | null>{
+  const subscription = await latestSubscription(userId);
   if (!subscription) return null;
 
   const lapsed =
     subscription.current_period_end !== null && subscription.current_period_end < now();
 
   if (lapsed && (subscription.status === "active" || subscription.status === "past_due")) {
-    setSubscriptionStatus(subscription.id, "expired");
+    await setSubscriptionStatus(subscription.id, "expired");
     // `users.plan` is only a cached mirror of this; let it drift and the customer
     // list starts disagreeing with what the customer is actually entitled to.
-    run("UPDATE users SET plan = 'free', updated_at = ? WHERE id = ?", now(), userId);
+    await run("UPDATE users SET plan = 'free', updated_at = ? WHERE id = ?", now(), userId);
     return null;
   }
   return subscription.status === "active" ? subscription : null;
 }
 
-export function entitlementsFor(user: User): Entitlements {
+export async function entitlementsFor(user: User): Promise<Entitlements>{
   // The platform owner is never gated by billing.
   if (user.role === "owner") {
     return { plan: "yearly", active: true, ...PAID };
   }
-  const subscription = activeSubscription(user.id);
+  const subscription = await activeSubscription(user.id);
   return subscription
     ? { plan: subscription.plan, active: true, ...PAID }
-    : { plan: "free", active: false, ...freeLimits() };
+    : { plan: "free", active: false, ...(await freeLimits()) };
 }
 
-export function setSubscriptionStatus(id: string, status: SubscriptionStatus) {
-  run("UPDATE subscriptions SET status = ?, updated_at = ? WHERE id = ?", status, now(), id);
+export async function setSubscriptionStatus(id: string, status: SubscriptionStatus) {
+  await run("UPDATE subscriptions SET status = ?, updated_at = ? WHERE id = ?", status, now(), id);
 }
 
 export function periodEnd(plan: Exclude<Plan, "free">, from = now()): number {
@@ -152,7 +151,7 @@ export function addMonths(from: number, months: number): number {
  * Records a subscription. `provider` says where it came from — a payment provider
  * for a real purchase, or `manual` when the platform owner grants one directly.
  */
-export function recordSubscription(input: {
+export async function recordSubscription(input: {
   userId: string;
   plan: Exclude<Plan, "free">;
   status: SubscriptionStatus;
@@ -163,10 +162,10 @@ export function recordSubscription(input: {
   providerCustomerId?: string | null;
   providerSubscriptionId?: string | null;
   currentPeriodEnd?: number | null;
-}): Subscription {
+}): Promise<Subscription>{
   const id = newId("sub");
   const ts = now();
-  run(
+  await run(
     `INSERT INTO subscriptions
        (id, user_id, plan, status, provider, provider_customer_id, provider_subscription_id,
         amount, source, started_at, current_period_end, cancel_at_period_end, created_at, updated_at)
@@ -178,43 +177,43 @@ export function recordSubscription(input: {
     input.provider,
     input.providerCustomerId ?? null,
     input.providerSubscriptionId ?? null,
-    input.amount ?? (input.source && input.source !== "paid" ? 0 : planDefinitions()[input.plan].amount),
+    input.amount ?? (input.source && input.source !== "paid" ? 0 : (await planDefinitions())[input.plan].amount),
     input.source ?? (input.provider === "manual" ? "manual" : "paid"),
     ts,
     input.currentPeriodEnd ?? null,
     ts,
     ts,
   );
-  run(
+  await run(
     "UPDATE users SET plan = ?, updated_at = ? WHERE id = ?",
     input.status === "active" ? input.plan : "free",
     ts,
     input.userId,
   );
-  logBillingEvent(input.userId, "subscription.recorded", `${input.plan} · ${input.status} · ${input.provider}`);
-  return get<Subscription>("SELECT * FROM subscriptions WHERE id = ?", id)!;
+  await logBillingEvent(input.userId, "subscription.recorded", `${input.plan} · ${input.status} · ${input.provider}`);
+  return (await get<Subscription>("SELECT * FROM subscriptions WHERE id = ?", id))!;
 }
 
-export function cancelSubscription(userId: string, immediately: boolean) {
-  const subscription = latestSubscription(userId);
+export async function cancelSubscription(userId: string, immediately: boolean) {
+  const subscription = await latestSubscription(userId);
   if (!subscription) return;
 
   if (immediately) {
-    setSubscriptionStatus(subscription.id, "canceled");
-    run("UPDATE subscriptions SET canceled_at = ? WHERE id = ?", now(), subscription.id);
-    run("UPDATE users SET plan = 'free', updated_at = ? WHERE id = ?", now(), userId);
+    await setSubscriptionStatus(subscription.id, "canceled");
+    await run("UPDATE subscriptions SET canceled_at = ? WHERE id = ?", now(), subscription.id);
+    await run("UPDATE users SET plan = 'free', updated_at = ? WHERE id = ?", now(), userId);
   } else {
-    run(
+    await run(
       "UPDATE subscriptions SET cancel_at_period_end = 1, updated_at = ? WHERE id = ?",
       now(),
       subscription.id,
     );
   }
-  logBillingEvent(userId, "subscription.canceled", immediately ? "immediate" : "at period end");
+  await logBillingEvent(userId, "subscription.canceled", immediately ? "immediate" : "at period end");
 }
 
-export function logBillingEvent(userId: string, kind: string, detail = "") {
-  run(
+export async function logBillingEvent(userId: string, kind: string, detail = "") {
+  await run(
     "INSERT INTO billing_events (id, user_id, kind, detail, created_at) VALUES (?, ?, ?, ?, ?)",
     newId("evt"),
     userId,
@@ -224,8 +223,8 @@ export function logBillingEvent(userId: string, kind: string, detail = "") {
   );
 }
 
-export function billingEvents(userId: string, limit = 12) {
-  return all<{ id: string; kind: string; detail: string; created_at: number }>(
+export async function billingEvents(userId: string, limit = 12) {
+  return await all<{ id: string; kind: string; detail: string; created_at: number }>(
     "SELECT id, kind, detail, created_at FROM billing_events WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
     userId,
     limit,
@@ -251,7 +250,7 @@ export interface BillingProvider {
  * No payment provider is wired up yet, and nothing here pretends otherwise: until
  * credentials exist in the environment this returns null and the UI says checkout
  * is unavailable. Implementing `BillingProvider` and returning it from here is the
- * only change a real provider needs — `recordSubscription()` and the entitlement
+ * only change a real provider needs — `await recordSubscription()` and the entitlement
  * checks above already speak in provider-agnostic terms.
  *
  * Expected environment variables:

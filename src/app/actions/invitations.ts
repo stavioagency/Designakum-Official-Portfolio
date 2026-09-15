@@ -44,7 +44,7 @@ export async function createInvitationAction(_prev: ActionState, fd: FormData): 
     const expiresAt = expiresRaw ? new Date(`${expiresRaw}T23:59:59`).getTime() : null;
     if (expiresAt !== null && Number.isNaN(expiresAt)) return { error: "تاريخ الانتهاء غير صالح" };
 
-    const invitation = createInvitation({
+    const invitation = await createInvitation({
       plan,
       months,
       email,
@@ -54,7 +54,7 @@ export async function createInvitationAction(_prev: ActionState, fd: FormData): 
       createdBy: actor.id,
     });
 
-    audit({
+    await audit({
       actor,
       action: "invitation.created",
       targetType: "invitation",
@@ -77,8 +77,8 @@ export async function revokeInvitationAction(_prev: ActionState, fd: FormData): 
     const id = str(fd, "invitationId");
     const code = str(fd, "code");
 
-    revokeInvitation(id);
-    audit({
+    await revokeInvitation(id);
+    await audit({
       actor,
       action: "invitation.revoked",
       targetType: "invitation",
@@ -103,22 +103,22 @@ export async function redeemInvitationAction(_prev: ActionState, fd: FormData): 
     const user = await requireUser();
 
     const fingerprint = await callerFingerprint();
-    const limit = rateLimit(`redeem:${fingerprint}`, 10, 60 * 60 * 1000);
+    const limit = await rateLimit(`redeem:${fingerprint}`, 10, 60 * 60 * 1000);
     if (!limit.ok) return { error: "محاولات كثيرة. حاول لاحقًا." };
 
     const code = str(fd, "code");
     if (!code) return { error: "أدخل رمز الدعوة" };
 
-    if (activeSubscription(user.id)) {
+    if (await activeSubscription(user.id)) {
       return { error: "لديك اشتراك نشط بالفعل" };
     }
 
-    const result = checkInvitation(code, user.email);
+    const result = await checkInvitation(code, user.email);
     if ("problem" in result) return { error: INVITATION_PROBLEM_LABEL[result.problem] };
 
-    redeemInvitation(result.invitation, user);
+    await redeemInvitation(result.invitation, user);
 
-    audit({
+    await audit({
       actor: user,
       action: "invitation.redeemed",
       targetType: "invitation",

@@ -8,12 +8,12 @@ describe("subscription entitlements", () => {
     const paid = await visit("/p/faisal");
 
     const connection = db();
-    const rows = connection
+    const rows = await connection
       .prepare(
         `SELECT u.email, s.status, s.source FROM users u
            LEFT JOIN subscriptions s ON s.id = (
              SELECT s2.id FROM subscriptions s2 WHERE s2.user_id = u.id
-              ORDER BY s2.created_at DESC, s2.rowid DESC LIMIT 1)
+              ORDER BY s2.created_at DESC, s2.seq DESC LIMIT 1)
           WHERE u.email IN ('noura@designakum.sa','faisal@designakum.sa')`,
       )
       .all();
@@ -34,8 +34,8 @@ describe("subscription entitlements", () => {
 
   test("comped subscriptions are excluded from revenue", async () => {
     const connection = db();
-    const comped = connection
-      .prepare("SELECT COUNT(*) AS n FROM subscriptions WHERE source <> 'paid' AND amount <> 0")
+    const comped = await connection
+      .prepare("SELECT COUNT(*)::int AS n FROM subscriptions WHERE source <> 'paid' AND amount <> 0")
       .get();
     connection.close();
 
@@ -44,7 +44,7 @@ describe("subscription entitlements", () => {
 
   test("the owner console reports the same revenue the data supports", async () => {
     const connection = db();
-    const paid = connection
+    const paid = await connection
       .prepare(
         `SELECT s.plan, s.amount FROM subscriptions s
           WHERE s.status = 'active' AND s.source = 'paid'
@@ -59,7 +59,7 @@ describe("subscription entitlements", () => {
     );
 
     const page = await visit("/console/subscriptions", {
-      cookie: sessionFor("admin@designakum.sa"),
+      cookie: await sessionFor("admin@designakum.sa"),
     });
     assert.equal(page.status, 200);
 
@@ -74,11 +74,11 @@ describe("subscription entitlements", () => {
 describe("pricing is settings-driven", () => {
   test("the public page reflects the stored price and recomputes the saving", async () => {
     const connection = db();
-    const row = connection
+    const row = await connection
       .prepare("SELECT value FROM settings WHERE key = 'pricing.monthly_halalas'")
       .get();
     const monthly = row ? Number(JSON.parse(row.value)) : 1200;
-    const yearlyRow = connection
+    const yearlyRow = await connection
       .prepare("SELECT value FROM settings WHERE key = 'pricing.yearly_halalas'")
       .get();
     const yearly = yearlyRow ? Number(JSON.parse(yearlyRow.value)) : 12000;

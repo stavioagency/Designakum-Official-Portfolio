@@ -9,19 +9,20 @@
     "seed": "node scripts/seed.mjs",
     "backup": "node scripts/backup.mjs",
     "restore": "node scripts/restore.mjs",
-    "schema": "node scripts/build-schema.mjs",
-    "prebuild": "node scripts/build-schema.mjs",
     "test": "node --test tests/",
-    "test:unit": "node --test tests/safe-url.test.ts"
+    "test:unit": "node --test tests/safe-url.test.ts",
+    "migrate": "psql \"$DATABASE_URL\" -f scripts/schema.pg.sql"
   },
   "dependencies": {
     "next": "15.5.4",
+    "pg": "^8.23.0",
     "react": "19.1.1",
     "react-dom": "19.1.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.13",
     "@types/node": "^22.10.2",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
     "tailwindcss": "^4.1.13",

@@ -35,7 +35,7 @@ export default async function LegalPage({ params }: { params: Promise<{ doc: str
 
   const locale = await currentLocale();
   const d = dict(locale);
-  const settings = readSettings();
+  const settings = await readSettings();
   const body = String(settings[entry.key] ?? "").trim();
 
   return (

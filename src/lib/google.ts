@@ -15,19 +15,19 @@ export function googleRedirectUri(origin: string) {
 const base64url = (buffer: Buffer) => buffer.toString("base64url");
 
 /** Builds the consent URL and stores the matching state + PKCE verifier. */
-export function beginGoogleAuth(origin: string, returnTo: string) {
-  const state = base64url(randomBytes(24));
-  const verifier = base64url(randomBytes(48));
-  const challenge = base64url(createHash("sha256").update(verifier).digest());
+export async function beginGoogleAuth(origin: string, returnTo: string) {
+  const state = await base64url(randomBytes(24));
+  const verifier = await base64url(randomBytes(48));
+  const challenge = await base64url(createHash("sha256").update(verifier).digest());
 
-  run(
+  await run(
     "INSERT INTO oauth_states (state, verifier, created_at) VALUES (?, ?, ?)",
     state,
     `${verifier}|${returnTo}`,
     now(),
   );
   // Anything older than 15 minutes is abandoned; clear it out while we're here.
-  run("DELETE FROM oauth_states WHERE created_at < ?", now() - 15 * 60 * 1000);
+  await run("DELETE FROM oauth_states WHERE created_at < ?", now() - 15 * 60 * 1000);
 
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID!,
@@ -44,13 +44,15 @@ export function beginGoogleAuth(origin: string, returnTo: string) {
   return `${AUTH_ENDPOINT}?${params}`;
 }
 
-export function consumeState(state: string): { verifier: string; returnTo: string } | null {
-  const row = get<{ verifier: string }>(
+export async function consumeState(
+  state: string,
+): Promise<{ verifier: string; returnTo: string } | null> {
+  const row = await get<{ verifier: string }>(
     "SELECT verifier FROM oauth_states WHERE state = ?",
     state,
   );
   if (!row) return null;
-  run("DELETE FROM oauth_states WHERE state = ?", state);
+  await run("DELETE FROM oauth_states WHERE state = ?", state);
 
   const [verifier, returnTo = "/dashboard"] = row.verifier.split("|");
   return { verifier, returnTo };

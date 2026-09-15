@@ -50,8 +50,8 @@ export default async function SupportQueuePage({
   const search = one(params.q) ?? "";
   const page = Math.max(1, Number(one(params.page)) || 1);
 
-  const counts = ticketCounts();
-  const { rows, total } = listTickets({
+  const counts = await ticketCounts();
+  const { rows, total } = await listTickets({
     status,
     search,
     limit: PER_PAGE,

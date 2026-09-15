@@ -43,7 +43,7 @@ function refresh(slug: string) {
 async function withPortfolio(fd: FormData): Promise<{ user: User; id: string; slug: string }> {
   const user = await requireUser();
   const id = str(fd, "portfolioId");
-  const portfolio = assertCanEdit(id, user);
+  const portfolio = await assertCanEdit(id, user);
   return { user, id, slug: portfolio.slug };
 }
 
@@ -57,7 +57,7 @@ async function resolveImage(
   user: User,
 ): Promise<string | undefined> {
   const file = fd.get(field);
-  if (file instanceof File && file.size > 0) return storeImage(file, user);
+  if (file instanceof File && file.size > 0) return await storeImage(file, user);
   if (str(fd, `${field}_cleared`) === "1") return "";
   return undefined;
 }
@@ -77,7 +77,7 @@ export async function saveProfileAction(_prev: ActionState, fd: FormData): Promi
     const theme = str(fd, "theme");
     if (!(theme in THEMES)) return { error: "لون الهوية غير معروف" };
 
-    updateProfile(id, user, {
+    await updateProfile(id, user, {
       name: str(fd, "name"),
       title: str(fd, "title"),
       tagline: str(fd, "tagline"),
@@ -100,7 +100,7 @@ export async function saveProfileAction(_prev: ActionState, fd: FormData): Promi
 export async function removeAvatarAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   try {
     const { user, id, slug } = await withPortfolio(fd);
-    updateProfile(id, user, { avatar_url: "" });
+    await updateProfile(id, user, { avatar_url: "" });
     refresh(slug);
     return { ok: "تم حذف الصورة" };
   } catch (error) {
@@ -111,7 +111,7 @@ export async function removeAvatarAction(_prev: ActionState, fd: FormData): Prom
 export async function saveSlugAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   try {
     const { user, id, slug } = await withPortfolio(fd);
-    const next = updateSlug(id, user, str(fd, "slug"));
+    const next = await updateSlug(id, user, str(fd, "slug"));
     refresh(slug);
     refresh(next);
     return { ok: `أصبح رابطك /p/${next}` };
@@ -124,7 +124,7 @@ export async function publishAction(_prev: ActionState, fd: FormData): Promise<A
   try {
     const { user, id, slug } = await withPortfolio(fd);
     const publish = str(fd, "value") === "1";
-    setPublished(id, user, publish);
+    await setPublished(id, user, publish);
     refresh(slug);
     return { ok: publish ? "تم نشر معرضك" : "تم إخفاء معرضك عن الزوار" };
   } catch (error) {
@@ -140,13 +140,13 @@ export async function addItemAction(_prev: ActionState, fd: FormData): Promise<A
     const t = table(fd);
 
     // Free accounts are capped; a paid subscription lifts the cap entirely.
-    const limits = entitlementsFor(user);
+    const limits = await entitlementsFor(user);
     const cap = t === "projects" ? limits.maxProjects : t === "slides" ? limits.maxSlides : Infinity;
     if (Number.isFinite(cap)) {
-      const count = all<{ n: number }>(
+      const count = (await all<{ n: number }>(
         `SELECT COUNT(*) AS n FROM ${t} WHERE portfolio_id = ?`,
         id,
-      )[0].n;
+      ))[0].n;
       if (count >= cap) {
         const noun = t === "projects" ? "من الأعمال" : "من الشرائح";
         return {
@@ -161,7 +161,7 @@ export async function addItemAction(_prev: ActionState, fd: FormData): Promise<A
       stats: { label: "عنصر جديد", value: "0", icon: "sparkle" },
       socials: { platform: "instagram", url: "" },
     };
-    addChild(t, id, user, defaults[t]);
+    await addChild(t, id, user, defaults[t]);
     refresh(slug);
     return { ok: "تمت الإضافة" };
   } catch (error) {
@@ -199,7 +199,7 @@ export async function saveItemAction(_prev: ActionState, fd: FormData): Promise<
     }
     if (image !== undefined) fields.image_url = image;
 
-    updateChild(t, id, user, itemId, fields);
+    await updateChild(t, id, user, itemId, fields);
     refresh(slug);
     return { ok: "تم الحفظ" };
   } catch (error) {
@@ -210,7 +210,7 @@ export async function saveItemAction(_prev: ActionState, fd: FormData): Promise<
 export async function removeItemAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   try {
     const { user, id, slug } = await withPortfolio(fd);
-    deleteChild(table(fd), id, user, str(fd, "itemId"));
+    await deleteChild(table(fd), id, user, str(fd, "itemId"));
     refresh(slug);
     return { ok: "تم الحذف" };
   } catch (error) {
@@ -222,7 +222,7 @@ export async function moveItemAction(_prev: ActionState, fd: FormData): Promise<
   try {
     const { user, id, slug } = await withPortfolio(fd);
     const direction = str(fd, "direction") === "up" ? "up" : "down";
-    moveChild(table(fd), id, user, str(fd, "itemId"), direction);
+    await moveChild(table(fd), id, user, str(fd, "itemId"), direction);
     refresh(slug);
     return { ok: "تم الترتيب" };
   } catch (error) {

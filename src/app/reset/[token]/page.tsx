@@ -14,7 +14,7 @@ export default async function ResetPasswordPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const valid = findValidReset(token) !== null;
+  const valid = await findValidReset(token) !== null;
 
   return (
     <main className="relative z-10 grid min-h-dvh place-items-center px-5 py-12">

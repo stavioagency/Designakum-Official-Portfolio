@@ -51,16 +51,16 @@ export async function setAccountStatusAction(_prev: ActionState, fd: FormData): 
 
     if (userId === actor.id) return { error: "لا يمكنك تغيير حالة حسابك الخاص" };
 
-    const target = getCustomer(userId);
+    const target = await getCustomer(userId);
     if (!target) return { error: "الحساب غير موجود" };
     if (target.role !== "client" && actor.role !== "owner") {
       return { error: "لا يمكنك تعديل حساب موظف" };
     }
 
-    run("UPDATE users SET status = ?, updated_at = ? WHERE id = ?", status, now(), userId);
-    if (status === "suspended") revokeSessionsFor(userId);
+    await run("UPDATE users SET status = ?, updated_at = ? WHERE id = ?", status, now(), userId);
+    if (status === "suspended") await revokeSessionsFor(userId);
 
-    audit({
+    await audit({
       actor,
       action: status === "suspended" ? "customer.suspended" : "customer.reactivated",
       targetType: "user",
@@ -84,14 +84,14 @@ export async function deleteCustomerAction(_prev: ActionState, fd: FormData): Pr
     const userId = str(fd, "userId");
     if (userId === actor.id) return { error: "لا يمكنك حذف حسابك الخاص" };
 
-    const target = getCustomer(userId);
+    const target = await getCustomer(userId);
     if (!target) return { error: "الحساب غير موجود" };
     if (str(fd, "confirm") !== target.email) {
       return { error: "اكتب بريد العميل بالضبط لتأكيد الحذف" };
     }
 
-    const portfolio = portfolioOf(userId);
-    audit({
+    const portfolio = await portfolioOf(userId);
+    await audit({
       actor,
       action: "customer.deleted",
       targetType: "user",
@@ -102,7 +102,7 @@ export async function deleteCustomerAction(_prev: ActionState, fd: FormData): Pr
     });
 
     // ON DELETE CASCADE clears the portfolio and everything hanging off it.
-    run("DELETE FROM users WHERE id = ?", userId);
+    await run("DELETE FROM users WHERE id = ?", userId);
 
     revalidatePath("/console/customers");
     revalidatePath("/console");
@@ -123,21 +123,21 @@ export async function grantSubscriptionAction(_prev: ActionState, fd: FormData):
     const comped = str(fd, "comped") === "1";
 
     if (!plan) return { error: "باقة غير معروفة" };
-    const target = getCustomer(userId);
+    const target = await getCustomer(userId);
     if (!target) return { error: "الحساب غير موجود" };
 
-    const before = latestSubscription(userId);
-    recordSubscription({
+    const before = await latestSubscription(userId);
+    await recordSubscription({
       userId,
       plan,
       status: "active",
       provider: "manual",
       source: comped ? "manual" : "paid",
-      amount: comped ? 0 : planDefinitions()[plan].amount * (plan === "monthly" ? months : 1),
+      amount: comped ? 0 : (await planDefinitions())[plan].amount * (plan === "monthly" ? months : 1),
       currentPeriodEnd: addMonths(now(), plan === "yearly" ? months * 12 : months),
     });
 
-    audit({
+    await audit({
       actor,
       action: comped ? "subscription.granted_free" : "subscription.granted",
       targetType: "user",
@@ -161,22 +161,22 @@ export async function extendSubscriptionAction(_prev: ActionState, fd: FormData)
     const userId = str(fd, "userId");
     const months = Math.min(60, Math.max(1, Number(str(fd, "months")) || 1));
 
-    const subscription = latestSubscription(userId);
+    const subscription = await latestSubscription(userId);
     if (!subscription) return { error: "لا يوجد اشتراك لتمديده" };
 
-    const target = getCustomer(userId);
+    const target = await getCustomer(userId);
     const from = Math.max(subscription.current_period_end ?? now(), now());
-    const extended = addMonths(from, months);
+    const extended = await addMonths(from, months);
 
-    run(
+    await run(
       "UPDATE subscriptions SET current_period_end = ?, status = 'active', cancel_at_period_end = 0, updated_at = ? WHERE id = ?",
       extended,
       now(),
       subscription.id,
     );
-    run("UPDATE users SET plan = ?, updated_at = ? WHERE id = ?", subscription.plan, now(), userId);
+    await run("UPDATE users SET plan = ?, updated_at = ? WHERE id = ?", subscription.plan, now(), userId);
 
-    audit({
+    await audit({
       actor,
       action: "subscription.extended",
       targetType: "user",
@@ -200,13 +200,13 @@ export async function endSubscriptionAction(_prev: ActionState, fd: FormData): P
     const userId = str(fd, "userId");
     const immediately = str(fd, "immediately") === "1";
 
-    const before = latestSubscription(userId);
+    const before = await latestSubscription(userId);
     if (!before) return { error: "لا يوجد اشتراك" };
 
-    cancelSubscription(userId, immediately);
-    const target = getCustomer(userId);
+    await cancelSubscription(userId, immediately);
+    const target = await getCustomer(userId);
 
-    audit({
+    await audit({
       actor,
       action: immediately ? "subscription.canceled" : "subscription.cancel_scheduled",
       targetType: "user",
@@ -229,22 +229,22 @@ export async function reactivateSubscriptionAction(_prev: ActionState, fd: FormD
     const actor = await requirePermission("billing.manage");
     const userId = str(fd, "userId");
 
-    const subscription = latestSubscription(userId);
+    const subscription = await latestSubscription(userId);
     if (!subscription) return { error: "لا يوجد اشتراك" };
-    if (activeSubscription(userId)) return { error: "الاشتراك نشط بالفعل" };
+    if (await activeSubscription(userId)) return { error: "الاشتراك نشط بالفعل" };
 
-    const end = Math.max(subscription.current_period_end ?? 0, periodEnd(subscription.plan));
-    setSubscriptionStatus(subscription.id, "active");
-    run(
+    const end = Math.max(subscription.current_period_end ?? 0, await periodEnd(subscription.plan));
+    await setSubscriptionStatus(subscription.id, "active");
+    await run(
       "UPDATE subscriptions SET current_period_end = ?, cancel_at_period_end = 0, canceled_at = NULL, updated_at = ? WHERE id = ?",
       end,
       now(),
       subscription.id,
     );
-    run("UPDATE users SET plan = ?, updated_at = ? WHERE id = ?", subscription.plan, now(), userId);
+    await run("UPDATE users SET plan = ?, updated_at = ? WHERE id = ?", subscription.plan, now(), userId);
 
-    const target = getCustomer(userId);
-    audit({
+    const target = await getCustomer(userId);
+    await audit({
       actor,
       action: "subscription.reactivated",
       targetType: "user",
@@ -275,11 +275,11 @@ export async function createStaffAction(_prev: ActionState, fd: FormData): Promi
     if (password.length < 12) return { error: "كلمة مرور الموظفين يجب أن تكون 12 حرفًا على الأقل" };
     if (!name) return { error: "الاسم مطلوب" };
     if (role !== "owner" && role !== "support") return { error: "دور غير معروف" };
-    if (findUserByEmail(email)) return { error: "هذا البريد مسجّل مسبقًا" };
+    if (await findUserByEmail(email)) return { error: "هذا البريد مسجّل مسبقًا" };
 
-    const created = createUser({ email, password, displayName: name, role });
+    const created = await createUser({ email, password, displayName: name, role });
 
-    audit({
+    await audit({
       actor,
       action: "staff.created",
       targetType: "user",
@@ -304,19 +304,19 @@ export async function setStaffRoleAction(_prev: ActionState, fd: FormData): Prom
     if (userId === actor.id) return { error: "لا يمكنك تغيير دورك الخاص" };
     if (!["owner", "support", "client"].includes(role)) return { error: "دور غير معروف" };
 
-    const target = getCustomer(userId);
+    const target = await getCustomer(userId);
     if (!target) return { error: "الحساب غير موجود" };
 
     // The platform must never end up with nobody who can administer it.
     if (target.role === "owner" && role !== "owner") {
-      const owners = ownerCount();
+      const owners = await ownerCount();
       if (owners <= 1) return { error: "لا يمكن إزالة آخر مالك للمنصة" };
     }
 
-    run("UPDATE users SET role = ?, updated_at = ? WHERE id = ?", role, now(), userId);
-    revokeSessionsFor(userId);
+    await run("UPDATE users SET role = ?, updated_at = ? WHERE id = ?", role, now(), userId);
+    await revokeSessionsFor(userId);
 
-    audit({
+    await audit({
       actor,
       action: "staff.role_changed",
       targetType: "user",
@@ -340,21 +340,21 @@ export async function resetCustomerPasswordAction(_prev: ActionState, fd: FormDa
     const password = String(fd.get("password") ?? "");
     if (password.length < 8) return { error: "كلمة المرور يجب أن تكون 8 أحرف على الأقل" };
 
-    const target = getCustomer(userId);
+    const target = await getCustomer(userId);
     if (!target) return { error: "الحساب غير موجود" };
     if (target.role !== "client" && actor.role !== "owner") {
       return { error: "لا يمكنك تعديل حساب موظف" };
     }
 
-    run(
+    await run(
       "UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?",
       hashPassword(password),
       now(),
       userId,
     );
-    revokeSessionsFor(userId);
+    await revokeSessionsFor(userId);
 
-    audit({
+    await audit({
       actor,
       action: "customer.password_reset",
       targetType: "user",
@@ -370,6 +370,6 @@ export async function resetCustomerPasswordAction(_prev: ActionState, fd: FormDa
   }
 }
 
-function ownerCount(): number {
-  return get<{ n: number }>("SELECT COUNT(*) AS n FROM users WHERE role = 'owner'")?.n ?? 0;
+async function ownerCount(): Promise<number>{
+  return (await get<{ n: number }>("SELECT COUNT(*) AS n FROM users WHERE role = 'owner'"))?.n ?? 0;
 }

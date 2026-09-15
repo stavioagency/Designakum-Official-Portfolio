@@ -28,12 +28,12 @@ describe("response hardening", () => {
 describe("stored links cannot execute script", () => {
   test("a javascript: URL never reaches the rendered page", async () => {
     const connection = db();
-    const portfolio = connection.prepare("SELECT id FROM portfolios WHERE slug = 'faisal'").get();
-    const original = connection
+    const portfolio = await connection.prepare("SELECT id FROM portfolios WHERE slug = 'faisal'").get();
+    const original = await connection
       .prepare("SELECT url FROM socials WHERE portfolio_id = ? ORDER BY position LIMIT 1")
       .get(portfolio.id);
 
-    connection
+    await connection
       .prepare("UPDATE socials SET url = ? WHERE portfolio_id = ? AND position = 0")
       .run("javascript:alert(document.cookie)", portfolio.id);
     connection.close();
@@ -44,7 +44,7 @@ describe("stored links cannot execute script", () => {
       assert.ok(!contains(result, "javascript:alert"), "hostile URL was rendered");
     } finally {
       const restore = db();
-      restore
+      await restore
         .prepare("UPDATE socials SET url = ? WHERE portfolio_id = ? AND position = 0")
         .run(original.url, portfolio.id);
       restore.close();
@@ -60,7 +60,7 @@ describe("authentication", () => {
   });
 
   test("a forged session signature is rejected", async () => {
-    const valid = sessionFor("admin@designakum.sa");
+    const valid = await sessionFor("admin@designakum.sa");
     const [name, value] = valid.split("=");
     const [id] = value.split(".");
     const forged = `${name}=${id}.${"0".repeat(64)}`;
@@ -78,7 +78,7 @@ describe("authentication", () => {
 describe("tenant isolation", () => {
   test("a customer cannot open another customer's ticket", async () => {
     const connection = db();
-    const ticket = connection
+    const ticket = await connection
       .prepare(
         "SELECT t.id, u.email FROM tickets t JOIN users u ON u.id = t.user_id LIMIT 1",
       )
@@ -89,16 +89,16 @@ describe("tenant isolation", () => {
     const owner = ticket.email;
     const other = owner === "faisal@designakum.sa" ? "noura@designakum.sa" : "faisal@designakum.sa";
 
-    const mine = await visit(`/dashboard/support/${ticket.id}`, { cookie: sessionFor(owner) });
+    const mine = await visit(`/dashboard/support/${ticket.id}`, { cookie: await sessionFor(owner) });
     assert.equal(mine.status, 200, "the owner should see their own ticket");
 
-    const theirs = await visit(`/dashboard/support/${ticket.id}`, { cookie: sessionFor(other) });
+    const theirs = await visit(`/dashboard/support/${ticket.id}`, { cookie: await sessionFor(other) });
     assert.equal(theirs.status, 404, "another customer must not see it");
   });
 
   test("a client cannot reach the console", async () => {
     const result = await visit("/console/customers", {
-      cookie: sessionFor("faisal@designakum.sa"),
+      cookie: await sessionFor("faisal@designakum.sa"),
       redirect: "follow",
     });
     assert.ok(
@@ -110,13 +110,13 @@ describe("tenant isolation", () => {
 
 describe("staff permissions", () => {
   test("an owner reaches the audit log", async () => {
-    const result = await visit("/console/audit", { cookie: sessionFor("admin@designakum.sa") });
+    const result = await visit("/console/audit", { cookie: await sessionFor("admin@designakum.sa") });
     assert.equal(result.status, 200);
     assert.ok(contains(result, "سجل التدقيق"));
   });
 
   test("a support agent is kept out of the audit log, settings and invitations", async () => {
-    const cookie = sessionFor("support@designakum.sa");
+    const cookie = await sessionFor("support@designakum.sa");
 
     // Next answers a redirect thrown mid-stream with HTTP 200 and the destination
     // inside the payload, so the meaningful checks are: the redirect was issued,
@@ -141,13 +141,13 @@ describe("staff permissions", () => {
   });
 
   test("an owner does see what a support agent is refused", async () => {
-    const cookie = sessionFor("admin@designakum.sa");
+    const cookie = await sessionFor("admin@designakum.sa");
     const invitations = await visit("/console/invitations", { cookie });
     assert.ok(contains(invitations, "DZKM1-WELCM"), "the owner should see invitation codes");
   });
 
   test("a support agent still works their own queues", async () => {
-    const cookie = sessionFor("support@designakum.sa");
+    const cookie = await sessionFor("support@designakum.sa");
     for (const allowed of ["/console", "/console/customers", "/console/moderation", "/console/support"]) {
       const result = await visit(allowed, { cookie });
       assert.equal(result.status, 200, `${allowed} should be open to support`);
@@ -164,8 +164,8 @@ describe("public surfaces", () => {
 
   test("a suspended portfolio is withheld from the public but shown to staff", async () => {
     const connection = db();
-    const portfolio = connection.prepare("SELECT id FROM portfolios WHERE slug = 'noura'").get();
-    connection
+    const portfolio = await connection.prepare("SELECT id FROM portfolios WHERE slug = 'noura'").get();
+    await connection
       .prepare("UPDATE portfolios SET suspended = 1, suspended_reason = 'test' WHERE id = ?")
       .run(portfolio.id);
     connection.close();
@@ -174,11 +174,11 @@ describe("public surfaces", () => {
       const anonymous = await visit("/p/noura");
       assert.ok(contains(anonymous, "موقوف"), "a suspended portfolio was served to the public");
 
-      const staff = await visit("/p/noura", { cookie: sessionFor("admin@designakum.sa") });
+      const staff = await visit("/p/noura", { cookie: await sessionFor("admin@designakum.sa") });
       assert.ok(contains(staff, "نورة"), "staff should still see the content under review");
     } finally {
       const restore = db();
-      restore
+      await restore
         .prepare("UPDATE portfolios SET suspended = 0, suspended_reason = '' WHERE id = ?")
         .run(portfolio.id);
       restore.close();

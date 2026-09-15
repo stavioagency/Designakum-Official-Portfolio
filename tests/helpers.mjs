@@ -1,17 +1,49 @@
-import { DatabaseSync } from "node:sqlite";
+import pg from "pg";
 import { createHmac, randomUUID, randomBytes } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
 export const BASE = process.env.TEST_BASE_URL ?? "http://localhost:3000";
-const DB_PATH = process.env.DATABASE_PATH ?? path.join(process.cwd(), "data", "platform.db");
 
-export const db = () => {
-  // The application server holds the same file; wait rather than fail on a busy lock.
-  const connection = new DatabaseSync(DB_PATH);
-  connection.exec("PRAGMA busy_timeout = 5000");
-  return connection;
+const connectionString =
+  process.env.DATABASE_URL ??
+  (() => {
+    // Mirror what the app reads, so the tests always talk to the same database.
+    const env = fs.readFileSync(path.join(process.cwd(), ".env.local"), "utf8");
+    return env.match(/^DATABASE_URL=(.+)$/m)?.[1]?.trim();
+  })();
+
+const pool = new pg.Pool({
+  connectionString,
+  ssl: connectionString?.includes("supabase") ? { rejectUnauthorized: false } : undefined,
+  max: 3,
+});
+
+const positional = (sql) => {
+  let i = 0;
+  return sql.replace(/\?/g, () => `$${++i}`);
 };
+
+/** Mirrors the shape the tests used against SQLite, so the assertions did not change. */
+export const db = () => ({
+  prepare(sql) {
+    const text = positional(sql);
+    return {
+      async get(...args) {
+        return (await pool.query(text, args)).rows[0];
+      },
+      async all(...args) {
+        return (await pool.query(text, args)).rows;
+      },
+      async run(...args) {
+        await pool.query(text, args);
+      },
+    };
+  },
+  close() {},
+});
+
+export const closePool = () => pool.end();
 
 /**
  * Signs a session cookie exactly the way the app does, so the tests exercise the
@@ -22,17 +54,16 @@ function secret() {
   return fs.readFileSync(path.join(process.cwd(), "data", ".dev-session-secret"), "utf8").trim();
 }
 
-export function sessionFor(email) {
+export async function sessionFor(email) {
   const connection = db();
-  const user = connection.prepare("SELECT id FROM users WHERE email = ?").get(email);
+  const user = await connection.prepare("SELECT id FROM users WHERE email = ?").get(email);
   if (!user) throw new Error(`No such user: ${email}`);
 
   const id = randomUUID().replace(/-/g, "") + randomBytes(8).toString("hex");
   const ts = Date.now();
-  connection
+  await connection
     .prepare("INSERT INTO sessions (id, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)")
     .run(id, user.id, ts, ts + 3_600_000);
-  connection.close();
 
   const mac = createHmac("sha256", secret()).update(id).digest("hex");
   return `dk_session=${id}.${mac}`;

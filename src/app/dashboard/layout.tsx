@@ -20,7 +20,7 @@ export default async function DashboardLayout({
   if (!user) redirect("/login");
 
   const locale = await currentLocale();
-  const portfolio = getPortfolioForUser(user.id);
+  const portfolio = await getPortfolioForUser(user.id);
   if (!portfolio) redirect(user.role === "client" ? "/login" : "/console");
 
   // Platform chrome always wears Designakum blue; a portfolio's own accent applies

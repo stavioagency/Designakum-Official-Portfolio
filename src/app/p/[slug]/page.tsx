@@ -23,7 +23,7 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const portfolio = getPortfolioBySlug(slug);
+  const portfolio = await getPortfolioBySlug(slug);
   if (!portfolio) return { title: "404" };
 
   const description = portfolio.bio.slice(0, 160) || portfolio.tagline;
@@ -41,11 +41,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PublicPortfolioPage({ params }: Props) {
   const { slug } = await params;
-  let portfolio = getPortfolioBySlug(slug);
+  let portfolio = await getPortfolioBySlug(slug);
   if (!portfolio) notFound();
 
   // A temporary suspension expires on its own the first time the page is opened.
-  if (liftExpiredSuspension(portfolio)) portfolio = getPortfolioBySlug(slug)!;
+  if (await liftExpiredSuspension(portfolio)) portfolio = (await getPortfolioBySlug(slug))!;
 
   const maintenance = await maintenanceState({ portfolio: true });
   if (maintenance.blocked) {
@@ -55,7 +55,7 @@ export default async function PublicPortfolioPage({ params }: Props) {
   const viewer = await currentUser();
   const canEdit = !!viewer && (isStaff(viewer) || viewer.id === portfolio.user_id);
   const d = dict(await currentLocale());
-  const settings = readSettings();
+  const settings = await readSettings();
 
   if (portfolio.suspended === 1 && !isStaff(viewer)) {
     return (
@@ -95,16 +95,16 @@ export default async function PublicPortfolioPage({ params }: Props) {
     );
   }
 
-  if (!canEdit) recordView(portfolio.id, await callerFingerprint());
+  if (!canEdit) await recordView(portfolio.id, await callerFingerprint());
 
   // The badge follows the page owner's subscription, not the viewer's.
-  const owner = get<User>("SELECT * FROM users WHERE id = ?", portfolio.user_id);
-  const showBadge = owner ? entitlementsFor(owner).showBadge : true;
+  const owner = await get<User>("SELECT * FROM users WHERE id = ?", portfolio.user_id);
+  const showBadge = owner ? (await entitlementsFor(owner)).showBadge : true;
 
   return (
     <>
       <PortfolioView
-        bundle={loadBundle(portfolio)}
+        bundle={await loadBundle(portfolio)}
         showBadge={showBadge}
         live
         reportsOpen={settings["features.reports"]}

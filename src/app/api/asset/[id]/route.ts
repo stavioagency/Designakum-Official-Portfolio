@@ -4,7 +4,7 @@ import { isStaff } from "@/lib/permissions";
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
-  const asset = readAsset(id);
+  const asset = await readAsset(id);
   if (!asset) return new Response("Not found", { status: 404 });
 
   const withheld = asset.owner_status === "suspended" || asset.portfolio_suspended === 1;

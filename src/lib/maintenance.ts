@@ -11,7 +11,7 @@ import { readSettings } from "./settings";
  * access throughout so the problem can be worked on.
  */
 export async function maintenanceState({ portfolio = false } = {}) {
-  const settings = readSettings();
+  const settings = await readSettings();
   if (!settings["platform.maintenance"]) return { blocked: false, message: "", staff: false };
 
   if (portfolio && !settings["platform.maintenance_includes_portfolios"]) {

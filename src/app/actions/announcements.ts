@@ -43,7 +43,7 @@ export async function createAnnouncementAction(_prev: ActionState, fd: FormData)
       return { error: "نوع غير معروف" };
     }
 
-    const announcement = createAnnouncement({
+    const announcement = await createAnnouncement({
       title: title.slice(0, 160),
       body: str(fd, "body").slice(0, 2000),
       severity,
@@ -52,7 +52,7 @@ export async function createAnnouncementAction(_prev: ActionState, fd: FormData)
       createdBy: actor.id,
     });
 
-    audit({
+    await audit({
       actor,
       action: "announcement.created",
       targetType: "announcement",
@@ -72,13 +72,13 @@ export async function toggleAnnouncementAction(_prev: ActionState, fd: FormData)
   try {
     const actor = await requirePermission("announcements.manage");
     const id = str(fd, "announcementId");
-    const announcement = getAnnouncement(id);
+    const announcement = await getAnnouncement(id);
     if (!announcement) return { error: "الإعلان غير موجود" };
 
     const active = announcement.active === 1 ? 0 : 1;
-    updateAnnouncement(id, { active });
+    await updateAnnouncement(id, { active });
 
-    audit({
+    await audit({
       actor,
       action: active ? "announcement.activated" : "announcement.deactivated",
       targetType: "announcement",
@@ -99,11 +99,11 @@ export async function deleteAnnouncementAction(_prev: ActionState, fd: FormData)
   try {
     const actor = await requirePermission("announcements.manage");
     const id = str(fd, "announcementId");
-    const announcement = getAnnouncement(id);
+    const announcement = await getAnnouncement(id);
     if (!announcement) return { error: "الإعلان غير موجود" };
 
-    deleteAnnouncement(id);
-    audit({
+    await deleteAnnouncement(id);
+    await audit({
       actor,
       action: "announcement.deleted",
       targetType: "announcement",
@@ -122,6 +122,6 @@ export async function deleteAnnouncementAction(_prev: ActionState, fd: FormData)
 /** Dismissal is per customer and needs no permission beyond being signed in. */
 export async function dismissAnnouncementAction(fd: FormData) {
   const user = await requireUser();
-  markAnnouncementRead(str(fd, "announcementId"), user.id);
+  await markAnnouncementRead(str(fd, "announcementId"), user.id);
   revalidatePath("/dashboard");
 }

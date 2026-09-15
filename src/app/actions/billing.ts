@@ -33,7 +33,7 @@ export async function startCheckoutAction(_prev: ActionState, fd: FormData): Pro
 
     const provider = billingProvider();
     if (!provider) {
-      logBillingEvent(user.id, "checkout.unavailable", plan);
+      await logBillingEvent(user.id, "checkout.unavailable", plan);
       return {
         error:
           "الدفع الإلكتروني غير مفعّل على هذه النسخة بعد. تواصل مع إدارة المنصة لتفعيل اشتراكك.",
@@ -48,7 +48,7 @@ export async function startCheckoutAction(_prev: ActionState, fd: FormData): Pro
       cancelUrl: `${origin}/dashboard/billing?checkout=cancelled`,
     });
 
-    logBillingEvent(user.id, "checkout.started", `${plan} · ${provider.id}`);
+    await logBillingEvent(user.id, "checkout.started", `${plan} · ${provider.id}`);
     destination = checkout.url;
   } catch (error) {
     return fail(error);
@@ -61,7 +61,7 @@ export async function cancelSubscriptionAction(_prev: ActionState, fd: FormData)
   try {
     const user = await requireUser();
     const immediately = str(fd, "immediately") === "1";
-    cancelSubscription(user.id, immediately);
+    await cancelSubscription(user.id, immediately);
     revalidatePath("/dashboard/billing");
     return {
       ok: immediately

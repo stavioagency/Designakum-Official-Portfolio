@@ -17,14 +17,14 @@ export default async function DashboardPage() {
   const user = await currentUser();
   if (!user) redirect("/login");
 
-  const portfolio = getPortfolioForUser(user.id);
+  const portfolio = await getPortfolioForUser(user.id);
   if (!portfolio) redirect("/console");
 
-  const bundle = loadBundle(portfolio);
+  const bundle = await loadBundle(portfolio);
   const origin = await requestOrigin();
   const published = portfolio.published === 1;
 
-  const announcements = liveAnnouncementsFor(user.id);
+  const announcements = await liveAnnouncementsFor(user.id);
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-7 sm:px-6 lg:py-10">

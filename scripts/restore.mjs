@@ -1,32 +1,27 @@
 /**
- * Restores a backup over the live database. Deliberately manual and loud: it
- * refuses without an explicit file argument and moves the current database aside
- * rather than deleting it.
+ * Restores a dump over the database named by DATABASE_URL.
+ * Deliberately manual and loud: it destroys whatever is there now.
  */
+import { spawn } from "node:child_process";
 import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const target = process.env.DATABASE_PATH ?? path.join(root, "data", "platform.db");
+const url = process.env.DATABASE_URL;
 const source = process.argv[2];
 
-if (!source) {
-  console.error("Usage: npm run restore -- data/backups/platform-<timestamp>.db");
+if (!url) {
+  console.error("DATABASE_URL is not set.");
   process.exit(1);
 }
-if (!fs.existsSync(source)) {
-  console.error(`No such backup: ${source}`);
+if (!source || !fs.existsSync(source)) {
+  console.error("Usage: npm run restore -- data/backups/designakum-<timestamp>.sql");
   process.exit(1);
 }
 
-console.log("Stop the application before restoring, then run this again if it is still running.\n");
+console.log(`Restoring ${source} into the database named by DATABASE_URL.`);
+console.log("This replaces the current contents. Stop the application first.\n");
 
-if (fs.existsSync(target)) {
-  const aside = `${target}.replaced-${Date.now()}`;
-  fs.renameSync(target, aside);
-  console.log(`Existing database moved to ${aside}`);
-}
-
-fs.copyFileSync(source, target);
-console.log(`Restored ${source} → ${target}`);
+const psql = spawn("psql", [url, "-v", "ON_ERROR_STOP=1", "-f", source], { stdio: "inherit" });
+psql.on("close", (code) => {
+  console.log(code === 0 ? "\nRestore complete." : `\npsql exited with ${code}`);
+  process.exit(code ?? 1);
+});

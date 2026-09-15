@@ -42,12 +42,12 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const staff = await guardPage("moderation.review");
   const { id } = await params;
 
-  const report = getReport(id);
+  const report = await getReport(id);
   if (!report) notFound();
 
-  const notes = reportNotes(id);
-  const portfolio = getPortfolioById(report.portfolio_id);
-  const members = staffMembers().map((member) => ({
+  const notes = await reportNotes(id);
+  const portfolio = await getPortfolioById(report.portfolio_id);
+  const members = (await staffMembers()).map((member) => ({
     id: member.id,
     label: member.display_name || member.email,
   }));

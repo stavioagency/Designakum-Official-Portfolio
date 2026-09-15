@@ -82,7 +82,7 @@ function unseal(raw: string | undefined): string | null {
 export async function createSession(userId: string) {
   const id = newToken();
   const ts = now();
-  run(
+  await run(
     "INSERT INTO sessions (id, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
     id,
     userId,
@@ -101,8 +101,8 @@ export async function createSession(userId: string) {
 
 export async function destroySession() {
   const jar = await cookies();
-  const id = unseal(jar.get(COOKIE)?.value);
-  if (id) run("DELETE FROM sessions WHERE id = ?", id);
+  const id = await unseal(jar.get(COOKIE)?.value);
+  if (id) await run("DELETE FROM sessions WHERE id = ?", id);
   jar.delete(COOKIE);
 }
 
@@ -110,27 +110,27 @@ export async function destroySession() {
 
 export async function currentUser(): Promise<User | null> {
   const jar = await cookies();
-  const sessionId = unseal(jar.get(COOKIE)?.value);
+  const sessionId = await unseal(jar.get(COOKIE)?.value);
   if (!sessionId) return null;
 
-  const session = get<{ user_id: string; expires_at: number }>(
+  const session = await get<{ user_id: string; expires_at: number }>(
     "SELECT user_id, expires_at FROM sessions WHERE id = ?",
     sessionId,
   );
   if (!session) return null;
   if (session.expires_at < now()) {
-    run("DELETE FROM sessions WHERE id = ?", sessionId);
+    await run("DELETE FROM sessions WHERE id = ?", sessionId);
     return null;
   }
 
-  const user = get<User>("SELECT * FROM users WHERE id = ?", session.user_id);
+  const user = await get<User>("SELECT * FROM users WHERE id = ?", session.user_id);
   if (!user || user.status === "suspended") return null;
 
   // Coarse last-seen tracking: one write a day per user, enough for "active users"
   // without turning every request into a database write.
   const today = new Date().setHours(0, 0, 0, 0);
   if (!user.last_seen_at || user.last_seen_at < today) {
-    run("UPDATE users SET last_seen_at = ? WHERE id = ?", now(), user.id);
+    await run("UPDATE users SET last_seen_at = ? WHERE id = ?", now(), user.id);
   }
   return user;
 }
@@ -151,11 +151,11 @@ export class AuthError extends Error {}
 
 /* -------------------------------------------------------------------- accounts */
 
-export function findUserByEmail(email: string) {
-  return get<User>("SELECT * FROM users WHERE email = ?", email.trim().toLowerCase());
+export async function findUserByEmail(email: string) {
+  return await get<User>("SELECT * FROM users WHERE email = ?", email.trim().toLowerCase());
 }
 
-export function createUser(input: {
+export async function createUser(input: {
   email: string;
   password?: string;
   displayName: string;
@@ -163,10 +163,10 @@ export function createUser(input: {
   googleId?: string;
   avatarUrl?: string;
   provider?: "password" | "google";
-}): User {
+}): Promise<User>{
   const ts = now();
   const id = newId("usr");
-  run(
+  await run(
     `INSERT INTO users (id, email, password_hash, display_name, role, status, plan,
        google_id, avatar_url, auth_provider, locale, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, 'active', 'free', ?, ?, ?, 'ar', ?, ?)`,
@@ -182,16 +182,16 @@ export function createUser(input: {
     ts,
     ts,
   );
-  return get<User>("SELECT * FROM users WHERE id = ?", id)!;
+  return (await get<User>("SELECT * FROM users WHERE id = ?", id))!;
 }
 
-export function findUserByGoogleId(googleId: string) {
-  return get<User>("SELECT * FROM users WHERE google_id = ?", googleId);
+export async function findUserByGoogleId(googleId: string) {
+  return await get<User>("SELECT * FROM users WHERE google_id = ?", googleId);
 }
 
 /** Attaches a Google identity to an account that already exists for that email. */
-export function linkGoogleAccount(userId: string, googleId: string, avatarUrl: string) {
-  run(
+export async function linkGoogleAccount(userId: string, googleId: string, avatarUrl: string) {
+  await run(
     `UPDATE users SET google_id = ?, avatar_url = CASE WHEN avatar_url = '' THEN ? ELSE avatar_url END,
        updated_at = ? WHERE id = ?`,
     googleId,
@@ -201,14 +201,14 @@ export function linkGoogleAccount(userId: string, googleId: string, avatarUrl: s
   );
 }
 
-export function setUserLocale(userId: string, locale: "ar" | "en") {
-  run("UPDATE users SET locale = ?, updated_at = ? WHERE id = ?", locale, now(), userId);
+export async function setUserLocale(userId: string, locale: "ar" | "en") {
+  await run("UPDATE users SET locale = ?, updated_at = ? WHERE id = ?", locale, now(), userId);
 }
 
-export function listUsers() {
-  return all<User>("SELECT * FROM users ORDER BY created_at DESC");
+export async function listUsers() {
+  return await all<User>("SELECT * FROM users ORDER BY created_at DESC");
 }
 
-export function revokeSessionsFor(userId: string) {
-  run("DELETE FROM sessions WHERE user_id = ?", userId);
+export async function revokeSessionsFor(userId: string) {
+  await run("DELETE FROM sessions WHERE user_id = ?", userId);
 }

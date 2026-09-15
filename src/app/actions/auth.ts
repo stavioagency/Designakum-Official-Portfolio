@@ -41,14 +41,14 @@ export async function signupAction(_prev: FormState, fd: FormData): Promise<Form
   // Creating an account writes a user, a portfolio and starter content, so it is
   // throttled per caller the same way sign-in attempts are.
   const fingerprint = await callerFingerprint();
-  const signups = rateLimit(`signup:${fingerprint}`, 3, 60 * 60 * 1000);
+  const signups = await rateLimit(`signup:${fingerprint}`, 3, 60 * 60 * 1000);
   if (!signups.ok) return { error: "too_many_signups" };
 
-  const settings = readSettings();
+  const settings = await readSettings();
   const inviteCode = str(fd, "invite");
 
   // An invitation is what reopens a closed or invite-only platform.
-  const invitation = inviteCode ? checkInvitation(inviteCode, email) : null;
+  const invitation = inviteCode ? await checkInvitation(inviteCode, email) : null;
   const hasValidInvite = Boolean(invitation && "invitation" in invitation);
 
   if (invitation && "problem" in invitation) return { error: `invite_${invitation.problem}` };
@@ -59,10 +59,10 @@ export async function signupAction(_prev: FormState, fd: FormData): Promise<Form
   if (password.length < 8) return { error: "weak_password" };
   if (name.length < 2) return { error: "short_name" };
   if (!slugify(desiredSlug)) return { error: "bad_slug" };
-  if (findUserByEmail(email)) return { error: "email_taken" };
+  if (await findUserByEmail(email)) return { error: "email_taken" };
 
-  const { user } = provisionClient({ email, password, name, title, slug: desiredSlug });
-  if (invitation && "invitation" in invitation) redeemInvitation(invitation.invitation, user);
+  const { user } = await provisionClient({ email, password, name, title, slug: desiredSlug });
+  if (invitation && "invitation" in invitation) await redeemInvitation(invitation.invitation, user);
 
   await createSession(user.id);
 
@@ -75,10 +75,10 @@ export async function loginAction(_prev: FormState, fd: FormData): Promise<FormS
 
   // Throttle password guessing per caller and per account.
   const fingerprint = await callerFingerprint();
-  const attempts = rateLimit(`login:${fingerprint}:${email}`, 8, 15 * 60 * 1000);
+  const attempts = await rateLimit(`login:${fingerprint}:${email}`, 8, 15 * 60 * 1000);
   if (!attempts.ok) return { error: "too_many_attempts" };
 
-  const user = findUserByEmail(email);
+  const user = await findUserByEmail(email);
   if (!user || !verifyPassword(password, user.password_hash)) {
     return { error: "bad_credentials" };
   }
@@ -137,7 +137,7 @@ export async function changePasswordAction(
     if (next !== confirm) return { error: "كلمتا المرور غير متطابقتين" };
     if (hasPassword && next === current) return { error: "اختر كلمة مرور مختلفة عن الحالية" };
 
-    run(
+    await run(
       "UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?",
       hashPassword(next),
       now(),
@@ -145,10 +145,10 @@ export async function changePasswordAction(
     );
 
     // Drop every session, including this one, then re-issue for this browser.
-    revokeSessionsFor(user.id);
+    await revokeSessionsFor(user.id);
     await createSession(user.id);
 
-    audit({
+    await audit({
       actor: user,
       action: hasPassword ? "account.password_changed" : "account.password_set",
       targetType: "user",
@@ -181,7 +181,7 @@ export async function requestPasswordResetAction(
   const email = String(fd.get("email") ?? "").trim().toLowerCase();
 
   const fingerprint = await callerFingerprint();
-  const limit = rateLimit(`reset:${fingerprint}`, 5, 60 * 60 * 1000);
+  const limit = await rateLimit(`reset:${fingerprint}`, 5, 60 * 60 * 1000);
   if (!limit.ok) return { error: "too_many_attempts" };
 
   const neutral = {
@@ -190,10 +190,10 @@ export async function requestPasswordResetAction(
 
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return neutral;
 
-  const user = findUserByEmail(email);
+  const user = await findUserByEmail(email);
   if (!user || user.status === "suspended") return neutral;
 
-  const token = createPasswordReset(user);
+  const token = await createPasswordReset(user);
   const origin = await requestOrigin();
   const link = `${origin}/reset/${token}`;
 
@@ -233,27 +233,27 @@ export async function resetPasswordAction(
   const confirm = String(fd.get("confirm") ?? "");
 
   const fingerprint = await callerFingerprint();
-  const limit = rateLimit(`reset-use:${fingerprint}`, 10, 60 * 60 * 1000);
+  const limit = await rateLimit(`reset-use:${fingerprint}`, 10, 60 * 60 * 1000);
   if (!limit.ok) return { error: "too_many_attempts" };
 
-  const record = findValidReset(token);
+  const record = await findValidReset(token);
   if (!record) return { error: "انتهت صلاحية الرابط أو سبق استخدامه. اطلب رابطًا جديدًا." };
   if (next.length < 8) return { error: "كلمة المرور يجب أن تكون 8 أحرف على الأقل" };
   if (next !== confirm) return { error: "كلمتا المرور غير متطابقتين" };
 
-  const user = get<User>("SELECT * FROM users WHERE id = ?", record.user_id);
+  const user = await get<User>("SELECT * FROM users WHERE id = ?", record.user_id);
   if (!user) return { error: "الحساب غير موجود" };
 
-  run(
+  await run(
     "UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?",
     hashPassword(next),
     now(),
     user.id,
   );
-  consumeReset(record.id);
-  revokeSessionsFor(user.id);
+  await consumeReset(record.id);
+  await revokeSessionsFor(user.id);
 
-  audit({
+  await audit({
     actor: user,
     action: "account.password_reset_completed",
     targetType: "user",

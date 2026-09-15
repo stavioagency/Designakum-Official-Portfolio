@@ -65,11 +65,11 @@ export default async function SubscriptionsPage({
   const params = await searchParams;
   const filter = one(params.status) ?? "active";
 
-  const plans = planDefinitions();
-  const saving = yearlySaving();
-  const revenue = revenueSnapshot();
-  const churn = churnRate(30);
-  const conversion = conversionRate();
+  const plans = await planDefinitions();
+  const saving = await yearlySaving();
+  const revenue = await revenueSnapshot();
+  const churn = await churnRate(30);
+  const conversion = await conversionRate();
   const riyalSrc = brandAsset("riyal");
 
   const where =
@@ -79,7 +79,7 @@ export default async function SubscriptionsPage({
         ? "WHERE s.status IN ('canceled','expired')"
         : "WHERE s.status = 'active'";
 
-  const rows = all<SubscriptionRow>(
+  const rows = await all<SubscriptionRow>(
     `SELECT s.*, u.email, u.display_name
        FROM subscriptions s JOIN users u ON u.id = s.user_id
        ${where}

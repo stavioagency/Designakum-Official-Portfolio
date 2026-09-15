@@ -19,8 +19,8 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
   // Clients never learn the console exists: they land back on their own dashboard.
   if (!can(user, "console.access")) redirect("/dashboard");
 
-  const reports = can(user, "moderation.review") ? reportCounts() : { pending: 0, reviewing: 0 };
-  const tickets = can(user, "support.manage") ? openTicketCount() : 0;
+  const reports = can(user, "moderation.review") ? await reportCounts() : { pending: 0, reviewing: 0 };
+  const tickets = can(user, "support.manage") ? await openTicketCount() : 0;
 
   return (
     <ConsoleShell

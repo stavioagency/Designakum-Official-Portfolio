@@ -49,21 +49,21 @@ export default async function CustomerProfilePage({
   const staff = await guardPage("customers.view");
   const { id } = await params;
 
-  const customer = getCustomer(id);
+  const customer = await getCustomer(id);
   if (!customer) notFound();
 
-  const portfolio = portfolioOf(customer.id);
-  const subscription = activeSubscription(customer.id);
-  const history = subscriptionHistory(customer.id);
-  const reports = portfolio ? reportsForPortfolio(portfolio.id) : [];
-  const tickets = ticketsForUser(customer.id);
-  const auditTrail = can(staff, "audit.view") ? auditForTarget(customer.id, 25) : [];
-  const events = can(staff, "billing.manage") ? billingEvents(customer.id, 8) : [];
+  const portfolio = await portfolioOf(customer.id);
+  const subscription = await activeSubscription(customer.id);
+  const history = await subscriptionHistory(customer.id);
+  const reports = portfolio ? await reportsForPortfolio(portfolio.id) : [];
+  const tickets = await ticketsForUser(customer.id);
+  const auditTrail = can(staff, "audit.view") ? await auditForTarget(customer.id, 25) : [];
+  const events = can(staff, "billing.manage") ? await billingEvents(customer.id, 8) : [];
 
   const origin = await requestOrigin();
-  const views = portfolio ? eventSeries("view", 30, portfolio.id) : [];
-  const whatsappClicks = portfolio ? eventTotal("whatsapp", 30, portfolio.id) : 0;
-  const socialClicks = portfolio ? eventTotal("social", 30, portfolio.id) : 0;
+  const views = portfolio ? await eventSeries("view", 30, portfolio.id) : [];
+  const whatsappClicks = portfolio ? await eventTotal("whatsapp", 30, portfolio.id) : 0;
+  const socialClicks = portfolio ? await eventTotal("social", 30, portfolio.id) : 0;
   const riyalSrc = brandAsset("riyal");
 
   return (
@@ -168,7 +168,7 @@ export default async function CustomerProfilePage({
               <EmptyState icon={<Flag className="h-5 w-5" />} title="لا بلاغات على هذا العميل" />
             ) : (
               <ul className="divide-y divide-white/6">
-                {reports.map((report) => (
+                {reports.map(async (report) => (
                   <li key={report.id}>
                     <Link
                       href={`/console/moderation/${report.id}`}
@@ -208,7 +208,7 @@ export default async function CustomerProfilePage({
               <EmptyState icon={<LifeBuoy className="h-5 w-5" />} title="لا تذاكر من هذا العميل" />
             ) : (
               <ul className="divide-y divide-white/6">
-                {tickets.map((ticket) => (
+                {tickets.map(async (ticket) => (
                   <li key={ticket.id}>
                     <Link
                       href={`/console/support/${ticket.id}`}
@@ -234,7 +234,7 @@ export default async function CustomerProfilePage({
                 <EmptyState title="لا إجراءات مسجّلة بعد" />
               ) : (
                 <ul className="divide-y divide-white/6">
-                  {auditTrail.map((entry) => (
+                  {auditTrail.map(async (entry) => (
                     <li key={entry.id} className="px-5 py-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <code dir="ltr" className="text-[12px] text-mist-200">{entry.action}</code>
@@ -313,7 +313,7 @@ export default async function CustomerProfilePage({
           {history.length > 1 && can(staff, "billing.manage") && (
             <SectionCard title="سجل الاشتراكات">
               <ul className="divide-y divide-white/6 text-[12.5px]">
-                {history.map((row) => (
+                {history.map(async (row) => (
                   <li key={row.id} className="flex items-center justify-between gap-3 px-5 py-2.5">
                     <span>{row.plan === "monthly" ? "شهري" : "سنوي"}</span>
                     <Badge tone={row.status === "active" ? "good" : "neutral"}>{row.status}</Badge>
@@ -327,7 +327,7 @@ export default async function CustomerProfilePage({
           {events.length > 0 && (
             <SectionCard title="سجل الفوترة">
               <ul className="divide-y divide-white/6 text-[12px]">
-                {events.map((event) => (
+                {events.map(async (event) => (
                   <li key={event.id} className="flex items-center justify-between gap-2 px-5 py-2.5">
                     <code dir="ltr" className="text-mist-300">{event.kind}</code>
                     <span className="truncate text-mist-500">{event.detail}</span>
@@ -390,10 +390,10 @@ export default async function CustomerProfilePage({
             كل تعديل هنا يُحفظ باسم العميل مباشرة في صفحته العامة. استخدمه للمساعدة عند الطلب فقط.
           </p>
           <Editor
-            bundle={loadBundle(portfolio)}
+            bundle={await loadBundle(portfolio)}
             user={customer}
             origin={origin}
-            preview={<PortfolioView bundle={loadBundle(portfolio)} />}
+            preview={<PortfolioView bundle={await loadBundle(portfolio)} />}
             hasPassword={customer.password_hash !== ""}
           />
         </section>

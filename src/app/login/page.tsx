@@ -22,7 +22,7 @@ export default async function LoginPage({
 
   const { error } = await searchParams;
   const d = dict(await currentLocale());
-  const settings = readSettings();
+  const settings = await readSettings();
 
   return (
     <main className="relative z-10 grid min-h-dvh place-items-center px-5 py-12">

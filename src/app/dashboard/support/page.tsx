@@ -16,8 +16,8 @@ export default async function CustomerSupportPage() {
   const user = await currentUser();
   if (!user) redirect("/login");
 
-  const settings = readSettings();
-  const tickets = ticketsForUser(user.id);
+  const settings = await readSettings();
+  const tickets = await ticketsForUser(user.id);
 
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-7 sm:px-6 lg:py-10">

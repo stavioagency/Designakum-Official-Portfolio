@@ -41,12 +41,12 @@ export type CustomerFilter = {
  * in a correlated subquery so filtering by plan reflects the live subscription
  * rather than the cached `users.plan` mirror.
  */
-export function listCustomers(filter: CustomerFilter = {}) {
+export async function listCustomers(filter: CustomerFilter = {}) {
   const where: string[] = ["u.role = 'client'"];
   const params: unknown[] = [];
 
   if (filter.search) {
-    where.push("(u.email LIKE ? OR u.display_name LIKE ? OR p.name LIKE ? OR p.slug LIKE ?)");
+    where.push("(u.email ILIKE ? OR u.display_name ILIKE ? OR p.name ILIKE ? OR p.slug ILIKE ?)");
     const like = `%${filter.search}%`;
     params.push(like, like, like, like);
   }
@@ -70,7 +70,7 @@ export function listCustomers(filter: CustomerFilter = {}) {
     filter.sort === "views"
       ? "p.views DESC"
       : filter.sort === "name"
-        ? "u.display_name COLLATE NOCASE"
+        ? "lower(u.display_name)"
         : "u.created_at DESC";
 
   const base = `
@@ -78,10 +78,10 @@ export function listCustomers(filter: CustomerFilter = {}) {
     LEFT JOIN portfolios p ON p.user_id = u.id
     LEFT JOIN subscriptions s ON s.id = (
       SELECT s2.id FROM subscriptions s2 WHERE s2.user_id = u.id
-       ORDER BY s2.created_at DESC, s2.rowid DESC LIMIT 1)
+       ORDER BY s2.created_at DESC, s2.seq DESC LIMIT 1)
     WHERE ${where.join(" AND ")}`;
 
-  const rows = all<CustomerRow>(
+  const rows = await all<CustomerRow>(
     `SELECT u.id, u.email, u.display_name, u.status, u.plan, u.role, u.auth_provider,
             u.created_at, u.last_seen_at,
             p.id AS portfolio_id, p.name AS portfolio_name, p.slug, p.published, p.suspended, p.views,
@@ -99,24 +99,24 @@ export function listCustomers(filter: CustomerFilter = {}) {
     filter.offset ?? 0,
   );
 
-  const total = get<{ n: number }>(`SELECT COUNT(*) AS n ${base}`, ...params)?.n ?? 0;
+  const total = (await get<{ n: number }>(`SELECT COUNT(*) AS n ${base}`, ...params))?.n ?? 0;
 
   return { rows, total };
 }
 
-export function getCustomer(id: string) {
-  return get<User>("SELECT * FROM users WHERE id = ?", id);
+export async function getCustomer(id: string) {
+  return await get<User>("SELECT * FROM users WHERE id = ?", id);
 }
 
-export function portfolioOf(userId: string) {
-  return get<Portfolio>(
+export async function portfolioOf(userId: string) {
+  return await get<Portfolio>(
     "SELECT * FROM portfolios WHERE user_id = ? ORDER BY created_at LIMIT 1",
     userId,
   );
 }
 
-export function staffMembers() {
-  return all<User>(
+export async function staffMembers() {
+  return await all<User>(
     "SELECT * FROM users WHERE role IN ('owner','support') ORDER BY role, created_at",
   );
 }

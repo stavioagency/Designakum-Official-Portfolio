@@ -21,16 +21,16 @@ export {
 
 /* ------------------------------------------------------------------ create */
 
-export function createTicket(input: {
+export async function createTicket(input: {
   user: User;
   subject: string;
   category: string;
   priority?: TicketPriority;
   body: string;
-}): Ticket {
+}): Promise<Ticket>{
   const ts = now();
   const id = newId("tkt");
-  run(
+  await run(
     `INSERT INTO tickets (id, user_id, subject, category, priority, status, last_reply_at, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, 'open', ?, ?, ?)`,
     id,
@@ -42,11 +42,11 @@ export function createTicket(input: {
     ts,
     ts,
   );
-  addTicketMessage(id, input.user, input.body, false, "customer");
-  return get<Ticket>("SELECT * FROM tickets WHERE id = ?", id)!;
+  await addTicketMessage(id, input.user, input.body, false, "customer");
+  return (await get<Ticket>("SELECT * FROM tickets WHERE id = ?", id))!;
 }
 
-export function addTicketMessage(
+export async function addTicketMessage(
   ticketId: string,
   author: User,
   body: string,
@@ -54,7 +54,7 @@ export function addTicketMessage(
   side: "customer" | "staff",
 ) {
   const ts = now();
-  run(
+  await run(
     `INSERT INTO ticket_messages (id, ticket_id, author_id, author_name, author_side, body, internal, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     newId("msg"),
@@ -68,9 +68,9 @@ export function addTicketMessage(
   );
   // Internal notes are staff-to-staff and must not look like customer activity.
   if (!internal) {
-    run("UPDATE tickets SET last_reply_at = ?, updated_at = ? WHERE id = ?", ts, ts, ticketId);
+    await run("UPDATE tickets SET last_reply_at = ?, updated_at = ? WHERE id = ?", ts, ts, ticketId);
   } else {
-    run("UPDATE tickets SET updated_at = ? WHERE id = ?", ts, ticketId);
+    await run("UPDATE tickets SET updated_at = ? WHERE id = ?", ts, ticketId);
   }
 }
 
@@ -83,7 +83,7 @@ export interface TicketRow extends Ticket {
   message_count: number;
 }
 
-export function listTickets(query: {
+export async function listTickets(query: {
   status?: TicketStatus | "all" | "open_like";
   search?: string;
   assigneeId?: string;
@@ -104,7 +104,7 @@ export function listTickets(query: {
     params.push(query.assigneeId);
   }
   if (query.search) {
-    where.push("(t.subject LIKE ? OR u.email LIKE ? OR u.display_name LIKE ?)");
+    where.push("(t.subject ILIKE ? OR u.email ILIKE ? OR u.display_name ILIKE ?)");
     const like = `%${query.search}%`;
     params.push(like, like, like);
   }
@@ -113,7 +113,7 @@ export function listTickets(query: {
   const limit = query.limit ?? 25;
   const offset = query.offset ?? 0;
 
-  const rows = all<TicketRow>(
+  const rows = await all<TicketRow>(
     `SELECT t.*, u.email AS customer_email, u.display_name AS customer_name,
             a.email AS assignee_email,
             (SELECT COUNT(*) FROM ticket_messages m WHERE m.ticket_id = t.id AND m.internal = 0) AS message_count
@@ -132,16 +132,16 @@ export function listTickets(query: {
   );
 
   const total =
-    get<{ n: number }>(
+    (await get<{ n: number }>(
       `SELECT COUNT(*) AS n FROM tickets t JOIN users u ON u.id = t.user_id ${clause}`,
       ...params,
-    )?.n ?? 0;
+    ))?.n ?? 0;
 
   return { rows, total };
 }
 
-export function ticketCounts(): Record<TicketStatus | "all", number> {
-  const rows = all<{ status: TicketStatus; n: number }>(
+export async function ticketCounts(): Promise<Record<TicketStatus | "all", number>>{
+  const rows = await all<{ status: TicketStatus; n: number }>(
     "SELECT status, COUNT(*) AS n FROM tickets GROUP BY status",
   );
   const counts = { open: 0, in_progress: 0, waiting_customer: 0, resolved: 0, all: 0 };
@@ -152,8 +152,8 @@ export function ticketCounts(): Record<TicketStatus | "all", number> {
   return counts;
 }
 
-export function getTicket(id: string) {
-  return get<TicketRow>(
+export async function getTicket(id: string) {
+  return await get<TicketRow>(
     `SELECT t.*, u.email AS customer_email, u.display_name AS customer_name,
             a.email AS assignee_email, 0 AS message_count
        FROM tickets t
@@ -165,33 +165,33 @@ export function getTicket(id: string) {
 }
 
 /** `includeInternal` is false for the customer's own view — never leak staff notes. */
-export function ticketMessages(ticketId: string, includeInternal: boolean) {
-  return all<TicketMessage>(
+export async function ticketMessages(ticketId: string, includeInternal: boolean) {
+  return await all<TicketMessage>(
     `SELECT * FROM ticket_messages WHERE ticket_id = ? ${includeInternal ? "" : "AND internal = 0"}
       ORDER BY created_at`,
     ticketId,
   );
 }
 
-export function ticketsForUser(userId: string) {
-  return all<Ticket>(
+export async function ticketsForUser(userId: string) {
+  return await all<Ticket>(
     "SELECT * FROM tickets WHERE user_id = ? ORDER BY last_reply_at DESC",
     userId,
   );
 }
 
-export function setTicketField(
+export async function setTicketField(
   ticketId: string,
   field: "status" | "priority" | "assignee_id",
   value: string | null,
 ) {
-  run(`UPDATE tickets SET ${field} = ?, updated_at = ? WHERE id = ?`, value, now(), ticketId);
+  await run(`UPDATE tickets SET ${field} = ?, updated_at = ? WHERE id = ?`, value, now(), ticketId);
 }
 
-export function openTicketCount() {
+export async function openTicketCount() {
   return (
-    get<{ n: number }>(
+    (await get<{ n: number }>(
       "SELECT COUNT(*) AS n FROM tickets WHERE status IN ('open','in_progress','waiting_customer')",
-    )?.n ?? 0
+    ))?.n ?? 0
   );
 }

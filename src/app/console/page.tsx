@@ -62,13 +62,13 @@ export default async function ConsoleDashboard({
 }) {
   const user = (await currentUser())!;
   const { denied } = await searchParams;
-  const stats = platformStats();
-  const activity = recentActivity(14);
+  const stats = await platformStats();
+  const activity = await recentActivity(14);
   const riyalSrc = brandAsset("riyal");
 
-  const views = eventSeries("view", 30);
-  const visitors = uniqueVisitorSeries(30);
-  const signups = registrationSeries(30);
+  const views = await eventSeries("view", 30);
+  const visitors = await uniqueVisitorSeries(30);
+  const signups = await registrationSeries(30);
   const showRevenue = can(user, "billing.manage");
 
   return (

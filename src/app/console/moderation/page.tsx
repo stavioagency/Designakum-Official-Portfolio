@@ -44,8 +44,8 @@ export default async function ModerationPage({
   const search = one(params.q) ?? "";
   const page = Math.max(1, Number(one(params.page)) || 1);
 
-  const counts = reportCounts();
-  const { rows, total } = listReports({
+  const counts = await reportCounts();
+  const { rows, total } = await listReports({
     status,
     search,
     limit: PER_PAGE,

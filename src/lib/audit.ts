@@ -23,7 +23,7 @@ export interface AuditEntry {
  * fire-and-forget from the caller's point of view but synchronous in practice, so
  * an action can never succeed without its audit row.
  */
-export function audit(input: {
+export async function audit(input: {
   actor: User;
   action: string;
   targetType?: string;
@@ -33,14 +33,13 @@ export function audit(input: {
   after?: unknown;
   detail?: string;
 }) {
-  const asText = (value: unknown) =>
-    value === undefined || value === null
+  const asText = (value: unknown) => value === undefined || value === null
       ? ""
       : typeof value === "string"
         ? value
         : JSON.stringify(value);
 
-  run(
+  await run(
     `INSERT INTO audit_log (id, actor_id, actor_email, actor_role, action, target_type,
        target_id, target_label, before_state, after_state, detail, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -52,8 +51,8 @@ export function audit(input: {
     input.targetType ?? "",
     input.targetId ?? "",
     input.targetLabel ?? "",
-    asText(input.before),
-    asText(input.after),
+    await asText(input.before),
+    await asText(input.after),
     input.detail ?? "",
     now(),
   );
@@ -68,13 +67,13 @@ export interface AuditQuery {
   offset?: number;
 }
 
-export function queryAudit(query: AuditQuery = {}) {
+export async function queryAudit(query: AuditQuery = {}) {
   const where: string[] = [];
   const params: unknown[] = [];
 
   if (query.search) {
     where.push(
-      "(actor_email LIKE ? OR action LIKE ? OR target_label LIKE ? OR detail LIKE ? OR target_id LIKE ?)",
+      "(actor_email ILIKE ? OR action ILIKE ? OR target_label ILIKE ? OR detail ILIKE ? OR target_id ILIKE ?)",
     );
     const like = `%${query.search}%`;
     params.push(like, like, like, like, like);
@@ -96,27 +95,27 @@ export function queryAudit(query: AuditQuery = {}) {
   const limit = query.limit ?? 50;
   const offset = query.offset ?? 0;
 
-  const rows = all<AuditEntry>(
-    `SELECT * FROM audit_log ${clause} ORDER BY created_at DESC, rowid DESC LIMIT ? OFFSET ?`,
+  const rows = await all<AuditEntry>(
+    `SELECT * FROM audit_log ${clause} ORDER BY created_at DESC, seq DESC LIMIT ? OFFSET ?`,
     ...params,
     limit,
     offset,
   );
   const total =
-    get<{ n: number }>(`SELECT COUNT(*) AS n FROM audit_log ${clause}`, ...params)?.n ?? 0;
+    (await get<{ n: number }>(`SELECT COUNT(*) AS n FROM audit_log ${clause}`, ...params))?.n ?? 0;
 
   return { rows, total };
 }
 
-export function auditActions(): string[] {
-  return all<{ action: string }>(
+export async function auditActions(): Promise<string[]>{
+  return (await all<{ action: string }>(
     "SELECT DISTINCT action FROM audit_log ORDER BY action",
-  ).map((r) => r.action);
+  )).map((r) => r.action);
 }
 
 /** Everything ever done to one customer, for the account-history tab. */
-export function auditForTarget(targetId: string, limit = 50) {
-  return all<AuditEntry>(
+export async function auditForTarget(targetId: string, limit = 50) {
+  return await all<AuditEntry>(
     "SELECT * FROM audit_log WHERE target_id = ? ORDER BY created_at DESC LIMIT ?",
     targetId,
     limit,

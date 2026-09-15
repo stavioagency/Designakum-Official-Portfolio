@@ -27,7 +27,7 @@ const SEVERITY_TONE: Record<AnnouncementSeverity, "neutral" | "good" | "warn" | 
 
 export default async function AnnouncementsPage() {
   await guardPage("announcements.manage");
-  const announcements = listAnnouncements();
+  const announcements = await listAnnouncements();
 
   return (
     <>

@@ -46,12 +46,12 @@ export default async function BillingPage() {
 
   const locale = await currentLocale();
   const d = dict(locale);
-  const copy = pricingCopy(locale);
+  const copy = await pricingCopy(locale);
 
-  const subscription = activeSubscription(user.id);
-  const latest = latestSubscription(user.id);
-  const limits = entitlementsFor(user);
-  const events = billingEvents(user.id);
+  const subscription = await activeSubscription(user.id);
+  const latest = await latestSubscription(user.id);
+  const limits = await entitlementsFor(user);
+  const events = await billingEvents(user.id);
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-7 sm:px-6 lg:py-10">

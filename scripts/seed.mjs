@@ -2,7 +2,7 @@
  * Seeds a demo platform: one owner account, two client portfolios with content.
  * Safe to re-run — it clears and rebuilds only the demo rows it owns.
  */
-import { DatabaseSync } from "node:sqlite";
+import pg from "pg";
 import { randomBytes, scryptSync } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -24,36 +24,44 @@ if (process.env.NODE_ENV === "production" && process.env.ALLOW_PRODUCTION_SEED !
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dataDir = path.join(root, "data");
-fs.mkdirSync(dataDir, { recursive: true });
 
-const dbPath = process.env.DATABASE_PATH ?? path.join(dataDir, "platform.db");
-
-// A database with real customers in it is never a seed target, whatever NODE_ENV says.
-if (fs.existsSync(dbPath) && process.env.ALLOW_PRODUCTION_SEED !== "yes-destroy-my-data") {
-  const existing = new DatabaseSync(dbPath);
-  const rows = existing
-    .prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='users'")
-    .get();
-  if (rows.n > 0) {
-    const real = existing
-      .prepare(
-        "SELECT COUNT(*) AS n FROM users WHERE email NOT LIKE '%@designakum.sa' AND role = 'client'",
-      )
-      .get();
-    if (real.n > 0) {
-      existing.close();
-      console.error(
-        `\nRefusing to seed: this database already holds ${real.n} real customer account(s).\n` +
-          "Point DATABASE_PATH at a scratch file, or set ALLOW_PRODUCTION_SEED=yes-destroy-my-data.\n",
-      );
-      process.exit(1);
-    }
-  }
-  existing.close();
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  console.error("\nDATABASE_URL is not set. Point it at your Postgres database first.\n");
+  process.exit(1);
 }
 
-const db = new DatabaseSync(dbPath);
-db.exec(fs.readFileSync(path.join(root, "scripts", "schema.sql"), "utf8"));
+const pool = new pg.Pool({
+  connectionString,
+  ssl: connectionString.includes("supabase") ? { rejectUnauthorized: false } : undefined,
+});
+
+/** The app writes `?` placeholders; Postgres wants $1, $2, … */
+const positional = (sql) => {
+  let i = 0;
+  return sql.replace(/\?/g, () => `$${++i}`);
+};
+
+const run = async (sql, ...args) => {
+  await pool.query(positional(sql), args);
+};
+const one = async (sql, ...args) => (await pool.query(positional(sql), args)).rows[0];
+
+// This script DELETES the demo accounts before recreating them, so it refuses to
+// touch a database that holds anyone real.
+if (process.env.ALLOW_PRODUCTION_SEED !== "yes-destroy-my-data") {
+  const real = await one(
+    "SELECT COUNT(*)::int AS n FROM users WHERE email NOT LIKE '%@designakum.sa' AND role = 'client'",
+  );
+  if (real && real.n > 0) {
+    console.error(
+      `\nRefusing to seed: this database already holds ${real.n} real customer account(s).\n` +
+        "Point DATABASE_URL at a scratch database, or set ALLOW_PRODUCTION_SEED=yes-destroy-my-data.\n",
+    );
+    await pool.end();
+    process.exit(1);
+  }
+}
 
 const now = () => Date.now();
 const id = (p) => `${p}_${randomBytes(9).toString("hex")}`;
@@ -61,7 +69,6 @@ const hash = (pw) => {
   const salt = randomBytes(16);
   return `scrypt$${salt.toString("hex")}$${scryptSync(pw, salt, 64).toString("hex")}`;
 };
-const run = (sql, ...args) => db.prepare(sql).run(...args);
 
 /* ------------------------------------------------------------ demo artwork */
 
@@ -102,28 +109,28 @@ for (const email of [
   "faisal@designakum.sa",
   "noura@designakum.sa",
 ]) {
-  const row = db.prepare("SELECT id FROM users WHERE email = ?").get(email);
-  if (row) run("DELETE FROM users WHERE id = ?", row.id);
+  const row = await one("SELECT id FROM users WHERE email = ?", email);
+  if (row) await run("DELETE FROM users WHERE id = ?", row.id);
 }
 
 /* ------------------------------------------------------------------ owner */
 
 const ownerId = id("usr");
-run(
+await run(
   `INSERT INTO users (id, email, password_hash, display_name, role, status, plan, created_at, updated_at)
    VALUES (?, 'admin@designakum.sa', ?, 'مالك المنصة', 'owner', 'active', 'yearly', ?, ?)`,
   ownerId, hash("Admin#2026"), now(), now(),
 );
 
 const ownerTwoId = id("usr");
-run(
+await run(
   `INSERT INTO users (id, email, password_hash, display_name, role, status, plan, created_at, updated_at)
    VALUES (?, 'owner2@designakum.sa', ?, 'الشريك المؤسس', 'owner', 'active', 'yearly', ?, ?)`,
   ownerTwoId, hash("Owner2#2026"), now(), now(),
 );
 
 const supportId = id("usr");
-run(
+await run(
   `INSERT INTO users (id, email, password_hash, display_name, role, status, plan, created_at, updated_at)
    VALUES (?, 'support@designakum.sa', ?, 'موظف الدعم', 'support', 'active', 'free', ?, ?)`,
   supportId, hash("Support#2026x"), now(), now(),
@@ -131,16 +138,16 @@ run(
 
 /* ---------------------------------------------------------------- clients */
 
-function createClient(c) {
+async function createClient(c) {
   const userId = id("usr");
-  run(
+  await run(
     `INSERT INTO users (id, email, password_hash, display_name, role, status, plan, created_at, updated_at)
      VALUES (?, ?, ?, ?, 'client', 'active', ?, ?, ?)`,
     userId, c.email, hash(c.password), c.name, c.plan, now(), now(),
   );
 
   const pfId = id("pf");
-  run(
+  await run(
     `INSERT INTO portfolios (id, user_id, slug, name, title, tagline, bio, avatar_url, monogram,
        whatsapp, whatsapp_label, theme, locale, footer_note, published, views, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, 'تواصل معي عبر واتساب', ?, 'ar', ?, 1, ?, ?, ?)`,
@@ -148,36 +155,32 @@ function createClient(c) {
     c.whatsapp, c.theme, c.footer, c.views, now(), now(),
   );
 
-  c.slides.forEach((s, i) =>
-    run(
+  for (const [i, s] of c.slides.entries())
+    await run(
       "INSERT INTO slides (id, portfolio_id, image_url, headline, subline, caption, position) VALUES (?, ?, ?, ?, ?, '', ?)",
       id("sld"), pfId, s.image, s.headline, s.subline, i,
-    ),
-  );
-  c.projects.forEach((p, i) =>
-    run(
+    );
+  for (const [i, p] of c.projects.entries())
+    await run(
       "INSERT INTO projects (id, portfolio_id, title, category, description, image_url, link, position) VALUES (?, ?, ?, ?, ?, ?, '', ?)",
       id("prj"), pfId, p.title, p.category, p.description, p.image, i,
-    ),
-  );
-  c.stats.forEach((s, i) =>
-    run(
+    );
+  for (const [i, s] of c.stats.entries())
+    await run(
       "INSERT INTO stats (id, portfolio_id, label, value, icon, position) VALUES (?, ?, ?, ?, ?, ?)",
       id("stt"), pfId, s.label, s.value, s.icon, i,
-    ),
-  );
-  c.socials.forEach((s, i) =>
-    run(
+    );
+  for (const [i, s] of c.socials.entries())
+    await run(
       "INSERT INTO socials (id, portfolio_id, platform, url, position) VALUES (?, ?, ?, ?, ?)",
       id("soc"), pfId, s.platform, s.url, i,
-    ),
-  );
+    );
 
   if (c.subscription) {
     const end = new Date();
     end.setMonth(end.getMonth() + (c.subscription === "yearly" ? 12 : 1));
     // A real paid subscription, so the console's revenue figures have something honest to add up.
-    run(
+    await run(
       `INSERT INTO subscriptions (id, user_id, plan, status, provider, amount, source,
          started_at, current_period_end, cancel_at_period_end, created_at, updated_at)
        VALUES (?, ?, ?, 'active', 'manual', ?, 'paid', ?, ?, 0, ?, ?)`,
@@ -190,7 +193,7 @@ function createClient(c) {
   const today = new Date();
   for (let d = 13; d >= 0; d--) {
     const day = new Date(today.getTime() - d * 86400000).toISOString().slice(0, 10);
-    run(
+    await run(
       "INSERT INTO page_views (id, portfolio_id, day, count) VALUES (?, ?, ?, ?)",
       id("pv"), pfId, day, Math.floor(Math.random() * 40) + 6,
     );
@@ -198,7 +201,7 @@ function createClient(c) {
   return { userId, pfId };
 }
 
-createClient({
+await createClient({
   email: "faisal@designakum.sa",
   password: "Faisal#2026",
   name: "فيصل فهد",
@@ -239,7 +242,7 @@ createClient({
   ],
 });
 
-createClient({
+await createClient({
   email: "noura@designakum.sa",
   password: "Noura#2026",
   name: "نورة العتيبي",
@@ -277,18 +280,18 @@ createClient({
 
 /* ------------------------------------------------- sample console workload */
 
-const faisal = db.prepare("SELECT id FROM users WHERE email = 'faisal@designakum.sa'").get();
-const noura = db.prepare("SELECT id FROM users WHERE email = 'noura@designakum.sa'").get();
-const nouraPortfolio = db.prepare("SELECT id FROM portfolios WHERE user_id = ?").get(noura.id);
+const faisal = await one("SELECT id FROM users WHERE email = 'faisal@designakum.sa'");
+const noura = await one("SELECT id FROM users WHERE email = 'noura@designakum.sa'");
+const nouraPortfolio = await one("SELECT id FROM portfolios WHERE user_id = ?", noura.id);
 
 // An open support ticket with one customer message.
 const ticketId = id("tkt");
-run(
+await run(
   `INSERT INTO tickets (id, user_id, subject, category, priority, status, last_reply_at, created_at, updated_at)
    VALUES (?, ?, 'لا تظهر صورة الغلاف على الجوال', 'technical', 'high', 'open', ?, ?, ?)`,
   ticketId, faisal.id, now(), now(), now(),
 );
-run(
+await run(
   `INSERT INTO ticket_messages (id, ticket_id, author_id, author_name, author_side, body, internal, created_at)
    VALUES (?, ?, ?, 'فيصل فهد', 'customer', ?, 0, ?)`,
   id("msg"), ticketId, faisal.id,
@@ -297,7 +300,7 @@ run(
 );
 
 // A pending report waiting in the moderation queue.
-run(
+await run(
   `INSERT INTO reports (id, portfolio_id, reporter_id, reporter_email, reason, description,
      evidence_url, status, created_at, updated_at)
    VALUES (?, ?, NULL, 'visitor@example.com', 'stolen_work', ?, '', 'pending', ?, ?)`,
@@ -307,7 +310,7 @@ run(
 );
 
 // A live announcement for client dashboards.
-run(
+await run(
   `INSERT INTO announcements (id, title, body, severity, active, starts_at, ends_at, created_by, created_at, updated_at)
    VALUES (?, 'أصبح بإمكانك قصّ صورك داخل المحرر', ?, 'success', 1, NULL, NULL, ?, ?, ?)`,
   id("ann"),
@@ -316,13 +319,13 @@ run(
 );
 
 // One unused invitation the owner can hand out.
-run(
+await run(
   `INSERT INTO invitations (id, code, plan, months, email, max_uses, used_count, expires_at, note, revoked, created_by, created_at)
    VALUES (?, 'DZKM1-WELCM', 'yearly', 1, '', 5, 0, NULL, 'دعوات الإطلاق', 0, ?, ?)`,
   id("inv"), ownerId, now(),
 );
 
-db.close();
+await pool.end();
 
 console.log(`
 تم تجهيز البيانات التجريبية:

@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "الأسعار" };
 export const dynamic = "force-dynamic";
 
 export default async function PricingPage() {
-  const [user, locale] = await Promise.all([currentUser(), currentLocale()]);
+  const [user, locale] = await Promise.all([await currentUser(), await currentLocale()]);
   const d = dict(locale);
 
   return (
@@ -34,8 +34,8 @@ export default async function PricingPage() {
 
       <main className="mx-auto w-full max-w-6xl px-5 py-12">
         <Pricing
-          copy={pricingCopy(locale)}
-          currentPlan={user ? entitlementsFor(user).plan : undefined}
+          copy={await pricingCopy(locale)}
+          currentPlan={user ? (await entitlementsFor(user)).plan : undefined}
           ctaHref={user ? "/dashboard/billing" : "/signup"}
         />
       </main>

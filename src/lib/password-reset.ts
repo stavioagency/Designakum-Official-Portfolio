@@ -9,12 +9,12 @@ const TTL = 60 * 60 * 1000; // one hour
 /** Only the hash is stored, so a database leak cannot be replayed as a reset link. */
 const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
 
-export function createPasswordReset(user: User): string {
+export async function createPasswordReset(user: User): Promise<string>{
   // Any earlier link for this account stops working the moment a new one is asked for.
-  run("UPDATE password_resets SET used_at = ? WHERE user_id = ? AND used_at IS NULL", now(), user.id);
+  await run("UPDATE password_resets SET used_at = ? WHERE user_id = ? AND used_at IS NULL", now(), user.id);
 
   const token = randomBytes(32).toString("base64url");
-  run(
+  await run(
     "INSERT INTO password_resets (id, user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?, ?)",
     newId("pwr"),
     user.id,
@@ -32,10 +32,10 @@ export interface ResetRecord {
   used_at: number | null;
 }
 
-export function findValidReset(token: string): ResetRecord | null {
+export async function findValidReset(token: string): Promise<ResetRecord | null>{
   if (!token) return null;
 
-  const row = get<ResetRecord & { token_hash: string }>(
+  const row = await get<ResetRecord & { token_hash: string }>(
     "SELECT * FROM password_resets WHERE token_hash = ?",
     hashToken(token),
   );
@@ -52,10 +52,10 @@ export function findValidReset(token: string): ResetRecord | null {
   return row;
 }
 
-export function consumeReset(id: string) {
-  run("UPDATE password_resets SET used_at = ? WHERE id = ?", now(), id);
+export async function consumeReset(id: string) {
+  await run("UPDATE password_resets SET used_at = ? WHERE id = ?", now(), id);
 }
 
-export function sweepExpiredResets() {
-  run("DELETE FROM password_resets WHERE expires_at < ?", now() - 7 * 24 * 60 * 60 * 1000);
+export async function sweepExpiredResets() {
+  await run("DELETE FROM password_resets WHERE expires_at < ?", now() - 7 * 24 * 60 * 60 * 1000);
 }

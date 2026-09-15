@@ -50,7 +50,7 @@ export default async function CustomersPage({
   const status = (one(params.status) ?? "all") as NonNullable<CustomerFilter["status"]>;
   const sort = (one(params.sort) ?? "recent") as NonNullable<CustomerFilter["sort"]>;
 
-  const { rows, total } = listCustomers({
+  const { rows, total } = await listCustomers({
     search,
     plan,
     status,

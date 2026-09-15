@@ -29,13 +29,13 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   const action = one(params.action) ?? "";
   const page = Math.max(1, Number(one(params.page)) || 1);
 
-  const { rows, total } = queryAudit({
+  const { rows, total } = await queryAudit({
     search,
     action: action || undefined,
     limit: PER_PAGE,
     offset: (page - 1) * PER_PAGE,
   });
-  const actions = auditActions();
+  const actions = await auditActions();
 
   const build = (next: number) => {
     const query = new URLSearchParams();

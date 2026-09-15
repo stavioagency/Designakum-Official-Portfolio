@@ -14,15 +14,15 @@ export interface RateLimitResult {
  * (login guessing, report and ticket spam) and it survives a restart, which an
  * in-memory map would not.
  */
-export function rateLimit(key: string, limit: number, windowMs: number): RateLimitResult {
+export async function rateLimit(key: string, limit: number, windowMs: number): Promise<RateLimitResult>{
   const ts = now();
-  const row = get<{ window_start: number; count: number }>(
+  const row = await get<{ window_start: number; count: number }>(
     "SELECT window_start, count FROM rate_limits WHERE key = ?",
     key,
   );
 
   if (!row || ts - row.window_start >= windowMs) {
-    run(
+    await run(
       `INSERT INTO rate_limits (key, window_start, count) VALUES (?, ?, 1)
        ON CONFLICT(key) DO UPDATE SET window_start = excluded.window_start, count = 1`,
       key,
@@ -39,7 +39,7 @@ export function rateLimit(key: string, limit: number, windowMs: number): RateLim
     };
   }
 
-  run("UPDATE rate_limits SET count = count + 1 WHERE key = ?", key);
+  await run("UPDATE rate_limits SET count = count + 1 WHERE key = ?", key);
   return { ok: true, remaining: limit - row.count - 1, retryAfterSeconds: 0 };
 }
 
@@ -54,6 +54,6 @@ export async function callerFingerprint(): Promise<string> {
   return createHash("sha256").update(`${ip}|${agent}`).digest("hex").slice(0, 24);
 }
 
-export function sweepRateLimits(olderThanMs = 24 * 60 * 60 * 1000) {
-  run("DELETE FROM rate_limits WHERE window_start < ?", now() - olderThanMs);
+export async function sweepRateLimits(olderThanMs = 24 * 60 * 60 * 1000) {
+  await run("DELETE FROM rate_limits WHERE window_start < ?", now() - olderThanMs);
 }

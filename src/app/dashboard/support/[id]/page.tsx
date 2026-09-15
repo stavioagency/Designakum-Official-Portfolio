@@ -20,12 +20,12 @@ export default async function CustomerTicketPage({
   if (!user) redirect("/login");
 
   const { id } = await params;
-  const ticket = getTicket(id);
+  const ticket = await getTicket(id);
   // Tenant isolation: a ticket belonging to anyone else simply does not exist here.
   if (!ticket || ticket.user_id !== user.id) notFound();
 
   // `false` keeps staff-only notes out of the customer's view.
-  const messages = ticketMessages(id, false);
+  const messages = await ticketMessages(id, false);
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-7 sm:px-6 lg:py-10">

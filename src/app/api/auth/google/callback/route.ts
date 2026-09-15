@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   const state = params.get("state");
   if (!code || !state) return fail(origin, "google_invalid");
 
-  const stored = consumeState(state);
+  const stored = await consumeState(state);
   if (!stored) return fail(origin, "google_expired");
 
   let profile;
@@ -30,21 +30,21 @@ export async function GET(request: Request) {
 
   if (!profile.emailVerified) return fail(origin, "google_unverified");
 
-  let user = findUserByGoogleId(profile.sub);
+  let user = await findUserByGoogleId(profile.sub);
 
   if (!user) {
-    const existing = findUserByEmail(profile.email);
+    const existing = await findUserByEmail(profile.email);
     if (existing) {
       // Same person, already registered with a password — link the identities.
-      linkGoogleAccount(existing.id, profile.sub, profile.picture);
-      user = findUserByGoogleId(profile.sub) ?? existing;
+      await linkGoogleAccount(existing.id, profile.sub, profile.picture);
+      user = await findUserByGoogleId(profile.sub) ?? existing;
     } else {
-      user = provisionClient({
+      user = (await provisionClient({
         email: profile.email,
         name: profile.name || profile.givenName || profile.email.split("@")[0],
         googleId: profile.sub,
         avatarUrl: profile.picture,
-      }).user;
+      })).user;
     }
   }
 

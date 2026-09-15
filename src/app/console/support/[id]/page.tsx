@@ -24,16 +24,16 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   await guardPage("support.manage");
   const { id } = await params;
 
-  const ticket = getTicket(id);
+  const ticket = await getTicket(id);
   if (!ticket) notFound();
 
   // Staff see internal notes; the customer's own view never requests them.
-  const messages = ticketMessages(id, true);
-  const members = staffMembers().map((member) => ({
+  const messages = await ticketMessages(id, true);
+  const members = (await staffMembers()).map((member) => ({
     id: member.id,
     label: member.display_name || member.email,
   }));
-  const subscription = activeSubscription(ticket.user_id);
+  const subscription = await activeSubscription(ticket.user_id);
 
   return (
     <>

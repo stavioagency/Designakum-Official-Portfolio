@@ -12,17 +12,17 @@ export const SEVERITY_LABEL: Record<AnnouncementSeverity, string> = {
   critical: "حرج",
 };
 
-export function createAnnouncement(input: {
+export async function createAnnouncement(input: {
   title: string;
   body: string;
   severity: AnnouncementSeverity;
   startsAt: number | null;
   endsAt: number | null;
   createdBy: string;
-}): Announcement {
+}): Promise<Announcement>{
   const ts = now();
   const id = newId("ann");
-  run(
+  await run(
     `INSERT INTO announcements (id, title, body, severity, active, starts_at, ends_at, created_by, created_at, updated_at)
      VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?)`,
     id,
@@ -35,16 +35,16 @@ export function createAnnouncement(input: {
     ts,
     ts,
   );
-  return get<Announcement>("SELECT * FROM announcements WHERE id = ?", id)!;
+  return (await get<Announcement>("SELECT * FROM announcements WHERE id = ?", id))!;
 }
 
-export function updateAnnouncement(
+export async function updateAnnouncement(
   id: string,
   patch: Partial<Pick<Announcement, "title" | "body" | "severity" | "active" | "starts_at" | "ends_at">>,
 ) {
   const fields = Object.keys(patch) as (keyof typeof patch)[];
   if (!fields.length) return;
-  run(
+  await run(
     `UPDATE announcements SET ${fields.map((f) => `${f} = ?`).join(", ")}, updated_at = ? WHERE id = ?`,
     ...fields.map((f) => patch[f] as string | number | null),
     now(),
@@ -52,22 +52,22 @@ export function updateAnnouncement(
   );
 }
 
-export function deleteAnnouncement(id: string) {
-  run("DELETE FROM announcements WHERE id = ?", id);
+export async function deleteAnnouncement(id: string) {
+  await run("DELETE FROM announcements WHERE id = ?", id);
 }
 
-export function listAnnouncements() {
-  return all<Announcement>("SELECT * FROM announcements ORDER BY created_at DESC");
+export async function listAnnouncements() {
+  return await all<Announcement>("SELECT * FROM announcements ORDER BY created_at DESC");
 }
 
-export function getAnnouncement(id: string) {
-  return get<Announcement>("SELECT * FROM announcements WHERE id = ?", id);
+export async function getAnnouncement(id: string) {
+  return await get<Announcement>("SELECT * FROM announcements WHERE id = ?", id);
 }
 
 /** What a signed-in client should see right now, minus anything they dismissed. */
-export function liveAnnouncementsFor(userId: string) {
+export async function liveAnnouncementsFor(userId: string) {
   const ts = now();
-  return all<Announcement>(
+  return await all<Announcement>(
     `SELECT a.* FROM announcements a
       WHERE a.active = 1
         AND (a.starts_at IS NULL OR a.starts_at <= ?)
@@ -82,8 +82,8 @@ export function liveAnnouncementsFor(userId: string) {
   );
 }
 
-export function markAnnouncementRead(announcementId: string, userId: string) {
-  run(
+export async function markAnnouncementRead(announcementId: string, userId: string) {
+  await run(
     `INSERT INTO announcement_reads (announcement_id, user_id, created_at) VALUES (?, ?, ?)
      ON CONFLICT(announcement_id, user_id) DO NOTHING`,
     announcementId,

@@ -22,7 +22,7 @@ export default async function SignupPage({
 
   const { error, invite } = await searchParams;
   const d = dict(await currentLocale());
-  const settings = readSettings();
+  const settings = await readSettings();
   const inviteRequired = settings["platform.invite_only"] || !settings["platform.signups_open"];
 
   return (

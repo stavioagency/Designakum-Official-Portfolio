@@ -5,8 +5,8 @@ import { openTicketCount } from "./support";
 import { reportCounts } from "./moderation";
 
 const DAY = 86_400_000;
-const count = (sql: string, ...params: unknown[]) =>
-  get<{ n: number }>(sql, ...params)?.n ?? 0;
+const count = async (sql: string, ...params: unknown[]) =>
+  (await get<{ n: number }>(sql, ...params))?.n ?? 0;
 
 export interface PlatformStats {
   totalUsers: number;
@@ -30,13 +30,13 @@ export interface PlatformStats {
   totalPortfolios: number;
 }
 
-export function platformStats(): PlatformStats {
+export async function platformStats(): Promise<PlatformStats>{
   const ts = now();
-  const revenue = revenueSnapshot();
-  const reports = reportCounts();
+  const revenue = await revenueSnapshot();
+  const reports = await reportCounts();
 
-  const totalUsers = count("SELECT COUNT(*) AS n FROM users WHERE role = 'client'");
-  const activeSubscriptions = count(
+  const totalUsers = await count("SELECT COUNT(*) AS n FROM users WHERE role = 'client'");
+  const activeSubscriptions = await count(
     `SELECT COUNT(DISTINCT user_id) AS n FROM subscriptions
       WHERE status = 'active' AND (current_period_end IS NULL OR current_period_end > ?)`,
     ts,
@@ -45,15 +45,15 @@ export function platformStats(): PlatformStats {
   return {
     totalUsers,
     // "Active" means seen in the last 30 days, which is what a session touch records.
-    activeUsers: count(
+    activeUsers: await count(
       "SELECT COUNT(*) AS n FROM users WHERE role = 'client' AND last_seen_at >= ?",
       ts - 30 * DAY,
     ),
-    newThisWeek: count(
+    newThisWeek: await count(
       "SELECT COUNT(*) AS n FROM users WHERE role = 'client' AND created_at >= ?",
       ts - 7 * DAY,
     ),
-    newThisMonth: count(
+    newThisMonth: await count(
       "SELECT COUNT(*) AS n FROM users WHERE role = 'client' AND created_at >= ?",
       ts - 30 * DAY,
     ),
@@ -62,18 +62,18 @@ export function platformStats(): PlatformStats {
     yearlySubscribers: revenue.yearlyCount,
     compedSubscribers: revenue.compedCount,
     freeUsers: Math.max(0, totalUsers - activeSubscriptions),
-    suspendedUsers: count("SELECT COUNT(*) AS n FROM users WHERE status = 'suspended'"),
-    suspendedPortfolios: count("SELECT COUNT(*) AS n FROM portfolios WHERE suspended = 1"),
-    endedSubscriptions: count(
+    suspendedUsers: await count("SELECT COUNT(*) AS n FROM users WHERE status = 'suspended'"),
+    suspendedPortfolios: await count("SELECT COUNT(*) AS n FROM portfolios WHERE suspended = 1"),
+    endedSubscriptions: await count(
       "SELECT COUNT(*) AS n FROM subscriptions WHERE status IN ('canceled','expired')",
     ),
     mrr: revenue.mrr,
     arr: revenue.arr,
-    churnPercent: churnRate(30).percent,
-    openTickets: openTicketCount(),
+    churnPercent: (await churnRate(30)).percent,
+    openTickets: await openTicketCount(),
     pendingReports: reports.pending + reports.reviewing,
-    publishedPortfolios: count("SELECT COUNT(*) AS n FROM portfolios WHERE published = 1"),
-    totalPortfolios: count("SELECT COUNT(*) AS n FROM portfolios"),
+    publishedPortfolios: await count("SELECT COUNT(*) AS n FROM portfolios WHERE published = 1"),
+    totalPortfolios: await count("SELECT COUNT(*) AS n FROM portfolios"),
   };
 }
 
@@ -92,15 +92,15 @@ export interface ActivityItem {
  * One merged stream of what has happened on the platform, assembled from the
  * tables that already record it rather than a separate activity log to keep in sync.
  */
-export function recentActivity(limit = 14): ActivityItem[] {
-  const signups = all<ActivityItem>(
+export async function recentActivity(limit = 14): Promise<ActivityItem[]>{
+  const signups = await all<ActivityItem>(
     `SELECT u.id AS id, 'signup' AS kind, u.display_name AS title, u.email AS detail,
             '/console/customers/' || u.id AS href, u.created_at AS created_at
        FROM users u WHERE u.role = 'client' ORDER BY u.created_at DESC LIMIT ?`,
     limit,
   );
 
-  const subscriptions = all<ActivityItem>(
+  const subscriptions = await all<ActivityItem>(
     `SELECT s.id AS id, 'subscription' AS kind,
             CASE s.plan WHEN 'monthly' THEN 'اشتراك شهري' ELSE 'اشتراك سنوي' END AS title,
             u.email || ' · ' || s.source AS detail,
@@ -110,7 +110,7 @@ export function recentActivity(limit = 14): ActivityItem[] {
     limit,
   );
 
-  const reports = all<ActivityItem>(
+  const reports = await all<ActivityItem>(
     `SELECT r.id AS id, 'report' AS kind, 'بلاغ عن ' || p.name AS title,
             r.reason AS detail, '/console/moderation/' || r.id AS href, r.created_at AS created_at
        FROM reports r JOIN portfolios p ON p.id = r.portfolio_id
@@ -118,7 +118,7 @@ export function recentActivity(limit = 14): ActivityItem[] {
     limit,
   );
 
-  const tickets = all<ActivityItem>(
+  const tickets = await all<ActivityItem>(
     `SELECT t.id AS id, 'ticket' AS kind, t.subject AS title, u.email AS detail,
             '/console/support/' || t.id AS href, t.created_at AS created_at
        FROM tickets t JOIN users u ON u.id = t.user_id
@@ -126,7 +126,7 @@ export function recentActivity(limit = 14): ActivityItem[] {
     limit,
   );
 
-  const audits = all<ActivityItem>(
+  const audits = await all<ActivityItem>(
     `SELECT a.id AS id, 'audit' AS kind, a.action AS title,
             a.actor_email || CASE WHEN a.target_label = '' THEN '' ELSE ' → ' || a.target_label END AS detail,
             '/console/audit' AS href, a.created_at AS created_at

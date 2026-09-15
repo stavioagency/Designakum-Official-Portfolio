@@ -11,7 +11,7 @@ import type { User } from "./types";
  * page rather than an empty form. Used by password sign-up, Google sign-in and
  * owner-created clients alike.
  */
-export function provisionClient(input: {
+export async function provisionClient(input: {
   email: string;
   password?: string;
   name: string;
@@ -19,8 +19,8 @@ export function provisionClient(input: {
   slug?: string;
   googleId?: string;
   avatarUrl?: string;
-}): { user: User; slug: string } {
-  const user = createUser({
+}): Promise<{ user: User; slug: string }> {
+  const user = await createUser({
     email: input.email,
     password: input.password,
     displayName: input.name,
@@ -28,17 +28,17 @@ export function provisionClient(input: {
     avatarUrl: input.avatarUrl,
   });
 
-  const portfolio = createPortfolio({
+  const portfolio = await createPortfolio({
     userId: user.id,
-    slug: uniqueSlug(input.slug || input.name || input.email.split("@")[0]),
+    slug: await uniqueSlug(input.slug || input.name || input.email.split("@")[0]),
     name: input.name,
     title: input.title || "مصمم جرافيك",
   });
 
-  seedStarterContent(portfolio);
+  await seedStarterContent(portfolio);
 
   if (input.avatarUrl) {
-    updateProfile(portfolio.id, user, { avatar_url: input.avatarUrl });
+    await updateProfile(portfolio.id, user, { avatar_url: input.avatarUrl });
   }
 
   return { user, slug: portfolio.slug };

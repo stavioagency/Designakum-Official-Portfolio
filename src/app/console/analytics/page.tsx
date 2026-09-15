@@ -51,19 +51,19 @@ export default async function AnalyticsPage({
   const rangeKey = RANGES.some((r) => r.key === one(params.range)) ? one(params.range)! : "30";
   const days = Number(rangeKey);
 
-  const views = eventSeries("view", days);
-  const visitors = uniqueVisitorSeries(days);
-  const signups = registrationSeries(days);
-  const subscriptions = subscriptionSeries(days);
+  const views = await eventSeries("view", days);
+  const visitors = await uniqueVisitorSeries(days);
+  const signups = await registrationSeries(days);
+  const subscriptions = await subscriptionSeries(days);
 
-  const whatsapp = eventTotal("whatsapp", days);
-  const social = eventTotal("social", days);
-  const projects = eventTotal("project", days);
+  const whatsapp = await eventTotal("whatsapp", days);
+  const social = await eventTotal("social", days);
+  const projects = await eventTotal("project", days);
 
-  const revenue = revenueSnapshot();
-  const churn = churnRate(days);
-  const conversion = conversionRate();
-  const top = topPortfolios(8, days);
+  const revenue = await revenueSnapshot();
+  const churn = await churnRate(days);
+  const conversion = await conversionRate();
+  const top = await topPortfolios(8, days);
   const riyalSrc = brandAsset("riyal");
 
   const totalViews = seriesTotal(views);
@@ -94,7 +94,7 @@ export default async function AnalyticsPage({
         />
         <StatCard
           label="زوار مختلفون"
-          value={nf.format(uniqueVisitorTotal(days))}
+          value={nf.format(await uniqueVisitorTotal(days))}
           hint="تُحتسب مرة واحدة لكل زائر يوميًا"
           icon={<Users className="h-4 w-4" />}
           series={visitors}

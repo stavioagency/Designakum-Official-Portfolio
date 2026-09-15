@@ -17,7 +17,7 @@ function generateCode(): string {
   return code;
 }
 
-export function createInvitation(input: {
+export async function createInvitation(input: {
   plan: Exclude<Plan, "free">;
   months: number;
   email?: string;
@@ -25,12 +25,12 @@ export function createInvitation(input: {
   expiresAt?: number | null;
   note?: string;
   createdBy: string;
-}): Invitation {
-  let code = generateCode();
-  while (get("SELECT id FROM invitations WHERE code = ?", code)) code = generateCode();
+}): Promise<Invitation>{
+  let code = await generateCode();
+  while (await get("SELECT id FROM invitations WHERE code = ?", code)) code = await generateCode();
 
   const id = newId("inv");
-  run(
+  await run(
     `INSERT INTO invitations (id, code, plan, months, email, max_uses, used_count, expires_at, note, revoked, created_by, created_at)
      VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, 0, ?, ?)`,
     id,
@@ -44,11 +44,11 @@ export function createInvitation(input: {
     input.createdBy,
     now(),
   );
-  return get<Invitation>("SELECT * FROM invitations WHERE id = ?", id)!;
+  return (await get<Invitation>("SELECT * FROM invitations WHERE id = ?", id))!;
 }
 
-export function findInvitationByCode(code: string) {
-  return get<Invitation>(
+export async function findInvitationByCode(code: string) {
+  return await get<Invitation>(
     "SELECT * FROM invitations WHERE code = ?",
     code.trim().toUpperCase(),
   );
@@ -57,11 +57,11 @@ export function findInvitationByCode(code: string) {
 export type InvitationProblem = "not_found" | "revoked" | "expired" | "used_up" | "wrong_email";
 
 /** One place decides whether a code may be used, so signup and redemption agree. */
-export function checkInvitation(
+export async function checkInvitation(
   code: string,
   email?: string,
-): { invitation: Invitation } | { problem: InvitationProblem } {
-  const invitation = findInvitationByCode(code);
+): Promise<{ invitation: Invitation } | { problem: InvitationProblem }> {
+  const invitation = await findInvitationByCode(code);
   if (!invitation) return { problem: "not_found" };
   if (invitation.revoked === 1) return { problem: "revoked" };
   if (invitation.expires_at && invitation.expires_at < now()) return { problem: "expired" };
@@ -84,11 +84,11 @@ export const INVITATION_PROBLEM_LABEL: Record<InvitationProblem, string> = {
  * Turns a valid code into a real subscription row, recorded with the `invitation`
  * source so comped accounts never inflate revenue.
  */
-export function redeemInvitation(invitation: Invitation, user: User) {
+export async function redeemInvitation(invitation: Invitation, user: User) {
   const end = new Date();
   end.setMonth(end.getMonth() + invitation.months);
 
-  recordSubscription({
+  await recordSubscription({
     userId: user.id,
     plan: invitation.plan,
     status: "active",
@@ -96,17 +96,17 @@ export function redeemInvitation(invitation: Invitation, user: User) {
     source: "invitation",
     amount: 0,
     currentPeriodEnd:
-      invitation.months === 1 ? periodEnd(invitation.plan) : end.getTime(),
+      invitation.months === 1 ? await periodEnd(invitation.plan) : end.getTime(),
   });
 
-  run(
+  await run(
     "INSERT INTO invitation_redemptions (id, invitation_id, user_id, created_at) VALUES (?, ?, ?, ?)",
     newId("red"),
     invitation.id,
     user.id,
     now(),
   );
-  run("UPDATE invitations SET used_count = used_count + 1 WHERE id = ?", invitation.id);
+  await run("UPDATE invitations SET used_count = used_count + 1 WHERE id = ?", invitation.id);
 }
 
 export interface InvitationRow extends Invitation {
@@ -114,10 +114,10 @@ export interface InvitationRow extends Invitation {
   redeemed_by: string;
 }
 
-export function listInvitations() {
-  return all<InvitationRow>(
+export async function listInvitations() {
+  return await all<InvitationRow>(
     `SELECT i.*, c.email AS creator_email,
-            COALESCE((SELECT GROUP_CONCAT(u.email, ', ')
+            COALESCE((SELECT string_agg(u.email, ', ')
                         FROM invitation_redemptions r JOIN users u ON u.id = r.user_id
                        WHERE r.invitation_id = i.id), '') AS redeemed_by
        FROM invitations i
@@ -126,12 +126,12 @@ export function listInvitations() {
   );
 }
 
-export function revokeInvitation(id: string) {
-  run("UPDATE invitations SET revoked = 1 WHERE id = ?", id);
+export async function revokeInvitation(id: string) {
+  await run("UPDATE invitations SET revoked = 1 WHERE id = ?", id);
 }
 
-export function invitationStats() {
-  const row = get<{ total: number; redeemed: number; live: number }>(
+export async function invitationStats() {
+  const row = await get<{ total: number; redeemed: number; live: number }>(
     `SELECT COUNT(*) AS total,
             COALESCE(SUM(used_count), 0) AS redeemed,
             SUM(CASE WHEN revoked = 0 AND used_count < max_uses

@@ -9,7 +9,7 @@ import { callerFingerprint, rateLimit } from "@/lib/rate-limit";
  */
 export async function POST(request: Request) {
   const fingerprint = await callerFingerprint();
-  const limit = rateLimit(`track:${fingerprint}`, 60, 60_000);
+  const limit = await rateLimit(`track:${fingerprint}`, 60, 60_000);
   if (!limit.ok) return new Response(null, { status: 429 });
 
   let body: { portfolioId?: string; kind?: string };
@@ -23,8 +23,8 @@ export async function POST(request: Request) {
   if (!body.portfolioId || !EVENT_KINDS.includes(kind) || kind === "view") {
     return new Response(null, { status: 400 });
   }
-  if (!getPortfolioById(body.portfolioId)) return new Response(null, { status: 404 });
+  if (!await getPortfolioById(body.portfolioId)) return new Response(null, { status: 404 });
 
-  recordPortfolioEvent(body.portfolioId, kind);
+  await recordPortfolioEvent(body.portfolioId, kind);
   return new Response(null, { status: 204 });
 }
