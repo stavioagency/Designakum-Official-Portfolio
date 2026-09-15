@@ -59,7 +59,7 @@ as items are fixed: ✅ done · ⏳ in progress · ⛔ blocked on something you 
 
 ## Medium — worth doing soon after launch
 
-- Analytics days are cut on UTC, not Riyadh time, so "today" ends at 3am locally.
+- ✅ Analytics days are cut in Riyadh time (`REPORTING_TIMEZONE`), not UTC. Found alongside it: every `COUNT`/`SUM` aggregate came back from Postgres as a bigint *string*, so the charts were summing text — now cast in SQL.
 - Vercel's Hobby plan forbids commercial use; a paid product needs Pro at $20/month.
 - No bot filtering on portfolio views; crawlers inflate a designer's numbers.
 - `page_views` and `portfolio_events` both record views — one should go.

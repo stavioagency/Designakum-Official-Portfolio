@@ -13,7 +13,24 @@ export const EVENT_LABEL: Record<EventKind, string> = {
   project: "نقرات الأعمال",
 };
 
-export const dayKey = (ms = now()) => new Date(ms).toISOString().slice(0, 10);
+/**
+ * Analytics days are cut in the platform's own timezone, not UTC.
+ *
+ * With UTC, a Riyadh designer's "today" ended at 3am local and the evening — when
+ * people actually share portfolio links — landed on the next day's row. Every
+ * daily figure was skewed by three hours.
+ */
+export const REPORTING_TIMEZONE = process.env.REPORTING_TIMEZONE ?? "Asia/Riyadh";
+
+const dayFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: REPORTING_TIMEZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+// en-CA formats as YYYY-MM-DD, which is what the day columns store.
+export const dayKey = (ms = now()) => dayFormatter.format(new Date(ms));
 
 export async function recordPortfolioEvent(portfolioId: string, kind: EventKind, day = dayKey()) {
   await run(
@@ -62,41 +79,43 @@ function seriesFrom(rows: { day: string; value: number }[], days: number): Serie
 
 export async function eventSeries(kind: EventKind, days = 30, portfolioId?: string): Promise<Series[]>{
   const rows = await all<{ day: string; value: number }>(
-    `SELECT day, SUM(count) AS value FROM portfolio_events
+    `SELECT day, SUM(count)::int AS value FROM portfolio_events
       WHERE kind = ? ${portfolioId ? "AND portfolio_id = ?" : ""} AND day >= ?
       GROUP BY day`,
     ...(portfolioId ? [kind, portfolioId] : [kind]),
     lastDays(days)[0],
   );
-  return await seriesFrom(rows, days);
+  return seriesFrom(rows, days);
 }
 
 export async function uniqueVisitorSeries(days = 30): Promise<Series[]>{
   const rows = await all<{ day: string; value: number }>(
-    "SELECT day, COUNT(*) AS value FROM visit_marks WHERE day >= ? GROUP BY day",
+    "SELECT day, COUNT(*)::int AS value FROM visit_marks WHERE day >= ? GROUP BY day",
     lastDays(days)[0],
   );
-  return await seriesFrom(rows, days);
+  return seriesFrom(rows, days);
 }
 
 export async function registrationSeries(days = 30): Promise<Series[]>{
   const since = Date.now() - days * 86_400_000;
   const rows = await all<{ day: string; value: number }>(
-    `SELECT to_char(to_timestamp(created_at / 1000.0), 'YYYY-MM-DD') AS day, COUNT(*) AS value
+    `SELECT to_char(to_timestamp(created_at / 1000.0) AT TIME ZONE ?::text, 'YYYY-MM-DD') AS day, COUNT(*)::int AS value
        FROM users WHERE role = 'client' AND created_at >= ? GROUP BY day`,
+    REPORTING_TIMEZONE,
     since,
   );
-  return await seriesFrom(rows, days);
+  return seriesFrom(rows, days);
 }
 
 export async function subscriptionSeries(days = 30): Promise<Series[]>{
   const since = Date.now() - days * 86_400_000;
   const rows = await all<{ day: string; value: number }>(
-    `SELECT to_char(to_timestamp(created_at / 1000.0), 'YYYY-MM-DD') AS day, COUNT(*) AS value
+    `SELECT to_char(to_timestamp(created_at / 1000.0) AT TIME ZONE ?::text, 'YYYY-MM-DD') AS day, COUNT(*)::int AS value
        FROM subscriptions WHERE created_at >= ? GROUP BY day`,
+    REPORTING_TIMEZONE,
     since,
   );
-  return await seriesFrom(rows, days);
+  return seriesFrom(rows, days);
 }
 
 export const seriesTotal = (series: Series[]) => series.reduce((sum, p) => sum + p.value, 0);

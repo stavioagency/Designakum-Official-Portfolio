@@ -132,10 +132,10 @@ export async function revokeInvitation(id: string) {
 
 export async function invitationStats() {
   const row = await get<{ total: number; redeemed: number; live: number }>(
-    `SELECT COUNT(*) AS total,
-            COALESCE(SUM(used_count), 0) AS redeemed,
+    `SELECT COUNT(*)::int AS total,
+            COALESCE(SUM(used_count), 0)::int AS redeemed,
             SUM(CASE WHEN revoked = 0 AND used_count < max_uses
-                      AND (expires_at IS NULL OR expires_at > ?) THEN 1 ELSE 0 END) AS live
+                      AND (expires_at IS NULL OR expires_at > ?) THEN 1 ELSE 0 END)::int AS live
        FROM invitations`,
     now(),
   );

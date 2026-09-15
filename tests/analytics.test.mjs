@@ -1,0 +1,66 @@
+import { test, describe } from "node:test";
+import assert from "node:assert/strict";
+import { db } from "./helpers.mjs";
+
+/**
+ * The day columns are cut in the reporting timezone. Two different engines do
+ * the cutting — Intl in Node, to_char in Postgres — and a chart silently lies
+ * if they ever disagree, so this pins them together.
+ */
+const TZ = process.env.REPORTING_TIMEZONE ?? "Asia/Riyadh";
+
+const dayFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TZ,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+describe("analytics days", () => {
+  test("Postgres and Node cut the day in the same timezone", async () => {
+    const instants = [
+      Date.UTC(2026, 0, 10, 22, 30), // late evening in Riyadh, next day already
+      Date.UTC(2026, 0, 10, 20, 59), // one minute before the Riyadh day rolls
+      Date.UTC(2026, 0, 10, 21, 1), // one minute after
+      Date.UTC(2026, 5, 30, 12, 0), // midsummer, no DST in Riyadh
+      Date.now(),
+    ];
+
+    const connection = db();
+    const statement = connection.prepare(
+      "SELECT to_char(to_timestamp(? / 1000.0) AT TIME ZONE ?::text, 'YYYY-MM-DD') AS day",
+    );
+
+    for (const ms of instants) {
+      const row = await statement.get(ms, TZ);
+      assert.equal(
+        row.day,
+        dayFormatter.format(new Date(ms)),
+        `the two engines disagree about ${new Date(ms).toISOString()}`,
+      );
+    }
+    connection.close();
+  });
+
+  test("a Riyadh evening is not filed under the next day", async () => {
+    // 23:00 Riyadh on the 10th is 20:00 UTC on the 10th — the UTC cut got this
+    // right, which is why the bug only showed after midnight local.
+    const evening = Date.UTC(2026, 0, 10, 20, 0);
+    assert.equal(dayFormatter.format(new Date(evening)), "2026-01-10");
+    // 01:00 Riyadh on the 11th is 22:00 UTC on the 10th — this is the one UTC
+    // filed a day early.
+    const afterMidnight = Date.UTC(2026, 0, 10, 22, 0);
+    assert.equal(dayFormatter.format(new Date(afterMidnight)), "2026-01-11");
+  });
+
+  test("aggregate counts arrive as numbers, not bigint strings", async () => {
+    const connection = db();
+    const row = await connection
+      .prepare("SELECT COUNT(*)::int AS value FROM users WHERE role = 'client'")
+      .get();
+    connection.close();
+
+    assert.equal(typeof row.value, "number", "COUNT must be cast, or the charts add up strings");
+    assert.ok(row.value >= 0);
+  });
+});

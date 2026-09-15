@@ -77,6 +77,16 @@ if (process.env.ALLOW_PRODUCTION_SEED !== "yes-destroy-my-data") {
 }
 
 const now = () => Date.now();
+
+// Mirrors REPORTING_TIMEZONE in src/lib/analytics.ts so seeded days line up with
+// the days the app counts.
+const dayFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: process.env.REPORTING_TIMEZONE ?? "Asia/Riyadh",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+const dayKey = (ms = Date.now()) => dayFormatter.format(new Date(ms));
 const id = (p) => `${p}_${randomBytes(9).toString("hex")}`;
 const hash = (pw) => {
   const salt = randomBytes(16);
@@ -214,7 +224,7 @@ async function createClient(c) {
 
   const today = new Date();
   for (let d = 13; d >= 0; d--) {
-    const day = new Date(today.getTime() - d * 86400000).toISOString().slice(0, 10);
+    const day = dayKey(today.getTime() - d * 86400000);
     await run(
       "INSERT INTO page_views (id, portfolio_id, day, count) VALUES (?, ?, ?, ?)",
       id("pv"), pfId, day, Math.floor(Math.random() * 40) + 6,
