@@ -65,7 +65,7 @@ as items are fixed: ✅ done · ⏳ in progress · ⛔ blocked on something you 
 - ✅ `page_views` folded into `portfolio_events` and dropped, counts backfilled.
 - `listInvitations` and the subscription list have no pagination.
 - The client dashboard and console are Arabic-only while the public site is bilingual.
-- No `robots.txt` or sitemap, which matters for a portfolio platform's SEO.
+- ✅ `robots.txt` and a sitemap. The sitemap lists only portfolios that are genuinely public (published, unsuspended, owner subscribed); a withheld page and every signed-in surface carry `noindex`. Set `SITE_URL` in production or the app names itself from the request host.
 - Upload hardening: no image dimension cap, so a decompression bomb is possible.
 - ✅ Versioned migrations: `scripts/migrate.mjs`, a `schema_migrations` table, checksums that refuse an edited migration, `--dry`, and `npm run migrate:down` for a migration that ships a `.down.sql`.
 - Support tickets cannot carry attachments, which is what most real tickets need.

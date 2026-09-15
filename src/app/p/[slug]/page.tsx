@@ -28,9 +28,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!portfolio) return { title: "404" };
 
   const description = portfolio.bio.slice(0, 160) || portfolio.tagline;
+
+  // A page that is not actually public answers with a placeholder, and a
+  // placeholder in a search index is worse for the designer than no result.
+  const owner = await get<User>("SELECT * FROM users WHERE id = ?", portfolio.user_id);
+  const live =
+    portfolio.published === 1 &&
+    portfolio.suspended === 0 &&
+    !!owner &&
+    owner.status === "active" &&
+    (await canPublish(owner));
+
   return {
     title: `${portfolio.name} — ${portfolio.title}`,
     description,
+    robots: live ? undefined : { index: false, follow: false },
+    alternates: live ? { canonical: `/p/${portfolio.slug}` } : undefined,
     openGraph: {
       title: `${portfolio.name} — ${portfolio.title}`,
       description,

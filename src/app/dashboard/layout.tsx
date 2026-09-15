@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { getPortfolioForUser } from "@/lib/portfolios";
@@ -5,6 +6,10 @@ import { TopNav } from "@/components/top-nav";
 import { currentLocale } from "@/lib/locale";
 import { maintenanceState } from "@/lib/maintenance";
 import { MaintenanceNotice } from "@/components/maintenance-notice";
+
+// A signed-in surface has nothing to offer a search engine, and robots.txt is
+// only a request — this is the header that actually keeps it out of an index.
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function DashboardLayout({
   children,

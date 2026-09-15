@@ -4,7 +4,10 @@ import { currentUser } from "@/lib/auth";
 import { LogoLockup } from "@/components/brand/logo";
 import { ForgotPasswordForm } from "@/components/password-reset-forms";
 
-export const metadata: Metadata = { title: "استعادة كلمة المرور" };
+export const metadata: Metadata = {
+  title: "استعادة كلمة المرور",
+  robots: { index: false, follow: false },
+};
 export const dynamic = "force-dynamic";
 
 export default async function ForgotPasswordPage() {

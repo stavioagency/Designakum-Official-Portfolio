@@ -5,7 +5,10 @@ import { ResetPasswordForm } from "@/components/password-reset-forms";
 import { findValidReset } from "@/lib/password-reset";
 import { AlertTriangle } from "@/components/icons";
 
-export const metadata: Metadata = { title: "تعيين كلمة مرور جديدة" };
+export const metadata: Metadata = {
+  title: "تعيين كلمة مرور جديدة",
+  robots: { index: false, follow: false },
+};
 export const dynamic = "force-dynamic";
 
 export default async function ResetPasswordPage({
