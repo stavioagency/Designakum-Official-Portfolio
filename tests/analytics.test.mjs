@@ -73,13 +73,17 @@ describe("bot traffic", () => {
    */
   async function withProbePortfolio(body) {
     const connection = db();
+    // The owner must be someone who may actually publish, or the page is withheld
+    // and nothing is counted. A free client is also published = 1.
     const owner = await connection
       .prepare(
-        `SELECT p.user_id FROM portfolios p
-          WHERE p.published = 1 AND p.suspended = 0 LIMIT 1`,
+        `SELECT s.user_id FROM subscriptions s
+          WHERE s.status = 'active'
+            AND (s.current_period_end IS NULL OR s.current_period_end > ?)
+          ORDER BY s.created_at DESC LIMIT 1`,
       )
-      .get();
-    assert.ok(owner, "the seed should leave at least one live portfolio");
+      .get(Date.now());
+    assert.ok(owner, "the seed should leave at least one subscribed customer");
 
     const slug = `bot-probe-${Math.random().toString(36).slice(2, 10)}`;
     const id = `pf_${slug}`;
@@ -118,8 +122,14 @@ describe("bot traffic", () => {
 
       assert.equal(await views(), before, "crawlers must not inflate the count");
 
-      await visit(`/p/${slug}`);
-      assert.equal(await views(), before + 1, "a real browser must still be counted");
+      const human = await visit(`/p/${slug}`);
+      assert.equal(
+        await views(),
+        before + 1,
+        `a real browser must still be counted (status ${human.status}, ${
+          human.body.includes("قيد التجهيز") ? "page was withheld" : "page was served"
+        })`,
+      );
     });
   });
 
