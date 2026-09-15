@@ -15,6 +15,8 @@ export const SEVERITY_LABEL: Record<AnnouncementSeverity, string> = {
 export async function createAnnouncement(input: {
   title: string;
   body: string;
+  titleEn?: string;
+  bodyEn?: string;
   severity: AnnouncementSeverity;
   startsAt: number | null;
   endsAt: number | null;
@@ -23,11 +25,14 @@ export async function createAnnouncement(input: {
   const ts = now();
   const id = newId("ann");
   await run(
-    `INSERT INTO announcements (id, title, body, severity, active, starts_at, ends_at, created_by, created_at, updated_at)
-     VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?)`,
+    `INSERT INTO announcements (id, title, body, title_en, body_en, severity, active,
+       starts_at, ends_at, created_by, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)`,
     id,
     input.title,
     input.body,
+    input.titleEn ?? "",
+    input.bodyEn ?? "",
     input.severity,
     input.startsAt,
     input.endsAt,

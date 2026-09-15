@@ -89,6 +89,7 @@ const ar = {
     noAccount: "ليس لديك حساب؟",
     toLogin: "تسجيل الدخول",
     toSignup: "أنشئ حسابًا",
+    forgot: "نسيت كلمة المرور؟",
   },
 
   dashboard: {
@@ -256,6 +257,8 @@ const ar = {
       canPublish: "صفحتك قابلة للنشر، وأي تعديل تحفظه يظهر للزوار مباشرة.",
       cannotPublish: "المحرّر مفتوح لك بالكامل بلا حدود — أعمال وشرائح وصور بلا عدد — لكن النشر للعامة يحتاج اشتراكًا فعّالًا.",
       inviteHeading: "لديك رمز دعوة؟",
+      redeem: "تفعيل",
+      redeeming: "جارٍ التحقق…",
       inviteBody: "أدخل الرمز الذي وصلك من فريق ديزاينكم لتفعيل اشتراكك مجانًا.",
       noProvider: "لم يتم ربط مزوّد دفع بهذه النسخة بعد، لذلك لا يمكن إتمام الشراء ذاتيًا. تواصل مع إدارة المنصة لتفعيل اشتراكك يدويًا.",
       history: "سجل الفوترة",
@@ -289,6 +292,21 @@ const ar = {
       hide: "إخفاء",
       publish: "نشر الآن",
     },
+  },
+
+  announcements: {
+    dismiss: "إغلاق الإعلان",
+  },
+
+  maintenance: {
+    title: "صيانة مؤقتة",
+    toConsole: "متابعة إلى لوحة الإدارة",
+  },
+
+  legal: {
+    unpublished: "لم يُنشر هذا المستند بعد",
+    unpublishedBody: "يضيف مالك المنصة نص {doc} من إعدادات ديزاينكم. هذه الصفحة جاهزة وتعرضه فور إضافته.",
+    updated: "آخر تحديث: {date}",
   },
 
   reset: {
@@ -462,6 +480,7 @@ const en: typeof ar = {
     noAccount: "No account yet?",
     toLogin: "Log in",
     toSignup: "Create one",
+    forgot: "Forgot your password?",
   },
 
   dashboard: {
@@ -629,6 +648,8 @@ const en: typeof ar = {
       canPublish: "Your page can be published, and anything you save shows to visitors straight away.",
       cannotPublish: "The editor is fully open to you, with no limits on work, slides or images — publishing to the public is the part that needs an active subscription.",
       inviteHeading: "Have an invitation code?",
+      redeem: "Activate",
+      redeeming: "Checking…",
       inviteBody: "Enter the code the Designakum team sent you to activate your subscription for free.",
       noProvider: "No payment provider is connected to this instance yet, so checkout can't complete on its own. Contact the platform team to activate your subscription manually.",
       history: "Billing history",
@@ -662,6 +683,21 @@ const en: typeof ar = {
       hide: "Unpublish",
       publish: "Publish now",
     },
+  },
+
+  announcements: {
+    dismiss: "Dismiss this announcement",
+  },
+
+  maintenance: {
+    title: "Down for maintenance",
+    toConsole: "Continue to the admin console",
+  },
+
+  legal: {
+    unpublished: "This document hasn't been published yet",
+    unpublishedBody: "The platform owner adds the {doc} text from the Designakum settings. This page is ready and will show it as soon as it's there.",
+    updated: "Last updated: {date}",
   },
 
   reset: {

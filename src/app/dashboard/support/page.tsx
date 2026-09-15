@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { ticketsForUser } from "@/lib/support";
 import { ticketCategories, ticketStatusLabel } from "@/lib/support-labels";
-import { readSettings } from "@/lib/settings";
+import { localized, readSettings } from "@/lib/settings";
 import { Badge, EmptyState, SectionCard, timeAgo } from "@/components/console/ui";
 import { NewTicketForm } from "@/components/support/customer-forms";
 import { LifeBuoy } from "@/components/icons";
@@ -32,7 +32,7 @@ export default async function CustomerSupportPage() {
       <header className="mb-6">
         <h1 className="text-[26px] font-bold">{t.title}</h1>
         <p className="mt-1 text-[13.5px] text-mist-400">
-          {settings["support.hours"]}
+          {localized(settings, "support.hours", locale)}
         </p>
       </header>
 
@@ -40,7 +40,7 @@ export default async function CustomerSupportPage() {
         <SectionCard title={t.newTicket} className="mb-4">
           <div className="p-5">
             <NewTicketForm
-              intro={settings["support.intro"]}
+              intro={localized(settings, "support.intro", locale)}
               copy={t}
               categories={ticketCategories(locale)}
             />

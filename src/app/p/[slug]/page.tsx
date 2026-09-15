@@ -9,7 +9,7 @@ import { callerIsBot } from "@/lib/bots";
 import { liftExpiredSuspension } from "@/lib/moderation";
 import { isStaff } from "@/lib/permissions";
 import { callerFingerprint } from "@/lib/rate-limit";
-import { readSettings } from "@/lib/settings";
+import { localized, readSettings } from "@/lib/settings";
 import { maintenanceState } from "@/lib/maintenance";
 import { MaintenanceNotice } from "@/components/maintenance-notice";
 import { currentLocale } from "@/lib/locale";
@@ -68,7 +68,8 @@ export default async function PublicPortfolioPage({ params }: Props) {
 
   const viewer = await currentUser();
   const canEdit = !!viewer && (isStaff(viewer) || viewer.id === portfolio.user_id);
-  const d = dict(await currentLocale());
+  const locale = await currentLocale();
+  const d = dict(locale);
   const settings = await readSettings();
 
   if (portfolio.suspended === 1 && !isStaff(viewer)) {
@@ -127,7 +128,7 @@ export default async function PublicPortfolioPage({ params }: Props) {
         bundle={await loadBundle(portfolio)}
         live
         reportsOpen={settings["features.reports"]}
-        rules={settings["rules.portfolio"]}
+        rules={localized(settings, "rules.portfolio", locale)}
       />
       {canEdit && (
         <Link

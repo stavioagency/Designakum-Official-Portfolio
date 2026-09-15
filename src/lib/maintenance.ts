@@ -1,7 +1,8 @@
 import "server-only";
+import { currentLocale } from "./locale";
 import { currentUser } from "./auth";
 import { isStaff } from "./permissions";
-import { readSettings } from "./settings";
+import { localized, readSettings } from "./settings";
 
 /**
  * Maintenance mode always closes the platform's own surfaces — landing, sign-in
@@ -23,6 +24,6 @@ export async function maintenanceState({ portfolio = false } = {}) {
   return {
     blocked: !staff,
     staff,
-    message: settings["platform.maintenance_message"],
+    message: localized(settings, "platform.maintenance_message", await currentLocale()),
   };
 }

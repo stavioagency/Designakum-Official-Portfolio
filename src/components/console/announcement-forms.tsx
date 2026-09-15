@@ -33,6 +33,17 @@ export function CreateAnnouncementForm() {
         <textarea name="body" rows={3} className="field" placeholder="اشرح التحديث بإيجاز…" />
       </Field>
 
+      {/* Optional. Customers on the English interface see these instead; leaving
+          them blank shows them the Arabic rather than nothing. */}
+      <div className="grid gap-4 sm:grid-cols-2" dir="ltr">
+        <Field label="Title (English)" hint="اختياري — يظهر لعملاء الواجهة الإنجليزية.">
+          <input name="titleEn" className="field" placeholder="A new platform update" />
+        </Field>
+        <Field label="Body (English)">
+          <textarea name="bodyEn" rows={3} className="field" placeholder="Explain the update briefly…" />
+        </Field>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="يبدأ في" hint="اتركه فارغًا ليظهر فورًا.">
           <input name="startsAt" type="date" className="field" />

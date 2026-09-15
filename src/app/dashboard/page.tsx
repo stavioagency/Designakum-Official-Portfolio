@@ -32,11 +32,17 @@ export default async function DashboardPage() {
   const published = portfolio.published === 1;
 
   const announcements = await liveAnnouncementsFor(user.id);
-  const copy = dict(await currentLocale()).dashboard;
+  const locale = await currentLocale();
+  const d = dict(locale);
+  const copy = d.dashboard;
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-7 sm:px-6 lg:py-10">
-      <AnnouncementBanner announcements={announcements} />
+      <AnnouncementBanner
+        announcements={announcements}
+        locale={locale}
+        dismissLabel={d.announcements.dismiss}
+      />
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-[26px] font-bold">{fill(copy.home.greeting, { name: portfolio.name.split(" ")[0] })}</h1>

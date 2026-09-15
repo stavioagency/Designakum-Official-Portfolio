@@ -269,6 +269,9 @@ CREATE TABLE IF NOT EXISTS announcements (
   id         TEXT PRIMARY KEY,
   title      TEXT NOT NULL,
   body       TEXT NOT NULL DEFAULT '',
+  -- Optional English pair. Empty means "use the original".
+  title_en   TEXT NOT NULL DEFAULT '',
+  body_en    TEXT NOT NULL DEFAULT '',
   severity   TEXT NOT NULL DEFAULT 'info',
   active     INTEGER NOT NULL DEFAULT 1,
   starts_at  BIGINT,

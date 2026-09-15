@@ -237,6 +237,9 @@ export interface Announcement {
   id: string;
   title: string;
   body: string;
+  /** Optional English pair; empty means "show the original". */
+  title_en: string;
+  body_en: string;
   severity: AnnouncementSeverity;
   active: number;
   starts_at: number | null;

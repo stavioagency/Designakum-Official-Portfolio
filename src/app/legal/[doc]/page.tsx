@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { formatDate } from "@/components/console/ui";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { readSettings, type SettingKey } from "@/lib/settings";
+import { localized, readSettings, type SettingKey } from "@/lib/settings";
 import { currentLocale } from "@/lib/locale";
-import { dict } from "@/lib/i18n";
+import { dict, fill } from "@/lib/i18n";
 import { LogoLockup } from "@/components/brand/logo";
 import { LocaleSwitch } from "@/components/locale-switch";
 import { AlertTriangle } from "@/components/icons";
@@ -25,7 +26,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { doc } = await params;
   const entry = DOCUMENTS[doc as Doc];
-  return entry ? { title: entry.title } : {};
+  if (!entry) return {};
+  const locale = await currentLocale();
+  return { title: locale === "ar" ? entry.title : entry.titleEn };
 }
 
 export default async function LegalPage({ params }: { params: Promise<{ doc: string }> }) {
@@ -36,7 +39,7 @@ export default async function LegalPage({ params }: { params: Promise<{ doc: str
   const locale = await currentLocale();
   const d = dict(locale);
   const settings = await readSettings();
-  const body = String(settings[entry.key] ?? "").trim();
+  const body = localized(settings, entry.key, locale).trim();
 
   return (
     <div className="relative z-10">
@@ -56,17 +59,18 @@ export default async function LegalPage({ params }: { params: Promise<{ doc: str
           <div className="card mt-6 flex items-start gap-3 p-6">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
             <div>
-              <p className="text-[15px] font-semibold text-amber-200">لم يُنشر هذا المستند بعد</p>
+              <p className="text-[15px] font-semibold text-amber-200">{d.legal.unpublished}</p>
               <p className="mt-2 text-[13.5px] leading-relaxed text-mist-400">
-                يضيف مالك المنصة نص {entry.title} من إعدادات ديزاينكم. هذه الصفحة جاهزة وتعرضه فور
-                إضافته.
+                {fill(d.legal.unpublishedBody, {
+                  doc: locale === "ar" ? entry.title : entry.titleEn,
+                })}
               </p>
             </div>
           </div>
         )}
 
         <p className="mt-6 text-[12px] text-mist-600">
-          آخر تحديث: {new Date().toLocaleDateString("ar-SA-u-nu-latn-ca-gregory")}
+          {fill(d.legal.updated, { date: formatDate(Date.now(), locale) })}
         </p>
 
         <Link href="/" className="btn btn-ghost mt-8">

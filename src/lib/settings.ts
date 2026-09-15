@@ -1,4 +1,5 @@
 import "server-only";
+import type { Locale } from "./types";
 import { all, now, run } from "./db";
 
 /**
@@ -27,6 +28,96 @@ export const SETTING_DEFAULTS = {
   "paypal.product_id": "" as string,
   "paypal.plan_monthly": "" as string,
   "paypal.plan_yearly": "" as string,
+
+
+  /**
+   * English versions of the customer-facing text above.
+   *
+   * A separate key per language rather than a translation at render time: these
+   * are written by the platform owner, and the legal ones by a lawyer. An empty
+   * value falls back to the Arabic, so an owner who only writes one language
+   * still has a working site in both.
+   */
+  "platform.maintenance_message_en":
+    "The platform is under maintenance and will be back shortly. Thanks for your patience.",
+  "support.hours_en": "Sunday to Thursday, 9am to 5pm",
+  "support.intro_en": "Describe the problem in as much detail as you can and we'll get back to you.",
+  "rules.portfolio_en":
+    "No content that breaks Saudi law, no work credited to someone other than its author, nothing abusive or misleading, and no fake contact details.",
+  "policy.terms_en": `Draft — needs legal review before it is adopted.
+
+1. About the service
+Designakum is a platform that lets designers and freelancers build a portfolio page on their own link, edit it and publish it. The service is delivered online on a monthly or yearly subscription.
+
+2. Your account
+• You are responsible for the accuracy of the details you register, and for keeping your password private.
+• The account is personal. It may not be shared, sold or transferred to anyone else without our agreement.
+• You must be at least 18, or otherwise legally authorised to enter into this agreement.
+
+3. Subscription and payment
+• Prices are shown on the pricing page in Saudi riyals and may include VAT as the law requires.
+• The subscription renews automatically at the end of each period unless you stop renewal from your dashboard.
+• Stopping renewal keeps your subscription active until the end of the period you have already paid for.
+• Refunds: you may request a refund within 14 days of your first subscription if you have not made substantial use of the service. After that, amounts for a period already under way are not refunded unless the law requires otherwise.
+
+4. The content you publish
+• Your work, images and words remain entirely yours.
+• You grant us a limited licence to display that content inside the platform, for the sole purpose of operating the service.
+• You confirm that you have the right to publish what you upload, and that it does not infringe anyone else's rights.
+
+5. Acceptable use
+You may not publish content that breaks the laws of the Kingdom of Saudi Arabia, work credited to someone other than its author, abusive or misleading content, or fake contact details — nor make any attempt to break into the platform or abuse it.
+
+6. Suspension and termination
+• We may take a non-compliant page down, or suspend an account, after reviewing a report — and we will tell you why.
+• Your content is kept while an account is suspended, and you can appeal through support.
+• You may end your subscription at any time from your dashboard.
+
+7. Limits of liability
+We make reasonable efforts to keep the service available, but we do not guarantee uninterrupted service. Our liability in any case does not exceed what you paid in the twelve months before the claim.
+
+8. Changes
+We may update these terms, and we will tell you about material changes by email or in your dashboard before they take effect.
+
+9. Governing law
+These terms are governed by the laws of the Kingdom of Saudi Arabia, and the Saudi courts have jurisdiction over any dispute.
+
+10. Contact
+For any question about these terms, reach us through support in your dashboard or at the support address published on the platform.`,
+  "policy.privacy_en": `Draft — needs legal review before it is adopted.
+
+1. What we collect
+• Account details: your name, email address, and your password stored as a hash (we never see it).
+• Portfolio content: whatever you enter yourself — name, description, images, work, links and contact number.
+• Usage data: how many times your page was viewed, how many times contact buttons were clicked, and a non-identifying technical fingerprint used to count distinct visitors per day.
+• Payment data: handled directly by the payment provider. We do not store card numbers on our servers.
+
+2. Why we collect it
+To run your account and show your page, to protect the platform from abuse, to issue invoices and manage your subscription, and to improve the service.
+
+3. Who it is shared with
+• The payment provider, to process subscriptions.
+• The email provider, to send operational messages such as password resets.
+• The hosting provider the platform runs on.
+We do not sell your data, and we do not share it with any third party for marketing.
+
+4. What is public
+Your public page — and the content you chose to publish on it — is available to anyone with the link, and search engines may index it. Your email address, your password and your subscription details never appear on the public page.
+
+5. How long we keep it
+We keep your account data for as long as the account exists. On deletion your data, images and portfolios are erased, except for the minimum billing and moderation records the law requires us to retain.
+
+6. Your rights
+Under the Personal Data Protection Law of the Kingdom, you have the right to access your data, correct it, request its deletion, and withdraw your consent. Contact us through support to exercise any of these.
+
+7. Cookies
+We use one essential cookie to keep you signed in, and one to remember your interface language. We use no advertising trackers.
+
+8. Security
+Passwords are stored as scrypt hashes, the connection is encrypted, and administrative access is limited to the platform team and recorded in an audit log.
+
+9. Contact
+For any question about your privacy, or to exercise your rights, reach us through support or at the support address published on the platform.`,
 
   "platform.maintenance": false,
   "platform.maintenance_includes_portfolios": true,
@@ -127,6 +218,24 @@ export type SettingKey = keyof typeof SETTING_DEFAULTS;
 export type Settings = { [K in SettingKey]: (typeof SETTING_DEFAULTS)[K] };
 
 type StoredRow = { key: string; value: string };
+
+
+/**
+ * A setting in the reader's language, falling back to the Arabic original.
+ *
+ * Falling back rather than showing an empty page is the point: the owner writes
+ * Arabic first, and an English visitor should get the Arabic terms of service
+ * rather than a blank one.
+ */
+export function localized<K extends SettingKey & string>(
+  settings: Settings,
+  key: K,
+  locale: Locale,
+): string {
+  if (locale === "ar") return String(settings[key] ?? "");
+  const english = String((settings as Record<string, unknown>)[`${key}_en`] ?? "").trim();
+  return english || String(settings[key] ?? "");
+}
 
 /** Reads every setting, overlaying stored overrides on the defaults. */
 export async function readSettings(): Promise<Settings>{

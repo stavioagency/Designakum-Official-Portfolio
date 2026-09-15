@@ -123,7 +123,7 @@ export default async function BillingPage() {
         <section className="card mb-4 p-5 sm:p-6">
           <h2 className="text-[15px] font-semibold">{b.inviteHeading}</h2>
           <p className="mb-4 mt-1 text-[13px] text-mist-400">{b.inviteBody}</p>
-          <RedeemInvite />
+          <RedeemInvite copy={{ redeem: b.redeem, redeeming: b.redeeming }} />
         </section>
       )}
 

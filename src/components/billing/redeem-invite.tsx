@@ -5,7 +5,7 @@ import { redeemInvitationAction } from "@/app/actions/invitations";
 import { Status, Submit } from "@/components/editor/ui";
 import { Gift } from "@/components/icons";
 
-export function RedeemInvite() {
+export function RedeemInvite({ copy }: { copy: { redeem: string; redeeming: string } }) {
   const [state, action] = useActionState(redeemInvitationAction, null);
 
   return (
@@ -19,9 +19,9 @@ export function RedeemInvite() {
           required
           autoComplete="off"
         />
-        <Submit className="btn btn-ghost" pendingLabel="جارٍ التحقق…">
+        <Submit className="btn btn-ghost" pendingLabel={copy.redeeming}>
           <Gift className="h-4 w-4" />
-          تفعيل
+          {copy.redeem}
         </Submit>
       </div>
       <Status state={state} />

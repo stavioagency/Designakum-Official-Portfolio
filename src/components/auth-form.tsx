@@ -124,7 +124,7 @@ export function AuthForm({
                 href="/forgot"
                 className="mb-[7px] text-[11.5px] text-mist-500 transition hover:text-mist-300"
               >
-                نسيت كلمة المرور؟
+                {d.forgot}
               </Link>
             )}
           </div>

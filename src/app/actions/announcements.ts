@@ -46,6 +46,8 @@ export async function createAnnouncementAction(_prev: ActionState, fd: FormData)
     const announcement = await createAnnouncement({
       title: title.slice(0, 160),
       body: str(fd, "body").slice(0, 2000),
+      titleEn: str(fd, "titleEn").slice(0, 160),
+      bodyEn: str(fd, "bodyEn").slice(0, 2000),
       severity,
       startsAt: parseDate(str(fd, "startsAt")),
       endsAt: parseDate(str(fd, "endsAt"), true),
