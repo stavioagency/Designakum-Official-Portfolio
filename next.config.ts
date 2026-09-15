@@ -3,29 +3,11 @@ import type { NextConfig } from "next";
 const isProduction = process.env.NODE_ENV === "production";
 
 /**
- * Defence in depth behind the input sanitising, not instead of it.
- *
- * `unsafe-inline` for scripts is still required: Next inlines its bootstrap and
- * RSC payload without a nonce unless a middleware generates one per request.
- * Tightening that to nonces is tracked in LAUNCH.md as a follow-up.
+ * The Content-Security-Policy is NOT here: it carries a per-request nonce and so
+ * lives in src/middleware.ts. Two CSP headers would both apply, and the
+ * intersection of the two is not what either one says.
  */
-const CSP = [
-  "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}`,
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com data:",
-  // Portfolio images are served from this origin; data:/blob: cover the cropper preview.
-  "img-src 'self' data: blob:",
-  "connect-src 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "object-src 'none'",
-  ...(isProduction ? ["upgrade-insecure-requests"] : []),
-].join("; ");
-
 const SECURITY_HEADERS = [
-  { key: "Content-Security-Policy", value: CSP },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },

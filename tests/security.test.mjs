@@ -15,8 +15,27 @@ describe("response hardening", () => {
       assert.ok(result.headers.get(header), `missing ${header}`);
     }
     assert.equal(result.headers.get("x-frame-options"), "DENY");
-    assert.match(result.headers.get("content-security-policy"), /object-src 'none'/);
     assert.equal(result.headers.get("x-powered-by"), null);
+
+    const csp = result.headers.get("content-security-policy");
+    assert.match(csp, /object-src 'none'/);
+
+    // The script policy must carry a per-request nonce, and a second request must
+    // get a different one — a fixed nonce is the same as no nonce.
+    const nonce = csp.match(/'nonce-([a-f0-9]{32})'/)?.[1];
+    assert.ok(nonce, `script-src has no nonce: ${csp}`);
+
+    const again = await visit("/");
+    const second = again.headers.get("content-security-policy").match(/'nonce-([a-f0-9]{32})'/)?.[1];
+    assert.notEqual(second, nonce, "the nonce must be generated per request");
+
+    // Every inline script Next emits has to carry it, or the page is broken the
+    // moment 'unsafe-inline' comes off in production.
+    const inlineScripts = result.body.match(/<script(?![^>]*\ssrc=)[^>]*>/g) ?? [];
+    assert.ok(inlineScripts.length > 0, "the page should have inline scripts to check");
+    for (const tag of inlineScripts) {
+      assert.match(tag, new RegExp(`nonce="${nonce}"`), `inline script without the nonce: ${tag}`);
+    }
   });
 
   test("the console is marked never-index", async () => {

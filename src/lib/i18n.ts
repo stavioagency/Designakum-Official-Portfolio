@@ -133,6 +133,12 @@ const ar = {
     invite_wrong_email: "هذه الدعوة مخصصة لبريد إلكتروني آخر",
   },
   notFound: { title: "لم نجد هذه الصفحة", body: "ربما تغيّر الرابط أو تم حذف المعرض.", cta: "الصفحة الرئيسية" },
+
+  cookies: {
+    body: "نستخدم ملفَّي ارتباط أساسيين فقط: واحد لإبقائك مسجّلًا للدخول، وآخر لتذكّر لغة الواجهة. لا نستخدم ملفات تتبّع إعلانية ولا نشارك بياناتك مع معلنين.",
+    policy: "سياسة الخصوصية",
+    dismiss: "فهمت",
+  },
 };
 
 const en: typeof ar = {
@@ -259,6 +265,12 @@ const en: typeof ar = {
     invite_wrong_email: "That invitation is for a different email address",
   },
   notFound: { title: "We couldn't find that page", body: "The link may have changed, or the portfolio was removed.", cta: "Go home" },
+
+  cookies: {
+    body: "We use two essential cookies only: one keeps you signed in, the other remembers your language. No advertising trackers, and nothing shared with advertisers.",
+    policy: "Privacy policy",
+    dismiss: "Got it",
+  },
 };
 
 const DICT = { ar, en } as const;

@@ -73,3 +73,21 @@ describe("search engines", () => {
     }
   });
 });
+
+describe("cookie notice", () => {
+  test("the notice appears on a public page and links to the privacy policy", async () => {
+    const page = await visit("/");
+    assert.ok(contains(page, "ملفَّي ارتباط أساسيين"), "the notice should be rendered");
+    assert.ok(page.body.includes("/legal/privacy"), "it should link to the privacy policy");
+  });
+
+  test("it does not itself set a cookie, and offers no false choice", async () => {
+    const page = await visit("/");
+    // Dismissal lives in localStorage — reading a notice about cookies must not
+    // create one. And there is no "reject": both cookies are strictly necessary,
+    // so a reject button could not honour itself.
+    const setCookie = page.headers.get("set-cookie") ?? "";
+    assert.ok(!setCookie.includes("dk_cookie"), `the notice set a cookie: ${setCookie}`);
+    assert.ok(!contains(page, "رفض"), "there should be no reject button it cannot honour");
+  });
+});

@@ -69,9 +69,12 @@ as items are fixed: ✅ done · ⏳ in progress · ⛔ blocked on something you 
 - ✅ Upload hardening. `src/lib/image-info.ts` reads the real format and pixel dimensions from the header without decoding, so a 45-byte PNG declaring 40 000 × 40 000 is refused (caps: 12 000 per side, 40 MP). The parsed type is also what gets stored, so a browser's `Content-Type` claim no longer decides how an asset is served. Verified end to end through the real editor form.
 - ✅ Versioned migrations: `scripts/migrate.mjs`, a `schema_migrations` table, checksums that refuse an edited migration, `--dry`, and `npm run migrate:down` for a migration that ships a `.down.sql`.
 - Support tickets cannot carry attachments, which is what most real tickets need.
-- No cookie/consent notice (PDPL).
-- CSP still allows `'unsafe-inline'` for scripts; tightening to per-request nonces
-  needs a middleware and is worth doing once the app is stable.
+- ✅ Cookie notice on every page, bilingual, dismissed into `localStorage` so reading it does not itself set a cookie. A notice rather than a consent gate: both cookies (session, language) are strictly necessary and there are no advertising trackers, so a reject button could not honour itself.
+- ✅ CSP now carries a per-request nonce with `'strict-dynamic'` (`src/middleware.ts`),
+  so `'unsafe-inline'` is off for scripts in production — until now an injected inline
+  `<script>` would have run and the script half of the policy bought nothing. Verified
+  against a real production build: every inline script Next emits carries the nonce, and
+  the editor, cropper, canvas export and upload all work with no console violations.
 - Sign-in has no CAPTCHA or exponential backoff beyond the fixed-window limiter.
 
 ## Post-launch

@@ -204,6 +204,12 @@ before/after states. Every mutation in `src/app/actions/console.ts`,
 `moderation.ts`, `support.ts`, `invitations.ts`, `announcements.ts` and
 `settings.ts` records one.
 
+**Content-Security-Policy** carries a per-request nonce, generated in
+`src/middleware.ts` and stamped by Next onto every inline script it emits, with
+`'strict-dynamic'` for the chunks those load. `'unsafe-inline'` is therefore off
+for scripts in production; development keeps it alongside the nonce because React
+Refresh needs `eval`, and a browser that understands nonces ignores it anyway.
+
 **Rate limiting** is a fixed-window counter in the database (`src/lib/rate-limit.ts`),
 applied to sign-in attempts, report submissions, ticket creation, invitation
 redemption and the analytics endpoint. It survives a restart, which an in-memory

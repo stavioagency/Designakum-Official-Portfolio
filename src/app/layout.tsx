@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { BRAND, brandAsset } from "@/lib/brand";
 import { DIR } from "@/lib/i18n";
 import { currentLocale } from "@/lib/locale";
+import { dict } from "@/lib/i18n";
+import { CookieNotice } from "@/components/cookie-notice";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -25,6 +27,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = await currentLocale();
   const icon = brandAsset("favicon") ?? brandAsset("icon") ?? brandAsset("mark-brand") ?? brandAsset("mark-light");
 
+  const d = dict(locale);
+
   return (
     <html lang={locale} dir={DIR[locale]}>
       <head>
@@ -36,7 +40,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           rel="stylesheet"
         />
       </head>
-      <body className="ambient">{children}</body>
+      <body className="ambient">
+        {children}
+        <CookieNotice body={d.cookies.body} policy={d.cookies.policy} dismiss={d.cookies.dismiss} />
+      </body>
     </html>
   );
 }
