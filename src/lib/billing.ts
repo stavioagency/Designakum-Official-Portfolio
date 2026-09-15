@@ -42,8 +42,8 @@ export const riyals = (halalas: number) => (halalas / 100).toLocaleString("en-US
  * the cent. Both figures are shown at checkout so nobody is surprised by their
  * statement.
  */
-export function inChargeCurrency(halalas: number) {
-  const settings = readSettings();
+export async function inChargeCurrency(halalas: number) {
+  const settings = await readSettings();
   const rate = settings["pricing.sar_per_usd"] || 3.75;
   // Widened: the default narrows to a literal, but an owner may change this.
   const currency: string = settings["pricing.charge_currency"] || "USD";
