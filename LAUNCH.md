@@ -44,9 +44,23 @@ as items are fixed: ✅ done · ⏳ in progress · ⛔ blocked on something you 
   documents are unpublished. Paste the text into console settings.
 - **`AUTH_SECRET`** on the production host, and TLS in front of the app.
 
+## Migration to Supabase + Vercel — done
+
+| Item | Status |
+| --- | --- |
+| PostgreSQL schema, hand-written (BIGINT timestamps, explicit `seq` for insertion order) | ✅ |
+| Data layer ported from `node:sqlite` to `pg` — 132 functions and 135 call sites now async | ✅ |
+| SQLite-only SQL translated: `rowid`, `date(…,'unixepoch')`, `GROUP_CONCAT`, `COLLATE NOCASE`, `LIKE`, unqualified `ON CONFLICT` arithmetic | ✅ |
+| Images moved out of the database into object storage (local driver in dev, private Supabase bucket in production) | ✅ |
+| Upload size brought under Vercel's 4.5 MB serverless body cap — would have failed on the platform | ✅ |
+| Backup/restore reworked for Postgres (`pg_dump`), restore proven into a scratch database | ✅ |
+| Verified against PostgreSQL 17 locally: schema, seed, page rendering, a real edit saving, 25/25 tests | ✅ |
+| Frankfurt project created and Tokyo deleted | ⛔ needs you — Supabase has no delete API and the connected account went read-only |
+
 ## Medium — worth doing soon after launch
 
 - Analytics days are cut on UTC, not Riyadh time, so "today" ends at 3am locally.
+- Vercel's Hobby plan forbids commercial use; a paid product needs Pro at $20/month.
 - No bot filtering on portfolio views; crawlers inflate a designer's numbers.
 - `page_views` and `portfolio_events` both record views — one should go.
 - `listInvitations` and the subscription list have no pagination.
