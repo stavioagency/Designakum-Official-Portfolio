@@ -5,26 +5,29 @@ import { createStaffAction, setStaffRoleAction } from "@/app/actions/console";
 import { Field, Status, Submit } from "@/components/editor/ui";
 import { AutoSubmitSelect } from "./forms";
 import { Shield } from "@/components/icons";
+import type { Dictionary } from "@/lib/i18n";
 
-export function CreateStaffForm() {
+type Copy = Dictionary["console"]["staff"];
+
+export function CreateStaffForm({ copy }: { copy: Copy }) {
   const [state, action] = useActionState(createStaffAction, null);
 
   return (
     <form action={action} className="space-y-4 p-5">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="الاسم">
+        <Field label={copy.name}>
           <input name="name" className="field" required />
         </Field>
-        <Field label="الدور">
+        <Field label={copy.role}>
           <select name="role" defaultValue="support" className="field">
-            <option value="support">فريق الدعم</option>
-            <option value="owner">مالك المنصة</option>
+            <option value="support">{copy.roleSupport}</option>
+            <option value="owner">{copy.roleOwner}</option>
           </select>
         </Field>
-        <Field label="البريد الإلكتروني">
+        <Field label={copy.email}>
           <input name="email" type="email" dir="ltr" className="field" required />
         </Field>
-        <Field label="كلمة المرور" hint="12 حرفًا على الأقل لحسابات الفريق.">
+        <Field label={copy.password} hint={copy.passwordHint}>
           <input name="password" dir="ltr" minLength={12} className="field" required autoComplete="new-password" />
         </Field>
       </div>
@@ -32,7 +35,7 @@ export function CreateStaffForm() {
       <div className="flex flex-wrap items-center gap-3">
         <Submit>
           <Shield className="h-4 w-4" />
-          إنشاء الحساب
+          {copy.create}
         </Submit>
         <Status state={state} />
       </div>
@@ -44,15 +47,17 @@ export function StaffRoleControl({
   userId,
   role,
   isSelf,
+  copy,
 }: {
   userId: string;
   role: string;
   isSelf: boolean;
+  copy: Copy;
 }) {
   const [state, action] = useActionState(setStaffRoleAction, null);
 
   if (isSelf) {
-    return <span className="text-[11.5px] text-mist-600">حسابك الحالي</span>;
+    return <span className="text-[11.5px] text-mist-600">{copy.you}</span>;
   }
 
   return (
@@ -60,12 +65,12 @@ export function StaffRoleControl({
       <input type="hidden" name="userId" value={userId} />
       <AutoSubmitSelect
         name="role"
-        ariaLabel="دور الموظف"
+        ariaLabel={copy.memberRole}
         defaultValue={role}
         options={[
-          { value: "owner", label: "مالك" },
-          { value: "support", label: "دعم" },
-          { value: "client", label: "عميل عادي" },
+          { value: "owner", label: copy.shortOwner },
+          { value: "support", label: copy.shortSupport },
+          { value: "client", label: copy.shortClient },
         ]}
       />
       <Status state={state} />

@@ -8,43 +8,52 @@ import {
 import { Field, Status, Submit } from "@/components/editor/ui";
 import { ConfirmSubmit } from "./forms";
 import { Check, Gift, Link as LinkIcon } from "@/components/icons";
+import { fill, type Dictionary } from "@/lib/i18n";
 
-export function CreateInvitationForm() {
+type Copy = Dictionary["console"]["invitations"];
+
+export function CreateInvitationForm({
+  copy,
+  plans,
+}: {
+  copy: Copy;
+  plans: { monthly: string; yearly: string };
+}) {
   const [state, action] = useActionState(createInvitationAction, null);
 
   return (
     <form action={action} className="space-y-4 p-5">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Field label="الباقة">
+        <Field label={copy.plan}>
           <select name="plan" defaultValue="monthly" className="field">
-            <option value="monthly">شهرية</option>
-            <option value="yearly">سنوية</option>
+            <option value="monthly">{plans.monthly}</option>
+            <option value="yearly">{plans.yearly}</option>
           </select>
         </Field>
-        <Field label="المدة" hint="أشهر للشهرية، سنوات للسنوية.">
+        <Field label={copy.duration} hint={copy.durationHint}>
           <input name="months" type="number" min={1} max={60} defaultValue={3} className="field" />
         </Field>
-        <Field label="عدد الاستخدامات">
+        <Field label={copy.maxUses}>
           <input name="maxUses" type="number" min={1} max={1000} defaultValue={1} className="field" />
         </Field>
-        <Field label="تاريخ الانتهاء" hint="اتركه فارغًا لدعوة بلا تاريخ انتهاء.">
+        <Field label={copy.expiresAt} hint={copy.expiresHint}>
           <input name="expiresAt" type="date" className="field" />
         </Field>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="بريد المدعو" hint="اتركه فارغًا لدعوة عامة يستخدمها أي شخص.">
+        <Field label={copy.inviteeEmail} hint={copy.inviteeHint}>
           <input name="email" type="email" dir="ltr" className="field" placeholder="name@example.com" />
         </Field>
-        <Field label="ملاحظة">
-          <input name="note" className="field" placeholder="سبب المنح أو اسم الجهة…" />
+        <Field label={copy.note}>
+          <input name="note" className="field" placeholder={copy.notePlaceholder} />
         </Field>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <Submit className="btn btn-primary">
           <Gift className="h-4 w-4" />
-          إنشاء الدعوة
+          {copy.submit}
         </Submit>
         <Status state={state} />
       </div>
@@ -52,7 +61,15 @@ export function CreateInvitationForm() {
   );
 }
 
-export function CopyInvitationLink({ code, origin }: { code: string; origin: string }) {
+export function CopyInvitationLink({
+  code,
+  origin,
+  copy,
+}: {
+  code: string;
+  origin: string;
+  copy: Copy;
+}) {
   const [copied, setCopied] = useState(false);
   const url = `${origin}/signup?invite=${code}`;
 
@@ -72,12 +89,20 @@ export function CopyInvitationLink({ code, origin }: { code: string; origin: str
       title={url}
     >
       {copied ? <Check className="h-3.5 w-3.5" /> : <LinkIcon className="h-3.5 w-3.5" />}
-      {copied ? "تم النسخ" : "نسخ الرابط"}
+      {copied ? copy.copied : copy.copyLink}
     </button>
   );
 }
 
-export function RevokeInvitation({ id, code }: { id: string; code: string }) {
+export function RevokeInvitation({
+  id,
+  code,
+  copy,
+}: {
+  id: string;
+  code: string;
+  copy: Copy;
+}) {
   const [state, action] = useActionState(revokeInvitationAction, null);
 
   return (
@@ -85,11 +110,11 @@ export function RevokeInvitation({ id, code }: { id: string; code: string }) {
       <input type="hidden" name="invitationId" value={id} />
       <input type="hidden" name="code" value={code} />
       <ConfirmSubmit
-        label="إلغاء"
+        label={copy.revoke}
         className="btn btn-danger !px-3 !py-1.5 !text-[12px]"
-        title="إلغاء هذه الدعوة؟"
-        body={`لن يعمل الرمز ${code} بعد الآن. الاشتراكات التي فُعّلت به سابقًا تبقى كما هي.`}
-        confirmLabel="إلغاء الدعوة"
+        title={copy.revokeTitle}
+        body={fill(copy.revokeBody, { code })}
+        confirmLabel={copy.revokeConfirm}
       />
       <Status state={state} />
     </form>

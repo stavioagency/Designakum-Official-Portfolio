@@ -10,7 +10,13 @@ export type SettingField =
   | { key: string; label: string; hint?: string; type: "money"; value: number };
 
 /** Prices live in halalas; the operator types riyals and this keeps both in sync. */
-function MoneyField({ field }: { field: Extract<SettingField, { type: "money" }> }) {
+function MoneyField({
+  field,
+  riyalLabel,
+}: {
+  field: Extract<SettingField, { type: "money" }>;
+  riyalLabel: string;
+}) {
   const [riyals, setRiyals] = useState(String(field.value / 100));
   const halalas = Math.max(0, Math.round(Number(riyals || 0) * 100));
 
@@ -26,7 +32,7 @@ function MoneyField({ field }: { field: Extract<SettingField, { type: "money" }>
           className="field"
           dir="ltr"
         />
-        <span className="shrink-0 text-[12.5px] text-mist-500">ريال</span>
+        <span className="shrink-0 text-[12.5px] text-mist-500">{riyalLabel}</span>
       </div>
       <input type="hidden" name={field.key} value={halalas} />
     </Field>
@@ -38,11 +44,15 @@ export function SettingsGroup({
   description,
   fields,
   columns = 2,
+  saveLabel = "حفظ",
+  riyalLabel = "ريال",
 }: {
   title: string;
   description?: string;
   fields: SettingField[];
   columns?: 1 | 2;
+  saveLabel?: string;
+  riyalLabel?: string;
 }) {
   const [state, action] = useActionState(saveSettingsAction, null);
 
@@ -83,7 +93,7 @@ export function SettingsGroup({
           }
 
           if (field.type === "money") {
-            return <MoneyField key={field.key} field={field} />;
+            return <MoneyField key={field.key} field={field} riyalLabel={riyalLabel} />;
           }
 
           if (field.type === "textarea") {
@@ -112,7 +122,7 @@ export function SettingsGroup({
       </div>
 
       <footer className="flex flex-wrap items-center gap-3 border-t border-white/8 px-5 py-4">
-        <Submit>حفظ</Submit>
+        <Submit>{saveLabel}</Submit>
         <Status state={state} />
       </footer>
     </form>
