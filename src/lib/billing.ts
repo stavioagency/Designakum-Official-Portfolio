@@ -2,6 +2,11 @@ import "server-only";
 import { all, get, now, run } from "./db";
 import { newId } from "./ids";
 import { readSettings } from "./settings";
+import {
+  createSubscription as createPayPalSubscription,
+  ensurePlan,
+  paypalConfigured,
+} from "./paypal";
 import type { Plan, Subscription, SubscriptionStatus, SubscriptionSource, User } from "./types";
 
 /* ------------------------------------------------------------------- pricing */
@@ -269,27 +274,52 @@ export interface BillingProvider {
 }
 
 /**
- * No payment provider is wired up yet, and nothing here pretends otherwise: until
- * credentials exist in the environment this returns null and the UI says checkout
- * is unavailable. Implementing `BillingProvider` and returning it from here is the
- * only change a real provider needs — `await recordSubscription()` and the entitlement
- * checks above already speak in provider-agnostic terms.
+ * The payment provider, if one is configured.
  *
- * Expected environment variables:
- *   BILLING_PROVIDER      e.g. "moyasar" | "stripe" | "tap"
- *   BILLING_SECRET_KEY    the provider's server-side key
- *   BILLING_PUBLIC_KEY    the provider's browser key, when it needs one
- *   BILLING_WEBHOOK_SECRET  signature secret for /api/billing/webhook
+ * Nothing here simulates a charge: with no credentials this returns null and the
+ * UI tells the customer checkout is unavailable rather than pretending. The
+ * adapter shape is provider-agnostic, so a Saudi provider settling in SAR could
+ * be added alongside PayPal without touching the subscription tables or the
+ * entitlement checks.
+ *
+ * Environment:
+ *   PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET   REST app credentials
+ *   PAYPAL_ENV        sandbox (default) | live
+ *   PAYPAL_WEBHOOK_ID id of the webhook registered in the PayPal dashboard
  */
 export function billingProvider(): BillingProvider | null {
-  const id = process.env.BILLING_PROVIDER;
-  const secret = process.env.BILLING_SECRET_KEY;
-  if (!id || !secret) return null;
+  if (!paypalConfigured()) return null;
 
-  throw new Error(
-    `BILLING_PROVIDER is set to "${id}" but no adapter is implemented for it yet. ` +
-      "Implement BillingProvider in src/lib/billing.ts and return it from billingProvider().",
-  );
+  return {
+    id: "paypal",
+    async createCheckout({ user, plan, successUrl, cancelUrl }) {
+      const definition = (await planDefinitions())[plan];
+      const charge = await inChargeCurrency(definition.amount);
+
+      const planId = await ensurePlan({
+        plan,
+        amount: charge.amount,
+        currency: charge.currency,
+      });
+
+      const subscription = await createPayPalSubscription({
+        planId,
+        userId: user.id,
+        email: user.email,
+        // PayPal appends subscription_id to the return URL.
+        returnUrl: `${successUrl}${successUrl.includes("?") ? "&" : "?"}plan=${plan}`,
+        cancelUrl,
+      });
+
+      await logBillingEvent(
+        user.id,
+        "checkout.created",
+        `paypal ${subscription.id} · ${charge.display} ${charge.currency}`,
+      );
+
+      return { url: subscription.approveUrl };
+    },
+  };
 }
 
-export const billingConfigured = () => Boolean(process.env.BILLING_PROVIDER && process.env.BILLING_SECRET_KEY);
+export const billingConfigured = () => paypalConfigured();

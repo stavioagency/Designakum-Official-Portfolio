@@ -21,6 +21,13 @@ export const SETTING_DEFAULTS = {
   "pricing.sar_per_usd": 3.75,
   "pricing.charge_currency": "USD",
 
+  // Written by the app, not by hand: PayPal's product and plan ids, kept so the
+  // catalogue is created once. A plan id is stored as "CUR:amount|id" so a price
+  // change produces a new plan instead of silently charging the old one.
+  "paypal.product_id": "" as string,
+  "paypal.plan_monthly": "" as string,
+  "paypal.plan_yearly": "" as string,
+
   "platform.maintenance": false,
   "platform.maintenance_includes_portfolios": true,
   "platform.maintenance_message":
