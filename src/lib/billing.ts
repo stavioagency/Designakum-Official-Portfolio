@@ -34,6 +34,32 @@ export async function planDefinitions(): Promise<Record<Exclude<Plan, "free">, P
 
 export const riyals = (halalas: number) => (halalas / 100).toLocaleString("en-US", { maximumFractionDigits: 2 });
 
+/**
+ * What the customer's card is actually charged.
+ *
+ * Prices are set, stored and displayed in riyals — that is the real price. The
+ * payment provider settles in dollars, so this converts at the peg and rounds to
+ * the cent. Both figures are shown at checkout so nobody is surprised by their
+ * statement.
+ */
+export function inChargeCurrency(halalas: number) {
+  const settings = readSettings();
+  const rate = settings["pricing.sar_per_usd"] || 3.75;
+  // Widened: the default narrows to a literal, but an owner may change this.
+  const currency: string = settings["pricing.charge_currency"] || "USD";
+
+  if (currency === "SAR") {
+    return { currency: "SAR", amount: halalas / 100, display: riyals(halalas) };
+  }
+
+  const amount = Math.round((halalas / 100 / rate) * 100) / 100;
+  return {
+    currency,
+    amount,
+    display: amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+  };
+}
+
 /** What a year of the monthly plan would cost, and what the yearly plan saves. */
 export async function yearlySaving() {
   const plans = await planDefinitions();

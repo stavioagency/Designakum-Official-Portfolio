@@ -15,6 +15,11 @@ export const SETTING_DEFAULTS = {
 
   "pricing.monthly_halalas": 1200,
   "pricing.yearly_halalas": 12000,
+  // PayPal cannot charge in SAR, so the card is billed in dollars. The riyal is
+  // pegged at 3.75/USD, which makes 12 SAR exactly $3.20 — but the rate lives
+  // here rather than in the code in case that ever changes.
+  "pricing.sar_per_usd": 3.75,
+  "pricing.charge_currency": "USD",
 
   "limits.free_projects": 6,
   "limits.free_slides": 2,

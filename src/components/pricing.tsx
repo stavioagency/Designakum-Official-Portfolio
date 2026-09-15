@@ -17,6 +17,10 @@ export interface PricingCopy {
   savedPercent: string;
   freeProjects: number;
   freeSlides: number;
+  /** The provider settles in this currency; the riyal price is still the real price. */
+  chargeCurrency: string;
+  monthlyCharged: string;
+  yearlyCharged: string;
 }
 
 function Price({
@@ -24,18 +28,31 @@ function Price({
   suffix,
   riyalSrc,
   locale,
+  charged,
+  currency,
 }: {
   amount: string;
   suffix: string;
   riyalSrc: string | null;
   locale: Locale;
+  charged?: string;
+  currency?: string;
 }) {
   return (
-    <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-      <span className="tnum text-[46px] font-bold leading-none">{amount}</span>
-      <Riyal src={riyalSrc} locale={locale} size="1.5rem" className="translate-y-[3px]" />
-      <span className="text-[13.5px] text-mist-400">/ {suffix}</span>
-    </p>
+    <div>
+      <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span className="tnum text-[46px] font-bold leading-none">{amount}</span>
+        <Riyal src={riyalSrc} locale={locale} size="1.5rem" className="translate-y-[3px]" />
+        <span className="text-[13.5px] text-mist-400">/ {suffix}</span>
+      </p>
+      {charged && currency && currency !== "SAR" && (
+        <p className="tnum mt-2 text-[12px] text-mist-500">
+          {locale === "ar"
+            ? `يُحصّل ${charged} ${currency} عبر بوابة الدفع`
+            : `Billed as ${charged} ${currency} at checkout`}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -90,7 +107,14 @@ export function Pricing({
         <article className="card lift flex flex-col p-6 sm:p-7">
           <h3 className="text-[15px] font-semibold text-mist-300">{d.monthly}</h3>
           <div className="mt-4">
-            <Price amount={copy.monthlyPrice} suffix={d.perMonth} riyalSrc={riyalSrc} locale={locale} />
+            <Price
+              amount={copy.monthlyPrice}
+              suffix={d.perMonth}
+              riyalSrc={riyalSrc}
+              locale={locale}
+              charged={copy.monthlyCharged}
+              currency={copy.chargeCurrency}
+            />
           </div>
           <p className="mt-3 text-[13px] leading-relaxed text-mist-400">{d.monthlyNote}</p>
 
@@ -121,7 +145,14 @@ export function Pricing({
           </div>
 
           <div className="mt-4">
-            <Price amount={copy.yearlyPrice} suffix={d.perYear} riyalSrc={riyalSrc} locale={locale} />
+            <Price
+              amount={copy.yearlyPrice}
+              suffix={d.perYear}
+              riyalSrc={riyalSrc}
+              locale={locale}
+              charged={copy.yearlyCharged}
+              currency={copy.chargeCurrency}
+            />
           </div>
 
           <p className="accent-text mt-3 flex items-center gap-1.5 text-[13px] font-semibold">
