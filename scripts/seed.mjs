@@ -47,6 +47,19 @@ const run = async (sql, ...args) => {
 };
 const one = async (sql, ...args) => (await pool.query(positional(sql), args)).rows[0];
 
+// Demo data belongs in development. A remote database is assumed to be real.
+const isLocal = /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(connectionString) ||
+  connectionString.includes("host=/") || connectionString.startsWith("postgresql:///");
+if (!isLocal && process.env.ALLOW_PRODUCTION_SEED !== "yes-destroy-my-data") {
+  console.error(
+    "\nRefusing to seed a non-local database. This creates fake designers and\n" +
+      "portfolios that would show up on your public showcase.\n" +
+      "For a real deployment use: npm run bootstrap\n",
+  );
+  await pool.end();
+  process.exit(1);
+}
+
 // This script DELETES the demo accounts before recreating them, so it refuses to
 // touch a database that holds anyone real.
 if (process.env.ALLOW_PRODUCTION_SEED !== "yes-destroy-my-data") {
@@ -111,6 +124,15 @@ for (const email of [
 ]) {
   const row = await one("SELECT id FROM users WHERE email = ?", email);
   if (row) await run("DELETE FROM users WHERE id = ?", row.id);
+}
+
+// Rows whose creator is only SET NULL on delete outlive the users above, so a
+// re-run would collide on the fixed invitation code. Clear them explicitly.
+for (const statement of [
+  "DELETE FROM invitations WHERE code = 'DZKM1-WELCM'",
+  "DELETE FROM announcements WHERE title = 'أصبح بإمكانك قصّ صورك داخل المحرر'",
+]) {
+  await run(statement);
 }
 
 /* ------------------------------------------------------------------ owner */
