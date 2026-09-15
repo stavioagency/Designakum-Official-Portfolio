@@ -95,14 +95,21 @@ async function warmUp() {
 export const BROWSER_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36";
 
+/**
+ * Visits as a returning visitor by default — one who has already chosen a
+ * language — because a first-time visitor is shown the language gate instead of
+ * the page. Pass `locale: null` to arrive as someone brand new.
+ */
 export async function visit(
   pathname,
-  { cookie, redirect = "manual", userAgent = BROWSER_UA } = {},
+  { cookie, redirect = "manual", userAgent = BROWSER_UA, locale = "ar" } = {},
 ) {
   await warmUp();
 
+  const jar = [locale ? `dk_locale=${locale}` : null, cookie].filter(Boolean).join("; ");
+
   const response = await fetch(`${BASE}${pathname}`, {
-    headers: { "user-agent": userAgent, ...(cookie ? { cookie } : {}) },
+    headers: { "user-agent": userAgent, ...(jar ? { cookie: jar } : {}) },
     redirect,
     cache: "no-store",
   });

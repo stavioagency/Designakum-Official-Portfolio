@@ -9,7 +9,7 @@ import {
   latestSubscription,
 } from "@/lib/billing";
 import { currentLocale } from "@/lib/locale";
-import { dict } from "@/lib/i18n";
+import { dict, fill } from "@/lib/i18n";
 import { pricingCopy } from "@/lib/pricing-copy";
 import { Pricing } from "@/components/pricing";
 import { CancelSubscription, CheckoutButton } from "@/components/billing/plan-actions";
@@ -17,22 +17,12 @@ import { RedeemInvite } from "@/components/billing/redeem-invite";
 import { Check, Shield, Sparkle } from "@/components/icons";
 import { formatDate, formatDateTime } from "@/components/console/ui";
 
-export const metadata: Metadata = { title: "الاشتراك" };
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: dict(await currentLocale()).meta.billing,
+  };
+}
 export const dynamic = "force-dynamic";
-
-const STATUS_LABEL: Record<string, string> = {
-  active: "نشط",
-  past_due: "متأخر السداد",
-  canceled: "ملغى",
-  expired: "منتهٍ",
-  incomplete: "غير مكتمل",
-};
-
-const PLAN_LABEL: Record<string, string> = {
-  free: "المجانية",
-  monthly: "الشهرية",
-  yearly: "السنوية",
-};
 
 
 
@@ -42,6 +32,13 @@ export default async function BillingPage() {
 
   const locale = await currentLocale();
   const d = dict(locale);
+  const b = d.dashboard.billing;
+  const planLabel: Record<string, string> = {
+    free: d.dashboard.settings.planFree,
+    monthly: d.dashboard.settings.planMonthly,
+    yearly: d.dashboard.settings.planYearly,
+  };
+  const statusLabel: Record<string, string> = b.status;
   const copy = await pricingCopy(locale);
 
   const subscription = await activeSubscription(user.id);
@@ -52,36 +49,37 @@ export default async function BillingPage() {
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-7 sm:px-6 lg:py-10">
       <header className="mb-6">
-        <h1 className="text-[26px] font-bold">الاشتراك والفوترة</h1>
-        <p className="mt-1 text-[13.5px] text-mist-400">
-          باقتك الحالية، وما تشمله، وكيف ترقّيها.
-        </p>
+        <h1 className="text-[26px] font-bold">{b.title}</h1>
+        <p className="mt-1 text-[13.5px] text-mist-400">{b.subtitle}</p>
       </header>
 
       <section className="card mb-4 p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-[12.5px] text-mist-500">الباقة الحالية</p>
+            <p className="text-[12.5px] text-mist-500">{b.currentPlan}</p>
             <p className="mt-1.5 flex items-center gap-2.5 text-[22px] font-bold">
               {limits.active ? (
                 <Sparkle className="h-5 w-5" style={{ color: "var(--accent-ring)" }} />
               ) : (
                 <Shield className="h-5 w-5 text-mist-500" />
               )}
-              الباقة {PLAN_LABEL[limits.plan] ?? limits.plan}
+              {b.planPrefix} {planLabel[limits.plan] ?? limits.plan}
             </p>
 
             {subscription?.current_period_end && (
               <p className="mt-2 text-[13px] text-mist-400">
                 {subscription.cancel_at_period_end
-                  ? `ينتهي في ${formatDate(subscription.current_period_end)}`
-                  : `يتجدد في ${formatDate(subscription.current_period_end)}`}
+                  ? fill(b.endsOn, { date: formatDate(subscription.current_period_end, locale) })
+                  : fill(b.renewsOn, { date: formatDate(subscription.current_period_end, locale) })}
               </p>
             )}
 
             {!limits.active && latest && (
               <p className="mt-2 text-[13px] text-amber-300">
-                آخر اشتراك: الباقة {PLAN_LABEL[latest.plan]} — {STATUS_LABEL[latest.status] ?? latest.status}
+                {fill(b.lastSubscription, {
+                  plan: planLabel[latest.plan] ?? latest.plan,
+                  status: statusLabel[latest.status] ?? latest.status,
+                })}
               </p>
             )}
           </div>
@@ -91,7 +89,7 @@ export default async function BillingPage() {
               limits.active ? "bg-emerald-400/12 text-emerald-300" : "bg-white/[0.07] text-mist-400"
             }`}
           >
-            {limits.active ? STATUS_LABEL.active : "بدون اشتراك"}
+            {limits.active ? b.status.active : b.noSubscription}
           </span>
         </div>
 
@@ -103,31 +101,35 @@ export default async function BillingPage() {
           }`}
         >
           {limits.canPublish
-            ? "صفحتك قابلة للنشر، وأي تعديل تحفظه يظهر للزوار مباشرة."
-            : "المحرّر مفتوح لك بالكامل بلا حدود — أعمال وشرائح وصور بلا عدد — لكن النشر للعامة يحتاج اشتراكًا فعّالًا."}
+            ? b.canPublish
+            : b.cannotPublish}
         </p>
 
         {subscription && (
           <div className="mt-5 border-t border-white/8 pt-5">
-            <CancelSubscription atPeriodEnd={subscription.cancel_at_period_end === 1} />
+            <CancelSubscription
+              atPeriodEnd={subscription.cancel_at_period_end === 1}
+              copy={{
+                cancelRenewal: d.dashboard.home.cancelRenewal,
+                renewalStopped: d.dashboard.home.renewalStopped,
+                pending: d.dashboard.common.pending,
+              }}
+            />
           </div>
         )}
       </section>
 
       {!limits.active && (
         <section className="card mb-4 p-5 sm:p-6">
-          <h2 className="text-[15px] font-semibold">لديك رمز دعوة؟</h2>
-          <p className="mb-4 mt-1 text-[13px] text-mist-400">
-            أدخل الرمز الذي وصلك من فريق ديزاينكم لتفعيل اشتراكك مجانًا.
-          </p>
+          <h2 className="text-[15px] font-semibold">{b.inviteHeading}</h2>
+          <p className="mb-4 mt-1 text-[13px] text-mist-400">{b.inviteBody}</p>
           <RedeemInvite />
         </section>
       )}
 
       {!billingConfigured() && (
         <p className="panel mb-6 px-4 py-3 text-[12.5px] leading-relaxed text-mist-400">
-          لم يتم ربط مزوّد دفع بهذه النسخة بعد، لذلك لا يمكن إتمام الشراء ذاتيًا.
-          تواصل مع إدارة المنصة لتفعيل اشتراكك يدويًا.
+          {b.noProvider}
         </p>
       )}
 
@@ -137,25 +139,35 @@ export default async function BillingPage() {
         heading
         monthlyCta={
           limits.plan === "monthly" && limits.active ? undefined : (
-            <CheckoutButton plan="monthly" label={d.pricing.cta} highlighted={false} />
+            <CheckoutButton
+              plan="monthly"
+              label={d.pricing.cta}
+              highlighted={false}
+              pendingLabel={d.dashboard.common.pending}
+            />
           )
         }
         yearlyCta={
           limits.plan === "yearly" && limits.active ? undefined : (
-            <CheckoutButton plan="yearly" label={d.pricing.cta} highlighted />
+            <CheckoutButton
+              plan="yearly"
+              label={d.pricing.cta}
+              highlighted
+              pendingLabel={d.dashboard.common.pending}
+            />
           )
         }
       />
 
       {events.length > 0 && (
         <section className="card mt-8 overflow-hidden">
-          <h2 className="border-b border-white/8 px-5 py-4 text-[15px] font-semibold">سجل الفوترة</h2>
+          <h2 className="border-b border-white/8 px-5 py-4 text-[15px] font-semibold">{b.history}</h2>
           <ul className="divide-y divide-white/6">
             {events.map((event) => (
               <li key={event.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
                 <span className="text-[13px] text-mist-300">{event.kind}</span>
                 <span className="text-[12px] text-mist-500">{event.detail}</span>
-                <span className="text-[12px] text-mist-500">{formatDateTime(event.created_at)}</span>
+                <span className="text-[12px] text-mist-500">{formatDateTime(event.created_at, locale)}</span>
               </li>
             ))}
           </ul>

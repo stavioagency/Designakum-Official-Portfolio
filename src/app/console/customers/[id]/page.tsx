@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { currentLocale } from "@/lib/locale";
+import { dict } from "@/lib/i18n";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { activeSubscription, subscriptionHistory, billingEvents, canPublish } from "@/lib/billing";
@@ -241,7 +243,7 @@ export default async function CustomerProfilePage({
                         <code dir="ltr" className="text-[12px] text-mist-200">{entry.action}</code>
                         <span className="text-[11.5px] text-mist-500">{entry.actor_email}</span>
                         <span className="ms-auto text-[11px] text-mist-600">
-                          {formatDate(entry.created_at, true)}
+                          {formatDateTime(entry.created_at)}
                         </span>
                       </div>
                       {entry.detail && (
@@ -397,6 +399,7 @@ export default async function CustomerProfilePage({
             preview={<PortfolioView bundle={await loadBundle(portfolio)} />}
             hasPassword={customer.password_hash !== ""}
             canPublish={await canPublish(customer)}
+            copy={dict(await currentLocale()).dashboard}
           />
         </section>
       )}

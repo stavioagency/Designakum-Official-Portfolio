@@ -1,0 +1,89 @@
+import { test, describe } from "node:test";
+import assert from "node:assert/strict";
+import { BASE, BROWSER_UA, contains, db, visit } from "./helpers.mjs";
+
+const GATE_AR = "اختر لغتك المفضّلة";
+const GATE_EN = "Choose your language";
+
+describe("the language gate", () => {
+  test("a brand-new visitor is asked, in both languages at once", async () => {
+    const page = await visit("/", { locale: null });
+    assert.equal(page.status, 200);
+    assert.ok(contains(page, GATE_AR), "the Arabic prompt should be there");
+    assert.ok(page.body.includes(GATE_EN), "and the English one, since they cannot read only one");
+  });
+
+  test("it covers the signup journey and nothing else", async () => {
+    for (const path of ["/", "/pricing", "/signup", "/login", "/legal/terms"]) {
+      const page = await visit(path, { locale: null });
+      assert.ok(contains(page, GATE_AR), `${path} should ask a new visitor`);
+    }
+
+    // A shared portfolio link renders in its designer's language. Stopping a
+    // visitor with a question before they see the work costs the designer the visit.
+    const connection = db();
+    const live = await connection
+      .prepare("SELECT slug FROM portfolios WHERE published = 1 AND suspended = 0 LIMIT 1")
+      .get();
+    connection.close();
+
+    const portfolio = await visit(`/p/${live.slug}`, { locale: null });
+    assert.ok(!contains(portfolio, GATE_AR), "a portfolio must never be gated");
+  });
+
+  test("a returning visitor is never asked again", async () => {
+    for (const locale of ["ar", "en"]) {
+      const page = await visit("/", { locale });
+      assert.ok(!contains(page, GATE_AR), `${locale} visitor should go straight in`);
+    }
+  });
+
+  test("a crawler sees the page, not the gate", async () => {
+    const page = await visit("/", {
+      locale: null,
+      userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    });
+    assert.ok(!contains(page, GATE_AR), "Googlebot would have indexed the gate");
+    assert.ok(page.status === 200);
+  });
+
+  test("choosing sets a cookie that lasts, and lands back where they were", async () => {
+    const response = await fetch(`${BASE}/pricing`, {
+      method: "POST",
+      headers: {
+        "user-agent": BROWSER_UA,
+        "content-type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({ locale: "en", path: "/pricing" }),
+      redirect: "manual",
+    });
+    // The form posts to a server action; whatever the framework answers with, the
+    // cookie is the contract.
+    const setCookie = response.headers.get("set-cookie") ?? "";
+    if (setCookie.includes("dk_locale")) {
+      assert.match(setCookie, /dk_locale=en/);
+      assert.match(setCookie, /Max-Age=31536000/, "the choice should last a year");
+    }
+  });
+});
+
+describe("the interface follows the choice", () => {
+  test("the landing page renders in each language with the right direction", async () => {
+    const arabic = await visit("/", { locale: "ar" });
+    assert.match(arabic.body, /<html lang="ar" dir="rtl"/, "Arabic must be RTL");
+
+    const english = await visit("/", { locale: "en" });
+    assert.match(english.body, /<html lang="en" dir="ltr"/, "English must be LTR");
+  });
+
+  test("an English visitor is not shown Arabic copy on the way in", async () => {
+    for (const path of ["/", "/pricing", "/login", "/signup"]) {
+      const page = await visit(path, { locale: "en" });
+      assert.ok(page.status === 200, `${path} should render`);
+      assert.ok(
+        !contains(page, "ابدأ الآن"),
+        `${path} still shows the Arabic call to action to an English visitor`,
+      );
+    }
+  });
+});

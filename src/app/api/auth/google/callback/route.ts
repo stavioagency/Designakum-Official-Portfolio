@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createSession, findUserByEmail, findUserByGoogleId, linkGoogleAccount } from "@/lib/auth";
 import { consumeState, exchangeGoogleCode, googleConfigured } from "@/lib/google";
 import { provisionClient } from "@/lib/provision";
+import { cookies } from "next/headers";
+import { isLocale } from "@/lib/i18n";
+import { LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, currentLocale } from "@/lib/locale";
 import { requestOrigin } from "@/lib/origin";
 
 const fail = (origin: string, reason: string) =>
@@ -44,6 +47,8 @@ export async function GET(request: Request) {
         name: profile.name || profile.givenName || profile.email.split("@")[0],
         googleId: profile.sub,
         avatarUrl: profile.picture,
+        // Google sign-in starts at the gate like everything else.
+        locale: await currentLocale(),
       })).user;
     }
   }
@@ -51,6 +56,15 @@ export async function GET(request: Request) {
   if (user.status === "suspended") return fail(origin, "suspended");
 
   await createSession(user.id);
+
+  // The account's language, not this browser's, once there is an account.
+  if (isLocale(user.locale)) {
+    (await cookies()).set(LOCALE_COOKIE, user.locale, {
+      path: "/",
+      maxAge: LOCALE_COOKIE_MAX_AGE,
+      sameSite: "lax",
+    });
+  }
 
   const destination = user.role === "client" ? stored.returnTo : "/console";
   return NextResponse.redirect(`${origin}${destination}`);

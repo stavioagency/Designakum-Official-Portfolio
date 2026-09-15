@@ -1,14 +1,20 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { currentLocale } from "@/lib/locale";
+import { dict, fill } from "@/lib/i18n";
 import { notFound, redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { getTicket, ticketMessages } from "@/lib/support";
-import { TICKET_CATEGORY_LABEL, TICKET_STATUS_LABEL } from "@/lib/support-labels";
+import { ticketCategoryLabel, ticketStatusLabel } from "@/lib/support-labels";
 import { Badge, SectionCard, formatDateTime, timeAgo } from "@/components/console/ui";
 import { CustomerReplyForm } from "@/components/support/customer-forms";
 import { ArrowLeft, Shield } from "@/components/icons";
 
-export const metadata: Metadata = { title: "تذكرة" };
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: dict(await currentLocale()).meta.ticket,
+  };
+}
 export const dynamic = "force-dynamic";
 
 export default async function CustomerTicketPage({
@@ -26,6 +32,8 @@ export default async function CustomerTicketPage({
 
   // `false` keeps staff-only notes out of the customer's view.
   const messages = await ticketMessages(id, false);
+  const locale = await currentLocale();
+  const t = dict(locale).dashboard.support;
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-7 sm:px-6 lg:py-10">
@@ -34,22 +42,23 @@ export default async function CustomerTicketPage({
         className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] text-mist-400 transition hover:text-white"
       >
         <ArrowLeft className="h-4 w-4" />
-        كل التذاكر
+        {t.allTickets}
       </Link>
 
       <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-[24px] font-bold">{ticket.subject}</h1>
           <p className="mt-1 text-[12.5px] text-mist-500">
-            {TICKET_CATEGORY_LABEL[ticket.category] ?? ticket.category} · فُتحت {timeAgo(ticket.created_at)}
+            {ticketCategoryLabel(ticket.category, locale)} ·{" "}
+            {fill(t.openedAgo, { ago: timeAgo(ticket.created_at) })}
           </p>
         </div>
         <Badge tone={ticket.status === "resolved" ? "neutral" : "warn"}>
-          {TICKET_STATUS_LABEL[ticket.status]}
+          {ticketStatusLabel(ticket.status, locale)}
         </Badge>
       </header>
 
-      <SectionCard title="المحادثة" className="mb-4">
+      <SectionCard title={t.conversation} className="mb-4">
         <ul className="space-y-3 p-5">
           {messages.map((message) => (
             <li
@@ -62,16 +71,16 @@ export default async function CustomerTicketPage({
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[12.5px] font-semibold">
-                  {message.author_side === "staff" ? "فريق ديزاينكم" : message.author_name}
+                  {message.author_side === "staff" ? t.staffName : message.author_name}
                 </span>
                 {message.author_side === "staff" && (
                   <Badge tone="accent">
                     <Shield className="h-3 w-3" />
-                    الدعم
+                    {t.staffBadge}
                   </Badge>
                 )}
                 <span className="ms-auto text-[11px] text-mist-600">
-                  {formatDateTime(message.created_at)}
+                  {formatDateTime(message.created_at, locale)}
                 </span>
               </div>
               <p className="mt-2 whitespace-pre-wrap text-[13.5px] leading-[1.9] text-mist-200">
@@ -82,9 +91,13 @@ export default async function CustomerTicketPage({
         </ul>
       </SectionCard>
 
-      <SectionCard title="ردك">
+      <SectionCard title={t.yourReply}>
         <div className="p-5">
-          <CustomerReplyForm ticketId={ticket.id} resolved={ticket.status === "resolved"} />
+          <CustomerReplyForm
+            ticketId={ticket.id}
+            resolved={ticket.status === "resolved"}
+            copy={t}
+          />
         </div>
       </SectionCard>
     </main>

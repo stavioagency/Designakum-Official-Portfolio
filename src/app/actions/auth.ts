@@ -4,27 +4,31 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   createSession,
+  currentUser,
   destroySession,
   findUserByEmail,
   hashPassword,
   requireUser,
   revokeSessionsFor,
+  setUserLocale,
   verifyPassword,
 } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { now, run } from "@/lib/db";
 import { provisionClient } from "@/lib/provision";
 import { slugify } from "@/lib/ids";
-import { LOCALE_COOKIE } from "@/lib/locale";
+import { LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, currentLocale } from "@/lib/locale";
 import { isLocale } from "@/lib/i18n";
 import { readSettings } from "@/lib/settings";
 import { checkInvitation, redeemInvitation } from "@/lib/invitations";
 import { callerFingerprint, rateLimit } from "@/lib/rate-limit";
 import { consumeReset, createPasswordReset, findValidReset } from "@/lib/password-reset";
 import { emailConfigured, sendMail } from "@/lib/mailer";
+import { emailTemplate } from "@/lib/emails";
 import { requestOrigin } from "@/lib/origin";
 import { get } from "@/lib/db";
-import type { User } from "@/lib/types";
+import { reportError } from "@/lib/observability";
+import type { Locale, User } from "@/lib/types";
 
 /** `error` is a key into the `authErrors` dictionary, so it can be shown in either language. */
 export type FormState = { error?: string } | null;
@@ -61,12 +65,50 @@ export async function signupAction(_prev: FormState, fd: FormData): Promise<Form
   if (!slugify(desiredSlug)) return { error: "bad_slug" };
   if (await findUserByEmail(email)) return { error: "email_taken" };
 
-  const { user } = await provisionClient({ email, password, name, title, slug: desiredSlug });
+  // Whatever they picked at the gate is the account's language from here on:
+  // starter copy, dashboard, and every email we ever send them.
+  const locale = await currentLocale();
+  const { user, slug } = await provisionClient({
+    email,
+    password,
+    name,
+    title,
+    slug: desiredSlug,
+    locale,
+  });
   if (invitation && "invitation" in invitation) await redeemInvitation(invitation.invitation, user);
 
   await createSession(user.id);
+  await sendWelcome(user, slug, locale);
 
   redirect("/dashboard");
+}
+
+/**
+ * The one email a new account gets. It carries the page's URL, because the URL
+ * is the thing people actually signed up for and the thing they will want to
+ * find again a week later.
+ *
+ * Never blocks the sign-up: a mail provider being down is not a reason to refuse
+ * someone an account, so a failure is recorded in mail_outbox and dropped here.
+ */
+async function sendWelcome(user: User, slug: string, locale: Locale) {
+  try {
+    const origin = await requestOrigin();
+    const composed = emailTemplate.welcome(locale, {
+      name: user.display_name || "",
+      portfolioUrl: `${origin}/p/${slug}`,
+      dashboardUrl: `${origin}/dashboard`,
+    });
+    await sendMail({
+      to: user.email,
+      subject: composed.subject,
+      kind: "welcome",
+      body: composed.body,
+    });
+  } catch (error) {
+    reportError(error, { area: "welcome-email", userId: user.id });
+  }
 }
 
 export async function loginAction(_prev: FormState, fd: FormData): Promise<FormState> {
@@ -87,12 +129,28 @@ export async function loginAction(_prev: FormState, fd: FormData): Promise<FormS
   }
 
   await createSession(user.id);
+  await adoptAccountLocale(user);
   redirect(user.role === "client" ? "/dashboard" : "/console");
 }
 
 export async function logoutAction() {
   await destroySession();
   redirect("/login");
+}
+
+/**
+ * Signing in adopts the account's language, not the browser's.
+ *
+ * Someone who set the site to English on their laptop and then signs in on a
+ * borrowed phone should get English, without being asked again.
+ */
+async function adoptAccountLocale(user: { locale?: string | null }) {
+  if (!isLocale(user.locale)) return;
+  (await cookies()).set(LOCALE_COOKIE, user.locale, {
+    path: "/",
+    maxAge: LOCALE_COOKIE_MAX_AGE,
+    sameSite: "lax",
+  });
 }
 
 /** Switches the interface language and reloads whatever page the visitor is on. */
@@ -103,9 +161,14 @@ export async function setLocaleAction(fd: FormData) {
   if (isLocale(locale)) {
     (await cookies()).set(LOCALE_COOKIE, locale, {
       path: "/",
-      maxAge: 60 * 60 * 24 * 365,
+      maxAge: LOCALE_COOKIE_MAX_AGE,
       sameSite: "lax",
     });
+
+    // The cookie is this browser's; the account's copy is what email is written
+    // in, so someone who switches language stops getting mail in the other one.
+    const user = await currentUser();
+    if (user) await setUserLocale(user.id, locale);
   }
 
   redirect(path.startsWith("/") && !path.startsWith("//") ? path : "/");
@@ -182,11 +245,9 @@ export async function requestPasswordResetAction(
 
   const fingerprint = await callerFingerprint();
   const limit = await rateLimit(`reset:${fingerprint}`, 5, 60 * 60 * 1000);
-  if (!limit.ok) return { error: "too_many_attempts" };
+  if (!limit.ok) return { error: "tooMany" };
 
-  const neutral = {
-    ok: "إن كان هذا البريد مسجّلاً لدينا فسيصلك رابط لإعادة تعيين كلمة المرور خلال دقائق.",
-  };
+  const neutral = { ok: "sent" };
 
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return neutral;
 
@@ -197,28 +258,24 @@ export async function requestPasswordResetAction(
   const origin = await requestOrigin();
   const link = `${origin}/reset/${token}`;
 
+  // Their language, not this browser's: someone can request a reset from a
+  // machine that has never seen the site.
+  const composed = emailTemplate.passwordReset(user.locale, {
+    name: user.display_name || "",
+    link,
+  });
+
   const result = await sendMail({
     to: user.email,
-    subject: "إعادة تعيين كلمة المرور — ديزاينكم",
+    subject: composed.subject,
     kind: "password_reset",
-    body: [
-      `مرحبًا ${user.display_name || ""}`.trim(),
-      "",
-      "وصلنا طلب لإعادة تعيين كلمة مرور حسابك في ديزاينكم.",
-      "افتح الرابط التالي خلال ساعة واحدة لتعيين كلمة مرور جديدة:",
-      link,
-      "",
-      "إن لم تطلب ذلك فتجاهل هذه الرسالة، ولن يتغيّر شيء في حسابك.",
-    ].join("\n"),
+    body: composed.body,
   });
 
   // Without a mail provider the link cannot reach anyone, and saying otherwise
   // would leave the customer waiting for an email that will never arrive.
   if (!result.delivered && !emailConfigured()) {
-    return {
-      error:
-        "خدمة البريد غير مفعّلة على هذه النسخة بعد، لذلك لا يمكن إرسال رابط الاستعادة. تواصل مع إدارة المنصة لإعادة تعيين كلمة مرورك.",
-    };
+    return { error: "mailerOff" };
   }
 
   return neutral;
@@ -234,15 +291,17 @@ export async function resetPasswordAction(
 
   const fingerprint = await callerFingerprint();
   const limit = await rateLimit(`reset-use:${fingerprint}`, 10, 60 * 60 * 1000);
-  if (!limit.ok) return { error: "too_many_attempts" };
+  if (!limit.ok) return { error: "tooMany" };
 
+  // Keys, not sentences: the words belong to whichever language the visitor
+  // chose, and an action has no business knowing which that is.
   const record = await findValidReset(token);
-  if (!record) return { error: "انتهت صلاحية الرابط أو سبق استخدامه. اطلب رابطًا جديدًا." };
-  if (next.length < 8) return { error: "كلمة المرور يجب أن تكون 8 أحرف على الأقل" };
-  if (next !== confirm) return { error: "كلمتا المرور غير متطابقتين" };
+  if (!record) return { error: "badToken" };
+  if (next.length < 8) return { error: "weak" };
+  if (next !== confirm) return { error: "mismatch" };
 
   const user = await get<User>("SELECT * FROM users WHERE id = ?", record.user_id);
-  if (!user) return { error: "الحساب غير موجود" };
+  if (!user) return { error: "failed" };
 
   await run(
     "UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?",
@@ -263,5 +322,6 @@ export async function resetPasswordAction(
   });
 
   await createSession(user.id);
+  await adoptAccountLocale(user);
   redirect(user.role === "client" ? "/dashboard" : "/console");
 }

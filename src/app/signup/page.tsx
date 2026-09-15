@@ -9,7 +9,11 @@ import { currentLocale } from "@/lib/locale";
 import { dict } from "@/lib/i18n";
 import { readSettings } from "@/lib/settings";
 
-export const metadata: Metadata = { title: "إنشاء حساب" };
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: dict(await currentLocale()).meta.signup,
+  };
+}
 export const dynamic = "force-dynamic";
 
 export default async function SignupPage({

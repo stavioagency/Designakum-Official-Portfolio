@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Series } from "@/lib/analytics";
+import type { Locale } from "@/lib/types";
 
 /* ------------------------------------------------------------------ format */
 
@@ -14,9 +15,23 @@ export const nf = new Intl.NumberFormat("en-US");
  */
 const DISPLAY_TIMEZONE = process.env.REPORTING_TIMEZONE ?? "Asia/Riyadh";
 
-export function formatDate(ms: number | null | undefined, withTime = false): string {
+/**
+ * Latin digits in both languages. Arabic-Indic numerals are correct Arabic but
+ * this platform shows prices, view counts and dates side by side, and mixing the
+ * two numeral systems on one screen reads as a bug.
+ */
+const DATE_LOCALE: Record<Locale, string> = {
+  ar: "ar-SA-u-nu-latn-ca-gregory",
+  en: "en-GB",
+};
+
+export function formatDate(
+  ms: number | null | undefined,
+  locale: Locale = "ar",
+  withTime = false,
+): string {
   if (!ms) return "—";
-  return new Date(ms).toLocaleDateString("ar-SA-u-nu-latn-ca-gregory", {
+  return new Date(ms).toLocaleDateString(DATE_LOCALE[locale] ?? DATE_LOCALE.ar, {
     timeZone: DISPLAY_TIMEZONE,
     year: "numeric",
     month: "short",
@@ -29,7 +44,8 @@ export function formatDate(ms: number | null | undefined, withTime = false): str
  * For anything where "which day" is not enough: money moving, a staff action, a
  * message in a thread. Support and billing arguments are settled on the minute.
  */
-export const formatDateTime = (ms: number | null | undefined) => formatDate(ms, true);
+export const formatDateTime = (ms: number | null | undefined, locale: Locale = "ar") =>
+  formatDate(ms, locale, true);
 
 const UNITS: [limit: number, divisor: number, one: string, many: string][] = [
   [60_000, 1000, "ثانية", "ثانية"],

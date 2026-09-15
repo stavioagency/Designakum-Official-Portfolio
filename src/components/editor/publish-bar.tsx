@@ -4,15 +4,19 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { publishAction } from "@/app/actions/portfolio";
 import type { Portfolio } from "@/lib/types";
+import type { Dictionary } from "@/lib/i18n";
 import { Status, Submit } from "./ui";
 
 export function PublishBar({
   portfolio,
   canPublish,
+  copy,
 }: {
   portfolio: Portfolio;
   canPublish: boolean;
+  copy: Dictionary["dashboard"];
 }) {
+  const t = copy.publishBar;
   const [state, publish] = useActionState(publishAction, null);
   const isPublished = portfolio.published === 1;
 
@@ -22,11 +26,11 @@ export function PublishBar({
         <div className="flex items-center gap-3">
           <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
           <p className="text-[13.5px] leading-relaxed text-mist-300">
-            معرضك جاهز، والنشر هو الخطوة الأخيرة — وهو ما يفتحه الاشتراك.
+            {t.locked}
           </p>
         </div>
         <Link href="/dashboard/billing" className="btn btn-primary">
-          فعّل الاشتراك للنشر
+          {t.subscribeCta}
         </Link>
       </div>
     );
@@ -43,15 +47,18 @@ export function PublishBar({
         />
         <p className="text-[13.5px] text-mist-300">
           {isPublished
-            ? "الصفحة منشورة ومتاحة لأي شخص لديه الرابط."
-            : "الصفحة مسودة — لن يراها أحد حتى تنشرها."}
+            ? t.live
+            : t.draft}
         </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <Status state={state} />
-        <Submit className={isPublished ? "btn btn-ghost" : "btn btn-primary"} pendingLabel="لحظة…">
-          {isPublished ? "إخفاء" : "نشر الآن"}
+        <Submit
+          className={isPublished ? "btn btn-ghost" : "btn btn-primary"}
+          pendingLabel={copy.common.pending}
+        >
+          {isPublished ? t.hide : t.publish}
         </Submit>
       </div>
     </form>

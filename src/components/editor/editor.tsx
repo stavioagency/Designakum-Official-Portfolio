@@ -7,18 +7,12 @@ import { SettingsSection } from "./settings-section";
 import { Field } from "./ui";
 import { ImageField } from "./image-field";
 import { SOCIAL_META, STAT_ICON_OPTIONS } from "@/components/icons";
+import type { Dictionary } from "@/lib/i18n";
 import type { PortfolioBundle, SocialPlatform, User } from "@/lib/types";
 
-const TABS = [
-  { key: "profile", label: "الملف الشخصي" },
-  { key: "slides", label: "الصور المميزة" },
-  { key: "projects", label: "الأعمال" },
-  { key: "stats", label: "الإحصائيات" },
-  { key: "socials", label: "روابط التواصل" },
-  { key: "settings", label: "الإعدادات" },
-] as const;
+const TAB_KEYS = ["profile", "slides", "projects", "stats", "socials", "settings"] as const;
 
-type TabKey = (typeof TABS)[number]["key"];
+type TabKey = (typeof TAB_KEYS)[number];
 
 export function Editor({
   bundle,
@@ -27,6 +21,7 @@ export function Editor({
   preview,
   hasPassword,
   canPublish,
+  copy,
 }: {
   bundle: PortfolioBundle;
   user: User;
@@ -34,6 +29,7 @@ export function Editor({
   preview: React.ReactNode;
   hasPassword: boolean;
   canPublish: boolean;
+  copy: Dictionary["dashboard"];
 }) {
   const [tab, setTab] = useState<TabKey>("profile");
   const { portfolio, slides, projects, stats, socials } = bundle;
@@ -42,42 +38,48 @@ export function Editor({
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px] xl:items-start">
       <div className="min-w-0 space-y-5">
         <nav className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-          {TABS.map((t) => (
+          {TAB_KEYS.map((key) => (
             <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
+              key={key}
+              onClick={() => setTab(key)}
               className={`shrink-0 rounded-2xl border px-4 py-2.5 text-[13.5px] font-medium transition ${
-                tab === t.key
+                tab === key
                   ? "accent-grad border-transparent text-white shadow-lg"
                   : "border-white/10 bg-white/[0.03] text-mist-400 hover:bg-white/[0.07] hover:text-white"
               }`}
             >
-              {t.label}
+              {copy.tabs[key]}
             </button>
           ))}
         </nav>
 
-        {tab === "profile" && <ProfileSection portfolio={portfolio} />}
+        {tab === "profile" && <ProfileSection portfolio={portfolio} copy={copy} />}
 
         {tab === "slides" && (
           <CollectionSection
             table="slides"
             portfolioId={portfolio.id}
             items={slides}
-            heading="الصور المميزة"
-            description="الشرائح التي تتبدّل في أعلى صفحتك. أضف صورة لكل شريحة مع عنوان قصير."
-            addLabel="إضافة شريحة"
-            emptyLabel="لا توجد شرائح بعد."
-            confirmText="حذف هذه الشريحة؟"
-            itemTitle={(item) => item.headline || "شريحة بدون عنوان"}
+            heading={copy.slides.heading}
+            description={copy.slides.description}
+            addLabel={copy.slides.add}
+            emptyLabel={copy.slides.empty}
+            confirmText={copy.slides.confirm}
+            itemTitle={(item) => item.headline || copy.slides.untitled}
             renderFields={(slide) => (
               <>
-                <ImageField name="image" current={slide.image_url} label="صورة الشريحة" aspect={16 / 9} hint="أفضل مقاس 1400×790 بكسل." />
+                <ImageField
+                  name="image"
+                  current={slide.image_url}
+                  label={copy.slides.image}
+                  aspect={16 / 9}
+                  hint={copy.slides.imageHint}
+                />
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="العنوان">
+                  <Field label={copy.slides.headline}>
                     <input name="headline" defaultValue={slide.headline} className="field" />
                   </Field>
-                  <Field label="السطر الفرعي">
+                  <Field label={copy.slides.subline}>
                     <input name="subline" defaultValue={slide.subline} className="field" />
                   </Field>
                 </div>
@@ -91,27 +93,32 @@ export function Editor({
             table="projects"
             portfolioId={portfolio.id}
             items={projects}
-            heading="الأعمال"
-            description="معرض أعمالك. كل عمل يظهر كبطاقة مربعة يمكن ربطها بصفحة خارجية."
-            addLabel="إضافة عمل"
-            emptyLabel="لم تضف أي عمل بعد."
-            confirmText="حذف هذا العمل؟"
-            itemTitle={(item) => item.title || "عمل بدون عنوان"}
+            heading={copy.projects.heading}
+            description={copy.projects.description}
+            addLabel={copy.projects.add}
+            emptyLabel={copy.projects.empty}
+            confirmText={copy.projects.confirm}
+            itemTitle={(item) => item.title || copy.projects.untitled}
             renderFields={(project) => (
               <>
-                <ImageField name="image" current={project.image_url} label="صورة العمل" aspect={1} />
+                <ImageField name="image" current={project.image_url} label={copy.projects.image} aspect={1} />
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="اسم العمل">
+                  <Field label={copy.projects.name}>
                     <input name="title" defaultValue={project.title} className="field" />
                   </Field>
-                  <Field label="التصنيف">
-                    <input name="category" defaultValue={project.category} className="field" placeholder="هوية بصرية" />
+                  <Field label={copy.projects.category}>
+                    <input
+                      name="category"
+                      defaultValue={project.category}
+                      className="field"
+                      placeholder={copy.projects.categoryPlaceholder}
+                    />
                   </Field>
                 </div>
-                <Field label="وصف مختصر">
+                <Field label={copy.projects.blurb}>
                   <textarea name="description" defaultValue={project.description} rows={3} className="field" />
                 </Field>
-                <Field label="رابط خارجي" hint="اختياري — صفحة المشروع على بيهانس أو موقعك.">
+                <Field label={copy.projects.link} hint={copy.projects.linkHint}>
                   <input name="link" defaultValue={project.link} className="field" dir="ltr" placeholder="https://" />
                 </Field>
               </>
@@ -124,21 +131,26 @@ export function Editor({
             table="stats"
             portfolioId={portfolio.id}
             items={stats}
-            heading="الإحصائيات"
-            description="تظهر أول ثلاثة عناصر في شريط الأرقام أعلى الصفحة."
-            addLabel="إضافة إحصائية"
-            emptyLabel="لا توجد إحصائيات بعد."
-            confirmText="حذف هذه الإحصائية؟"
-            itemTitle={(item) => item.label || "إحصائية"}
+            heading={copy.stats.heading}
+            description={copy.stats.description}
+            addLabel={copy.stats.add}
+            emptyLabel={copy.stats.empty}
+            confirmText={copy.stats.confirm}
+            itemTitle={(item) => item.label || copy.stats.untitled}
             renderFields={(stat) => (
               <div className="grid gap-4 sm:grid-cols-3">
-                <Field label="العنوان">
-                  <input name="label" defaultValue={stat.label} className="field" placeholder="الأعمال" />
+                <Field label={copy.stats.label}>
+                  <input
+                    name="label"
+                    defaultValue={stat.label}
+                    className="field"
+                    placeholder={copy.stats.labelPlaceholder}
+                  />
                 </Field>
-                <Field label="القيمة">
+                <Field label={copy.stats.value}>
                   <input name="value" defaultValue={stat.value} className="field" placeholder="+300" />
                 </Field>
-                <Field label="الأيقونة">
+                <Field label={copy.stats.icon}>
                   <select name="icon" defaultValue={stat.icon} className="field">
                     {STAT_ICON_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -157,17 +169,17 @@ export function Editor({
             table="socials"
             portfolioId={portfolio.id}
             items={socials}
-            heading="روابط التواصل"
-            description="تظهر أول خمسة روابط كأيقونات في أعلى صفحتك."
-            addLabel="إضافة رابط"
-            emptyLabel="لم تضف أي رابط بعد."
-            confirmText="حذف هذا الرابط؟"
+            heading={copy.socials.heading}
+            description={copy.socials.description}
+            addLabel={copy.socials.add}
+            emptyLabel={copy.socials.empty}
+            confirmText={copy.socials.confirm}
             itemTitle={(item) =>
-              SOCIAL_META[item.platform as SocialPlatform]?.label ?? "رابط"
+              SOCIAL_META[item.platform as SocialPlatform]?.label ?? copy.socials.untitled
             }
             renderFields={(social) => (
               <div className="grid gap-4 sm:grid-cols-[180px_1fr]">
-                <Field label="المنصة">
+                <Field label={copy.socials.platform}>
                   <select name="platform" defaultValue={social.platform} className="field">
                     {(Object.keys(SOCIAL_META) as SocialPlatform[]).map((key) => (
                       <option key={key} value={key}>
@@ -176,7 +188,7 @@ export function Editor({
                     ))}
                   </select>
                 </Field>
-                <Field label="الرابط">
+                <Field label={copy.socials.url}>
                   <input name="url" defaultValue={social.url} className="field" dir="ltr" placeholder="https://instagram.com/username" />
                 </Field>
               </div>
@@ -191,13 +203,14 @@ export function Editor({
             origin={origin}
             hasPassword={hasPassword}
             canPublish={canPublish}
+            copy={copy}
           />
         )}
       </div>
 
       {/* Live phone preview — desktop only, refreshes whenever an edit revalidates. */}
       <aside className="hidden xl:sticky xl:top-24 xl:block">
-        <p className="mb-3 text-center text-[12.5px] text-mist-500">معاينة مباشرة</p>
+        <p className="mb-3 text-center text-[12.5px] text-mist-500">{copy.profile.livePreview}</p>
         <div className="mx-auto w-[380px] overflow-hidden rounded-[42px] border border-white/12 bg-ink-950 p-2 shadow-[0_40px_90px_-40px_rgba(0,0,0,1)]">
           <div className="no-scrollbar h-[720px] overflow-y-auto rounded-[34px] bg-ink-950">
             {preview}

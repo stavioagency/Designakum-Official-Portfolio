@@ -3,11 +3,19 @@
 import { useActionState } from "react";
 import { saveProfileAction } from "@/app/actions/portfolio";
 import { THEMES, type Portfolio, type ThemeKey } from "@/lib/types";
+import type { Dictionary } from "@/lib/i18n";
 import { Field, Status, Submit } from "./ui";
 import { ImageField } from "./image-field";
 import { useState } from "react";
 
-export function ProfileSection({ portfolio }: { portfolio: Portfolio }) {
+export function ProfileSection({
+  portfolio,
+  copy,
+}: {
+  portfolio: Portfolio;
+  copy: Dictionary["dashboard"];
+}) {
+  const t = copy.profile;
   const [state, action] = useActionState(saveProfileAction, null);
   const [theme, setTheme] = useState<ThemeKey>(portfolio.theme);
 
@@ -15,10 +23,8 @@ export function ProfileSection({ portfolio }: { portfolio: Portfolio }) {
     <div className="space-y-5">
       <form action={action} className="card space-y-5 p-5 sm:p-6">
         <header>
-          <h2 className="text-lg font-semibold">الملف الشخصي</h2>
-          <p className="mt-1 text-[13px] text-mist-400">
-            هذه المعلومات تظهر في أعلى صفحتك العامة.
-          </p>
+          <h2 className="text-lg font-semibold">{t.heading}</h2>
+          <p className="mt-1 text-[13px] text-mist-400">{t.description}</p>
         </header>
 
         <input type="hidden" name="portfolioId" value={portfolio.id} />
@@ -26,43 +32,58 @@ export function ProfileSection({ portfolio }: { portfolio: Portfolio }) {
 
         <div className="grid gap-5 sm:grid-cols-[180px_1fr]">
           <div className="space-y-2">
-            <ImageField name="avatar" current={portfolio.avatar_url} label="الصورة الشخصية" aspect={1} />
-            <Field label="الحرف البديل" hint="يظهر مكان الصورة إذا لم ترفع واحدة.">
+            <ImageField name="avatar" current={portfolio.avatar_url} label={t.avatar} aspect={1} />
+            <Field label={t.monogram} hint={t.monogramHint}>
               <input name="monogram" defaultValue={portfolio.monogram} maxLength={2} className="field text-center" />
             </Field>
           </div>
 
           <div className="space-y-4">
-            <Field label="الاسم">
+            <Field label={t.name}>
               <input name="name" defaultValue={portfolio.name} className="field" required />
             </Field>
-            <Field label="التخصص">
-              <input name="title" defaultValue={portfolio.title} className="field" placeholder="مصمم جرافيك | F9 Designer" />
+            <Field label={t.title}>
+              <input
+                name="title"
+                defaultValue={portfolio.title}
+                className="field"
+                placeholder={t.titlePlaceholder}
+              />
             </Field>
-            <Field label="جملة تعريفية قصيرة">
-              <input name="tagline" defaultValue={portfolio.tagline} className="field" placeholder="خلّك دائمًا مميز مع تصميم يناسبك" />
+            <Field label={t.tagline}>
+              <input
+                name="tagline"
+                defaultValue={portfolio.tagline}
+                className="field"
+                placeholder={t.taglinePlaceholder}
+              />
             </Field>
           </div>
         </div>
 
-        <Field label="نبذة عنك">
+        <Field label={t.bio}>
           <textarea name="bio" defaultValue={portfolio.bio} rows={5} className="field" />
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="رقم واتساب" hint="بصيغة دولية بدون رموز، مثال: 966500000000">
+          <Field label={t.whatsapp} hint={t.whatsappHint}>
             <input name="whatsapp" defaultValue={portfolio.whatsapp} className="field" dir="ltr" placeholder="966500000000" />
           </Field>
-          <Field label="نص زر التواصل">
+          <Field label={t.whatsappLabel}>
             <input name="whatsapp_label" defaultValue={portfolio.whatsapp_label} className="field" />
           </Field>
         </div>
 
-        <Field label="نص حقوق النشر">
-          <input name="footer_note" defaultValue={portfolio.footer_note} className="field" placeholder="جميع الحقوق محفوظة لـ ..." />
+        <Field label={t.footer}>
+          <input
+            name="footer_note"
+            defaultValue={portfolio.footer_note}
+            className="field"
+            placeholder={t.footerPlaceholder}
+          />
         </Field>
 
-        <Field label="لون الهوية">
+        <Field label={t.accent}>
           <div className="flex flex-wrap gap-2.5">
             {(Object.keys(THEMES) as ThemeKey[]).map((key) => {
               const t = THEMES[key];
@@ -90,7 +111,7 @@ export function ProfileSection({ portfolio }: { portfolio: Portfolio }) {
         </Field>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Submit>حفظ التغييرات</Submit>
+          <Submit>{copy.common.save}</Submit>
           <Status state={state} />
         </div>
       </form>

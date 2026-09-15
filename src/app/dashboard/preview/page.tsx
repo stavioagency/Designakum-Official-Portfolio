@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { currentLocale } from "@/lib/locale";
+import { dict } from "@/lib/i18n";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
@@ -8,7 +10,11 @@ import { PreviewFrame } from "@/components/preview-frame";
 import { PublishBar } from "@/components/editor/publish-bar";
 import { canPublish } from "@/lib/billing";
 
-export const metadata: Metadata = { title: "معاينة" };
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: dict(await currentLocale()).meta.preview,
+  };
+}
 export const dynamic = "force-dynamic";
 
 export default async function PreviewPage() {
@@ -18,24 +24,26 @@ export default async function PreviewPage() {
   const portfolio = await getPortfolioForUser(user.id);
   if (!portfolio) redirect("/console");
 
+  const copy = dict(await currentLocale()).dashboard;
+
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-7 sm:px-6 lg:py-10">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-[26px] font-bold">معاينة الصفحة</h1>
+          <h1 className="text-[26px] font-bold">{copy.home.previewTitle}</h1>
           <p className="mt-1 text-[13.5px] text-mist-400">
-            هكذا سيرى زوارك صفحتك تمامًا — جرّبها على الجوال وسطح المكتب.
+            {copy.home.previewSub}
           </p>
         </div>
         <Link href="/dashboard" className="btn btn-ghost">
-          العودة للمحرر
+          {copy.home.backToEditor}
         </Link>
       </div>
 
-      <PublishBar portfolio={portfolio} canPublish={await canPublish(user)} />
+      <PublishBar copy={copy} portfolio={portfolio} canPublish={await canPublish(user)} />
 
       <div className="mt-6">
-        <PreviewFrame>
+        <PreviewFrame labels={{ mobile: copy.home.mobile, desktop: copy.home.desktop }}>
           <PortfolioView bundle={await loadBundle(portfolio)} />
         </PreviewFrame>
       </div>

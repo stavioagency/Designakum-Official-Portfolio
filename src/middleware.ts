@@ -46,6 +46,9 @@ export function middleware(request: NextRequest) {
   const headers = new Headers(request.headers);
   headers.set("x-nonce", nonce);
   headers.set("Content-Security-Policy", csp);
+  // A server layout cannot see the pathname on its own, and the language gate has
+  // to know which surfaces it belongs on.
+  headers.set("x-pathname", request.nextUrl.pathname);
 
   const response = NextResponse.next({ request: { headers } });
   response.headers.set("Content-Security-Policy", csp);

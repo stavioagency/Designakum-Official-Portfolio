@@ -9,10 +9,14 @@ export function TopNav({
   user,
   links,
   locale,
+  ownerLabel,
+  logoutLabel,
 }: {
   user: User;
   links: { href: string; label: string; external?: boolean }[];
   locale: Locale;
+  ownerLabel: string;
+  logoutLabel: string;
 }) {
   return (
     <header className="sticky top-0 z-40 border-b border-white/8 bg-ink-950/70 backdrop-blur-xl">
@@ -35,7 +39,7 @@ export function TopNav({
         {user.role === "owner" && (
           <span className="hidden items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 text-[11.5px] text-mist-300 sm:flex">
             <Shield className="h-3.5 w-3.5" />
-            مالك المنصة
+            {ownerLabel}
           </span>
         )}
 
@@ -44,8 +48,8 @@ export function TopNav({
         <form action={logoutAction}>
           <button
             type="submit"
-            title="تسجيل الخروج"
-            aria-label="تسجيل الخروج"
+            title={logoutLabel}
+            aria-label={logoutLabel}
             className="icon-btn !h-10 !w-10"
           >
             <Logout className="h-[18px] w-[18px]" />

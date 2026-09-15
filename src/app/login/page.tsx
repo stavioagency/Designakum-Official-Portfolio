@@ -9,10 +9,12 @@ import { currentLocale } from "@/lib/locale";
 import { dict } from "@/lib/i18n";
 import { readSettings } from "@/lib/settings";
 
-export const metadata: Metadata = {
-  title: "تسجيل الدخول",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: dict(await currentLocale()).meta.login,
+    robots: { index: false, follow: false },
+  };
+}
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage({

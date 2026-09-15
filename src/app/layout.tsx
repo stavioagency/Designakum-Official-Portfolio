@@ -1,20 +1,25 @@
 import type { Metadata, Viewport } from "next";
 import { BRAND, brandAsset } from "@/lib/brand";
 import { DIR } from "@/lib/i18n";
-import { currentLocale } from "@/lib/locale";
+import { headers } from "next/headers";
+import { currentLocale, gateApplies, hasChosenLocale, suggestedLocale } from "@/lib/locale";
 import { dict } from "@/lib/i18n";
+import { callerIsBot } from "@/lib/bots";
 import { CookieNotice } from "@/components/cookie-notice";
+import { LanguageGate } from "@/components/language-gate";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: {
-    default: `${BRAND.nameEn} — ${BRAND.tagline}`,
-    template: `%s · ${BRAND.nameEn}`,
-  },
-  description:
-    "ديزاينكم: منصة عربية لإنشاء صفحات أعمال احترافية للمصممين والمستقلين، بروابط خاصة ولوحة تحكم كاملة.",
-  applicationName: BRAND.nameEn,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const d = dict(await currentLocale());
+  return {
+    title: {
+      default: `${BRAND.nameEn} — ${d.brandTagline}`,
+      template: `%s · ${BRAND.nameEn}`,
+    },
+    description: d.meta.description,
+    applicationName: BRAND.nameEn,
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: BRAND.ink,
@@ -29,6 +34,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   const d = dict(locale);
 
+  // Asked once, on the marketing and account journey only, and never of a crawler
+  // — a search engine that saw the gate instead of the page would index the gate.
+  const pathname = (await headers()).get("x-pathname") ?? "/";
+  const gate =
+    gateApplies(pathname) && !(await hasChosenLocale()) && !(await callerIsBot())
+      ? await suggestedLocale()
+      : null;
+
   return (
     <html lang={locale} dir={DIR[locale]}>
       <head>
@@ -41,8 +54,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body className="ambient">
-        {children}
-        <CookieNotice body={d.cookies.body} policy={d.cookies.policy} dismiss={d.cookies.dismiss} />
+        {gate ? (
+          // The gate replaces the page rather than floating over it. An overlay
+          // leaves the page scrolling underneath and leaks the other language
+          // past the edges of the card, which is the thing it exists to prevent.
+          <LanguageGate pathname={pathname} suggested={gate} />
+        ) : (
+          <>
+            {children}
+            <CookieNotice
+              body={d.cookies.body}
+              policy={d.cookies.policy}
+              dismiss={d.cookies.dismiss}
+            />
+          </>
+        )}
       </body>
     </html>
   );

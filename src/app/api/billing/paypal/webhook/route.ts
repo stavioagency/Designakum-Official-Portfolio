@@ -1,6 +1,7 @@
 import { get } from "@/lib/db";
 import {
   addMonths,
+  inChargeCurrency,
   latestSubscription,
   logBillingEvent,
   planDefinitions,
@@ -8,6 +9,12 @@ import {
   setSubscriptionStatus,
 } from "@/lib/billing";
 import { verifyWebhook } from "@/lib/paypal";
+import {
+  notifyPaymentFailed,
+  notifySubscriptionActive,
+  notifySubscriptionEnded,
+  userFor,
+} from "@/lib/billing-mail";
 import { reportError } from "@/lib/observability";
 import { run, now } from "@/lib/db";
 import type { Plan, User } from "@/lib/types";
@@ -64,6 +71,10 @@ export async function POST(request: Request) {
         // Fall back to monthly when we have no prior record to read the plan from.
         const plan: Exclude<Plan, "free"> = existing && existing.plan === "yearly" ? "yearly" : "monthly";
         const definition = (await planDefinitions())[plan];
+        const charge = await inChargeCurrency(definition.amount);
+        const periodEnd = resource.billing_info?.next_billing_time
+          ? new Date(resource.billing_info.next_billing_time).getTime()
+          : addMonths(Date.now(), plan === "yearly" ? 12 : 1);
 
         await recordSubscription({
           userId,
@@ -73,9 +84,13 @@ export async function POST(request: Request) {
           source: "paid",
           amount: definition.amount,
           providerSubscriptionId: resource.id ?? null,
-          currentPeriodEnd: resource.billing_info?.next_billing_time
-            ? new Date(resource.billing_info.next_billing_time).getTime()
-            : addMonths(Date.now(), plan === "yearly" ? 12 : 1),
+          currentPeriodEnd: periodEnd,
+        });
+
+        await notifySubscriptionActive(user, {
+          plan,
+          charged: `${charge.display} ${charge.currency}`,
+          periodEnd,
         });
         break;
       }
@@ -92,6 +107,11 @@ export async function POST(request: Request) {
         );
         await run("UPDATE users SET plan = 'free', updated_at = ? WHERE id = ?", now(), userId);
         await logBillingEvent(userId, event.event_type.toLowerCase(), resource.id ?? "");
+
+        // Say why the page went down, and that nothing was deleted — otherwise the
+        // first a customer knows of it is a dead link someone sent them.
+        const ended = await userFor(userId);
+        if (ended) await notifySubscriptionEnded(ended);
         break;
       }
 
@@ -101,6 +121,9 @@ export async function POST(request: Request) {
         const existing = await latestSubscription(userId);
         if (existing) await setSubscriptionStatus(existing.id, "past_due");
         await logBillingEvent(userId, "payment.failed", resource.id ?? "");
+
+        const failed = await userFor(userId);
+        if (failed) await notifyPaymentFailed(failed);
         break;
       }
 

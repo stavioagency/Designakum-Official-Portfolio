@@ -4,6 +4,7 @@ import { currentUser } from "@/lib/auth";
 import { getPortfolioForUser } from "@/lib/portfolios";
 import { TopNav } from "@/components/top-nav";
 import { currentLocale } from "@/lib/locale";
+import { dict } from "@/lib/i18n";
 import { maintenanceState } from "@/lib/maintenance";
 import { MaintenanceNotice } from "@/components/maintenance-notice";
 
@@ -25,6 +26,7 @@ export default async function DashboardLayout({
   if (!user) redirect("/login");
 
   const locale = await currentLocale();
+  const nav = dict(locale).dashboard.nav;
   const portfolio = await getPortfolioForUser(user.id);
   if (!portfolio) redirect(user.role === "client" ? "/login" : "/console");
 
@@ -35,14 +37,16 @@ export default async function DashboardLayout({
       <TopNav
         user={user}
         locale={locale}
+        ownerLabel={nav.owner}
+        logoutLabel={nav.logout}
         links={[
-          { href: "/dashboard", label: "المحرر" },
-          { href: "/dashboard/preview", label: "المعاينة" },
-          { href: "/dashboard/billing", label: "الاشتراك" },
-          { href: "/dashboard/support", label: "الدعم" },
-          { href: `/p/${portfolio.slug}`, label: "الصفحة العامة", external: true },
+          { href: "/dashboard", label: nav.editor },
+          { href: "/dashboard/preview", label: nav.preview },
+          { href: "/dashboard/billing", label: nav.billing },
+          { href: "/dashboard/support", label: nav.support },
+          { href: `/p/${portfolio.slug}`, label: nav.publicPage, external: true },
           ...(user.role === "owner" || user.role === "support"
-            ? [{ href: "/console", label: "لوحة الإدارة" }]
+            ? [{ href: "/console", label: nav.console }]
             : []),
         ]}
       />

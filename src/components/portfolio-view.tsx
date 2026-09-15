@@ -3,7 +3,7 @@ import { ShareButton } from "./share-button";
 import { TrackEvents } from "./track-events";
 import { ReportDialog } from "./report-dialog";
 import { SOCIAL_META, STAT_ICONS, Whatsapp } from "./icons";
-import { DIR, dict } from "@/lib/i18n";
+import { DIR, dict, fill } from "@/lib/i18n";
 import { safeUrl, socialHref } from "@/lib/safe-url";
 import type { PortfolioBundle } from "@/lib/types";
 
@@ -203,7 +203,7 @@ export function PortfolioView({
                     <span className="accent-grad h-5 w-1 rounded-full" />
                     {d.works}
                   </h2>
-                  <span className="tnum text-[12.5px] text-mist-500">{d.worksCount(projects.length)}</span>
+                  <span className="tnum text-[12.5px] text-mist-500">{fill(d.worksCount, { n: projects.length })}</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3.5 @5xl:grid-cols-3 @5xl:gap-4">

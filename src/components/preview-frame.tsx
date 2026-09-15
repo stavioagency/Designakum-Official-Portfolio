@@ -3,11 +3,17 @@
 import { useState } from "react";
 
 const MODES = [
-  { key: "mobile", label: "جوال", width: 430 },
-  { key: "desktop", label: "سطح المكتب", width: 0 },
+  { key: "mobile", width: 430 },
+  { key: "desktop", width: 0 },
 ] as const;
 
-export function PreviewFrame({ children }: { children: React.ReactNode }) {
+export function PreviewFrame({
+  children,
+  labels,
+}: {
+  children: React.ReactNode;
+  labels: { mobile: string; desktop: string };
+}) {
   const [mode, setMode] = useState<(typeof MODES)[number]["key"]>("mobile");
   const width = MODES.find((m) => m.key === mode)!.width;
 
@@ -23,7 +29,7 @@ export function PreviewFrame({ children }: { children: React.ReactNode }) {
                 mode === m.key ? "accent-grad text-white" : "text-mist-400 hover:text-white"
               }`}
             >
-              {m.label}
+              {labels[m.key]}
             </button>
           ))}
         </div>

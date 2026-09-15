@@ -9,7 +9,11 @@ import { LogoLockup } from "@/components/brand/logo";
 import { LocaleSwitch } from "@/components/locale-switch";
 import { Pricing } from "@/components/pricing";
 
-export const metadata: Metadata = { title: "الأسعار" };
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: dict(await currentLocale()).meta.pricing,
+  };
+}
 export const dynamic = "force-dynamic";
 
 export default async function PricingPage() {

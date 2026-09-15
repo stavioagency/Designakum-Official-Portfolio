@@ -124,19 +124,30 @@ export const Whatsapp = (p: P) => (
   </Base>
 );
 
-export const SOCIAL_META: Record<SocialPlatform, { label: string; Icon: (p: P) => React.JSX.Element; prefix?: string }> = {
-  instagram: { label: "إنستغرام", Icon: Instagram },
-  x: { label: "إكس", Icon: XIcon },
-  telegram: { label: "تيليجرام", Icon: Telegram },
-  behance: { label: "بيهانس", Icon: Behance },
-  dribbble: { label: "دريبل", Icon: Dribbble },
-  linkedin: { label: "لينكدإن", Icon: Linkedin },
-  tiktok: { label: "تيك توك", Icon: TikTok },
-  youtube: { label: "يوتيوب", Icon: Youtube },
-  snapchat: { label: "سناب شات", Icon: Snapchat },
-  website: { label: "الموقع", Icon: Globe },
-  email: { label: "البريد", Icon: Mail, prefix: "mailto:" },
+/**
+ * Platform names in both languages. Most are transliterations of a Latin brand
+ * name, so an English interface should show the brand as it is actually written.
+ */
+export const SOCIAL_META: Record<
+  SocialPlatform,
+  { label: string; labelEn: string; Icon: (p: P) => React.JSX.Element; prefix?: string }
+> = {
+  instagram: { label: "إنستغرام", labelEn: "Instagram", Icon: Instagram },
+  x: { label: "إكس", labelEn: "X", Icon: XIcon },
+  telegram: { label: "تيليجرام", labelEn: "Telegram", Icon: Telegram },
+  behance: { label: "بيهانس", labelEn: "Behance", Icon: Behance },
+  dribbble: { label: "دريبل", labelEn: "Dribbble", Icon: Dribbble },
+  linkedin: { label: "لينكدإن", labelEn: "LinkedIn", Icon: Linkedin },
+  tiktok: { label: "تيك توك", labelEn: "TikTok", Icon: TikTok },
+  youtube: { label: "يوتيوب", labelEn: "YouTube", Icon: Youtube },
+  snapchat: { label: "سناب شات", labelEn: "Snapchat", Icon: Snapchat },
+  website: { label: "الموقع", labelEn: "Website", Icon: Globe },
+  email: { label: "البريد", labelEn: "Email", Icon: Mail, prefix: "mailto:" },
 };
+
+/** The platform's name in the reader's language. */
+export const socialLabel = (platform: SocialPlatform, locale: string) =>
+  locale === "en" ? SOCIAL_META[platform].labelEn : SOCIAL_META[platform].label;
 
 /* --------------------------------------------------------------- interface */
 
@@ -266,13 +277,13 @@ export const STAT_ICONS: Record<string, (p: P) => React.JSX.Element> = {
 };
 
 export const STAT_ICON_OPTIONS = [
-  { value: "star", label: "تقييم" },
-  { value: "briefcase", label: "أعمال" },
-  { value: "users", label: "عملاء" },
-  { value: "clock", label: "خبرة" },
-  { value: "sparkle", label: "تميّز" },
-  { value: "eye", label: "مشاهدات" },
-  { value: "", label: "بدون أيقونة" },
+  { value: "star", label: "تقييم", labelEn: "Rating" },
+  { value: "briefcase", label: "أعمال", labelEn: "Projects" },
+  { value: "users", label: "عملاء", labelEn: "Clients" },
+  { value: "clock", label: "خبرة", labelEn: "Experience" },
+  { value: "sparkle", label: "تميّز", labelEn: "Highlight" },
+  { value: "eye", label: "مشاهدات", labelEn: "Views" },
+  { value: "", label: "بدون أيقونة", labelEn: "No icon" },
 ];
 
 /* ------------------------------------------------------------------ console */

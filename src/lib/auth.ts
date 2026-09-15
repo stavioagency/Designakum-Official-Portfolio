@@ -5,7 +5,8 @@ import path from "node:path";
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { all, get, now, run } from "./db";
 import { newId, newToken } from "./ids";
-import type { Role, User } from "./types";
+import { DEFAULT_LOCALE } from "./i18n";
+import type { Locale, Role, User } from "./types";
 
 const COOKIE = "dk_session";
 const SESSION_TTL = 1000 * 60 * 60 * 24 * 30; // 30 days
@@ -163,13 +164,14 @@ export async function createUser(input: {
   googleId?: string;
   avatarUrl?: string;
   provider?: "password" | "google";
+  locale?: Locale;
 }): Promise<User>{
   const ts = now();
   const id = newId("usr");
   await run(
     `INSERT INTO users (id, email, password_hash, display_name, role, status, plan,
        google_id, avatar_url, auth_provider, locale, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, 'active', 'free', ?, ?, ?, 'ar', ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, 'active', 'free', ?, ?, ?, ?, ?, ?)`,
     id,
     input.email.trim().toLowerCase(),
     // A Google account has no password; the empty hash can never verify.
@@ -179,6 +181,7 @@ export async function createUser(input: {
     input.googleId ?? null,
     input.avatarUrl ?? "",
     input.provider ?? (input.googleId ? "google" : "password"),
+    input.locale ?? DEFAULT_LOCALE,
     ts,
     ts,
   );

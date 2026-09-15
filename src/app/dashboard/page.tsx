@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { currentLocale } from "@/lib/locale";
+import { dict, fill } from "@/lib/i18n";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
@@ -11,7 +13,11 @@ import { Eye } from "@/components/icons";
 import { liveAnnouncementsFor } from "@/lib/announcements";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 
-export const metadata: Metadata = { title: "لوحة التحكم" };
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: dict(await currentLocale()).meta.dashboard,
+  };
+}
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
@@ -26,31 +32,32 @@ export default async function DashboardPage() {
   const published = portfolio.published === 1;
 
   const announcements = await liveAnnouncementsFor(user.id);
+  const copy = dict(await currentLocale()).dashboard;
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-7 sm:px-6 lg:py-10">
       <AnnouncementBanner announcements={announcements} />
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-[26px] font-bold">مرحبًا، {portfolio.name.split(" ")[0]}</h1>
+          <h1 className="text-[26px] font-bold">{fill(copy.home.greeting, { name: portfolio.name.split(" ")[0] })}</h1>
           <p className="mt-1 flex flex-wrap items-center gap-2 text-[13.5px] text-mist-400">
             <span
               className={`rounded-full px-2.5 py-1 text-[11.5px] font-semibold ${
                 published ? "bg-emerald-400/12 text-emerald-300" : "bg-amber-400/12 text-amber-300"
               }`}
             >
-              {published ? "منشور" : "مسودة"}
+              {published ? copy.home.published : copy.home.draft}
             </span>
             <span className="tnum flex items-center gap-1.5">
               <Eye className="h-4 w-4" />
-              {portfolio.views} مشاهدة
+              {fill(copy.home.views, { n: portfolio.views })}
             </span>
             <code dir="ltr" className="text-mist-500">/p/{portfolio.slug}</code>
           </p>
         </div>
 
         <Link href="/dashboard/preview" className="btn btn-ghost">
-          معاينة قبل النشر
+          {copy.home.previewCta}
         </Link>
       </div>
 
@@ -61,6 +68,7 @@ export default async function DashboardPage() {
         preview={<PortfolioView bundle={bundle} />}
         hasPassword={user.password_hash !== ""}
         canPublish={await canPublish(user)}
+        copy={copy}
       />
     </main>
   );

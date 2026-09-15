@@ -10,6 +10,7 @@ import {
 import { getSubscription } from "@/lib/paypal";
 import { reportError } from "@/lib/observability";
 import { audit } from "@/lib/audit";
+import { notifySubscriptionActive } from "@/lib/billing-mail";
 import { requestOrigin } from "@/lib/origin";
 import type { Plan } from "@/lib/types";
 
@@ -69,6 +70,12 @@ export async function GET(request: Request) {
       providerSubscriptionId: subscription.id,
       providerCustomerId: subscription.subscriber?.payer_id ?? null,
       currentPeriodEnd: periodEnd,
+    });
+
+    await notifySubscriptionActive(user, {
+      plan,
+      charged: `${charge.display} ${charge.currency}`,
+      periodEnd,
     });
 
     await audit({

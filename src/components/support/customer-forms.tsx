@@ -7,10 +7,20 @@ import {
   replyAsCustomerAction,
 } from "@/app/actions/support";
 import { Field, Status, Submit } from "@/components/editor/ui";
-import { TICKET_CATEGORIES } from "@/lib/support-labels";
+import type { Dictionary } from "@/lib/i18n";
 import { LifeBuoy } from "@/components/icons";
 
-export function NewTicketForm({ intro }: { intro: string }) {
+type Copy = Dictionary["dashboard"]["support"];
+
+export function NewTicketForm({
+  intro,
+  copy,
+  categories,
+}: {
+  intro: string;
+  copy: Copy;
+  categories: { value: string; label: string }[];
+}) {
   const [state, action] = useActionState(createTicketAction, null);
 
   return (
@@ -18,12 +28,18 @@ export function NewTicketForm({ intro }: { intro: string }) {
       {intro && <p className="text-[13px] leading-relaxed text-mist-400">{intro}</p>}
 
       <div className="grid gap-4 sm:grid-cols-[1fr_200px]">
-        <Field label="عنوان المشكلة">
-          <input name="subject" className="field" required minLength={4} placeholder="مثال: لا أستطيع رفع صورة" />
+        <Field label={copy.subject}>
+          <input
+            name="subject"
+            className="field"
+            required
+            minLength={4}
+            placeholder={copy.subjectPlaceholder}
+          />
         </Field>
-        <Field label="التصنيف">
+        <Field label={copy.category}>
           <select name="category" defaultValue="general" className="field">
-            {TICKET_CATEGORIES.map((category) => (
+            {categories.map((category) => (
               <option key={category.value} value={category.value}>
                 {category.label}
               </option>
@@ -32,14 +48,14 @@ export function NewTicketForm({ intro }: { intro: string }) {
         </Field>
       </div>
 
-      <Field label="التفاصيل" hint="كلما كان الشرح أدق، كان الرد أسرع.">
+      <Field label={copy.details} hint={copy.detailsHint}>
         <textarea name="body" rows={5} className="field" required minLength={10} />
       </Field>
 
       <div className="flex flex-wrap items-center gap-3">
         <Submit>
           <LifeBuoy className="h-4 w-4" />
-          إرسال التذكرة
+          {copy.submit}
         </Submit>
         <Status state={state} />
       </div>
@@ -47,7 +63,15 @@ export function NewTicketForm({ intro }: { intro: string }) {
   );
 }
 
-export function CustomerReplyForm({ ticketId, resolved }: { ticketId: string; resolved: boolean }) {
+export function CustomerReplyForm({
+  ticketId,
+  resolved,
+  copy,
+}: {
+  ticketId: string;
+  resolved: boolean;
+  copy: Copy;
+}) {
   const [replyState, reply] = useActionState(replyAsCustomerAction, null);
   const [closeState, close] = useActionState(closeOwnTicketAction, null);
 
@@ -59,12 +83,12 @@ export function CustomerReplyForm({ ticketId, resolved }: { ticketId: string; re
           name="body"
           rows={4}
           className="field"
-          placeholder={resolved ? "الرد على تذكرة مغلقة سيعيد فتحها…" : "اكتب ردك…"}
+          placeholder={resolved ? copy.reopenPlaceholder : copy.replyPlaceholder}
           required
           minLength={2}
         />
         <div className="flex flex-wrap items-center gap-3">
-          <Submit>إرسال</Submit>
+          <Submit>{copy.send}</Submit>
           <Status state={replyState} />
         </div>
       </form>
@@ -73,7 +97,7 @@ export function CustomerReplyForm({ ticketId, resolved }: { ticketId: string; re
         <form action={close} className="flex flex-wrap items-center gap-3 border-t border-white/8 pt-4">
           <input type="hidden" name="ticketId" value={ticketId} />
           <Submit className="btn btn-ghost !px-3.5 !py-2 !text-[13px]" pendingLabel="…">
-            تم حل المشكلة، أغلق التذكرة
+            {copy.resolve}
           </Submit>
           <Status state={closeState} />
         </form>
