@@ -6,6 +6,7 @@ import {
   Badge,
   EmptyState,
   PageHeader,
+  Pagination,
   SectionCard,
   StatCard,
   formatDate,
@@ -21,10 +22,25 @@ import { Gift } from "@/components/icons";
 export const metadata: Metadata = { title: "الدعوات" };
 export const dynamic = "force-dynamic";
 
-export default async function InvitationsPage() {
+const PER_PAGE = 25;
+
+type Search = Record<string, string | string[] | undefined>;
+
+export default async function InvitationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Search>;
+}) {
   await guardPage("invitations.manage");
 
-  const invitations = await listInvitations();
+  const params = await searchParams;
+  const raw = params.page;
+  const page = Math.max(1, Number(Array.isArray(raw) ? raw[0] : raw) || 1);
+
+  const { rows: invitations, total } = await listInvitations({
+    limit: PER_PAGE,
+    offset: (page - 1) * PER_PAGE,
+  });
   const stats = await invitationStats();
   const origin = await requestOrigin();
 
@@ -107,6 +123,12 @@ export default async function InvitationsPage() {
             })}
           </ul>
         )}
+        <Pagination
+          total={total}
+          page={page}
+          perPage={PER_PAGE}
+          build={(next) => (next > 1 ? `/console/invitations?page=${next}` : "/console/invitations")}
+        />
       </SectionCard>
     </>
   );

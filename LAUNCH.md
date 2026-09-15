@@ -63,7 +63,7 @@ as items are fixed: ✅ done · ⏳ in progress · ⛔ blocked on something you 
 - Vercel's Hobby plan forbids commercial use; a paid product needs Pro at $20/month.
 - ✅ Bot filtering on views and interaction pings (`src/lib/bots.ts`). Crawlers, link-preview fetchers (a WhatsApp share fires one before any human opens the link) and scripted clients are served the page and not counted.
 - ✅ `page_views` folded into `portfolio_events` and dropped, counts backfilled.
-- `listInvitations` and the subscription list have no pagination.
+- ✅ Pagination on the invitations and subscriptions lists (the subscriptions one was a bare `LIMIT 100` that silently hid everything past the hundredth). Dead `listUsers` — an unbounded `SELECT * FROM users` with no callers — removed; announcements and per-customer subscription history capped.
 - The client dashboard and console are Arabic-only while the public site is bilingual.
 - ✅ `robots.txt` and a sitemap. The sitemap lists only portfolios that are genuinely public (published, unsuspended, owner subscribed); a withheld page and every signed-in surface carry `noindex`. Set `SITE_URL` in production or the app names itself from the request host.
 - Upload hardening: no image dimension cap, so a decompression bomb is possible.

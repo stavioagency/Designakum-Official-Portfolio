@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { all } from "@/lib/db";
+import { all, get } from "@/lib/db";
 import { billingConfigured, planDefinitions, yearlySaving } from "@/lib/billing";
 import { conversionRate, churnRate, revenueSnapshot } from "@/lib/analytics";
 import { guardPage } from "@/lib/permissions";
@@ -10,6 +10,7 @@ import {
   Badge,
   EmptyState,
   PageHeader,
+  Pagination,
   SectionCard,
   StatCard,
   Tabs,
@@ -21,6 +22,8 @@ import { CreditCard, Wallet } from "@/components/icons";
 
 export const metadata: Metadata = { title: "الاشتراكات" };
 export const dynamic = "force-dynamic";
+
+const PER_PAGE = 50;
 
 interface SubscriptionRow {
   id: string;
@@ -64,6 +67,7 @@ export default async function SubscriptionsPage({
   await guardPage("billing.manage");
   const params = await searchParams;
   const filter = one(params.status) ?? "active";
+  const page = Math.max(1, Number(one(params.page)) || 1);
 
   const plans = await planDefinitions();
   const saving = await yearlySaving();
@@ -79,12 +83,31 @@ export default async function SubscriptionsPage({
         ? "WHERE s.status IN ('canceled','expired')"
         : "WHERE s.status = 'active'";
 
+  // Paged rather than a bare LIMIT: the old query silently hid everything past
+  // the hundredth subscription, which is exactly the point at which the platform
+  // would be worth looking at.
   const rows = await all<SubscriptionRow>(
     `SELECT s.*, u.email, u.display_name
        FROM subscriptions s JOIN users u ON u.id = s.user_id
        ${where}
-      ORDER BY s.created_at DESC LIMIT 100`,
+      ORDER BY s.created_at DESC
+      LIMIT ? OFFSET ?`,
+    PER_PAGE,
+    (page - 1) * PER_PAGE,
   );
+
+  const total =
+    (await get<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM subscriptions s JOIN users u ON u.id = s.user_id ${where}`,
+    ))?.n ?? 0;
+
+  const buildPage = (next: number) => {
+    const query = new URLSearchParams();
+    if (filter !== "active") query.set("status", filter);
+    if (next > 1) query.set("page", String(next));
+    const qs = query.toString();
+    return qs ? `/console/subscriptions?${qs}` : "/console/subscriptions";
+  };
 
   return (
     <>
@@ -172,7 +195,7 @@ export default async function SubscriptionsPage({
         />
       </div>
 
-      <SectionCard title="سجل الاشتراكات" description="أحدث 100 اشتراك">
+      <SectionCard title="سجل الاشتراكات" description={`${nf.format(total)} اشتراك`}>
         {rows.length === 0 ? (
           <EmptyState icon={<CreditCard className="h-5 w-5" />} title="لا اشتراكات في هذه القائمة" />
         ) : (
@@ -212,6 +235,7 @@ export default async function SubscriptionsPage({
             ))}
           </ul>
         )}
+        <Pagination total={total} page={page} perPage={PER_PAGE} build={buildPage} />
       </SectionCard>
     </>
   );

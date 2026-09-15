@@ -205,10 +205,6 @@ export async function setUserLocale(userId: string, locale: "ar" | "en") {
   await run("UPDATE users SET locale = ?, updated_at = ? WHERE id = ?", locale, now(), userId);
 }
 
-export async function listUsers() {
-  return await all<User>("SELECT * FROM users ORDER BY created_at DESC");
-}
-
 export async function revokeSessionsFor(userId: string) {
   await run("DELETE FROM sessions WHERE user_id = ?", userId);
 }

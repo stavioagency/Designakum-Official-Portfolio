@@ -56,8 +56,12 @@ export async function deleteAnnouncement(id: string) {
   await run("DELETE FROM announcements WHERE id = ?", id);
 }
 
-export async function listAnnouncements() {
-  return await all<Announcement>("SELECT * FROM announcements ORDER BY created_at DESC");
+/** Newest first, capped — announcements are never deleted, only expired. */
+export async function listAnnouncements(limit = 100) {
+  return await all<Announcement>(
+    "SELECT * FROM announcements ORDER BY created_at DESC LIMIT ?",
+    Math.min(Math.max(1, limit), 200),
+  );
 }
 
 export async function getAnnouncement(id: string) {

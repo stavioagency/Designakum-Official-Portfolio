@@ -112,10 +112,11 @@ export async function latestSubscription(userId: string): Promise<Subscription |
   );
 }
 
-export async function subscriptionHistory(userId: string) {
+export async function subscriptionHistory(userId: string, limit = 50) {
   return await all<Subscription>(
-    "SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC, seq DESC",
+    "SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC, seq DESC LIMIT ?",
     userId,
+    Math.min(Math.max(1, limit), 200),
   );
 }
 

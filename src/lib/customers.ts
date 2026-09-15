@@ -88,9 +88,9 @@ export async function listCustomers(filter: CustomerFilter = {}) {
             s.plan AS subscription_plan, s.status AS subscription_status,
             s.source AS subscription_source, s.current_period_end AS period_end,
             (SELECT COUNT(*) FROM reports r WHERE r.portfolio_id = p.id
-              AND r.status IN ('pending','reviewing')) AS open_reports,
+              AND r.status IN ('pending','reviewing'))::int AS open_reports,
             (SELECT COUNT(*) FROM tickets t WHERE t.user_id = u.id
-              AND t.status <> 'resolved') AS open_tickets
+              AND t.status <> 'resolved')::int AS open_tickets
      ${base}
      ORDER BY ${order}
      LIMIT ? OFFSET ?`,

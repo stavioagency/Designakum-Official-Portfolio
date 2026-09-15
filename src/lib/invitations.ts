@@ -114,16 +114,26 @@ export interface InvitationRow extends Invitation {
   redeemed_by: string;
 }
 
-export async function listInvitations() {
-  return await all<InvitationRow>(
+/**
+ * Paged. Invitation codes accumulate and are never cleaned up, so an unbounded
+ * SELECT here is a page that gets slower every month and eventually times out.
+ */
+export async function listInvitations({ limit = 25, offset = 0 } = {}) {
+  const rows = await all<InvitationRow>(
     `SELECT i.*, c.email AS creator_email,
             COALESCE((SELECT string_agg(u.email, ', ')
                         FROM invitation_redemptions r JOIN users u ON u.id = r.user_id
                        WHERE r.invitation_id = i.id), '') AS redeemed_by
        FROM invitations i
        LEFT JOIN users c ON c.id = i.created_by
-      ORDER BY i.created_at DESC`,
+      ORDER BY i.created_at DESC
+      LIMIT ? OFFSET ?`,
+    Math.min(Math.max(1, limit), 100),
+    Math.max(0, offset),
   );
+
+  const total = (await get<{ n: number }>("SELECT COUNT(*) AS n FROM invitations"))?.n ?? 0;
+  return { rows, total };
 }
 
 export async function revokeInvitation(id: string) {
