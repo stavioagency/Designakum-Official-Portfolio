@@ -2,6 +2,7 @@ import "server-only";
 import { get, now, run } from "./db";
 import { newId } from "./ids";
 import { deleteImage, putImage, readImage } from "./storage";
+import { imageInfo } from "./image-info";
 import type { User } from "./types";
 
 // Comfortably under Vercel's 4.5 MB serverless request cap, and far above what
@@ -12,21 +13,42 @@ const MAX_BYTES = 4 * 1024 * 1024;
 // this app's own origin.
 const ALLOWED = new Set(["image/png", "image/jpeg", "image/webp", "image/gif", "image/avif"]);
 
+/**
+ * Dimension caps. File size alone cannot see a decompression bomb — 40 KB on the
+ * wire can declare 40 000 × 40 000 pixels, which is 6 GB once anything renders
+ * it. The per-side cap covers the pathological aspect ratios that slip under a
+ * megapixel budget, and 40 MP is far above the largest photograph anyone will
+ * reasonably put on a portfolio page.
+ */
+const MAX_SIDE = 12_000;
+const MAX_PIXELS = 40_000_000;
+
 export async function storeImage(file: File, user: User): Promise<string> {
   if (!file || file.size === 0) throw new Error("لم يتم اختيار صورة");
   if (file.size > MAX_BYTES) throw new Error("حجم الصورة يتجاوز 4 ميجابايت");
   if (!ALLOWED.has(file.type)) throw new Error("صيغة الصورة غير مدعومة");
 
-  const id = newId("ast");
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const storagePath = await putImage(id, bytes, file.type);
+
+  // The browser's Content-Type is a claim; the magic bytes are the fact. Storing
+  // the parsed type means the asset route can never be talked into serving
+  // something as an image that is not one.
+  const info = imageInfo(bytes);
+  if (!info || !ALLOWED.has(info.mime)) throw new Error("الملف ليس صورة صالحة");
+  if (info.width < 1 || info.height < 1) throw new Error("الملف ليس صورة صالحة");
+  if (info.width > MAX_SIDE || info.height > MAX_SIDE || info.width * info.height > MAX_PIXELS) {
+    throw new Error("أبعاد الصورة كبيرة جدًا");
+  }
+
+  const id = newId("ast");
+  const storagePath = await putImage(id, bytes, info.mime);
 
   await run(
     `INSERT INTO assets (id, owner_id, mime, storage_path, byte_size, created_at)
      VALUES (?, ?, ?, ?, ?, ?)`,
     id,
     user.id,
-    file.type,
+    info.mime,
     storagePath,
     bytes.byteLength,
     now(),
