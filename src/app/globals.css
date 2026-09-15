@@ -1,0 +1,290 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "IBM Plex Sans Arabic", "Tajawal", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-ink-950: #07080e;
+  --color-ink-900: #0b0d16;
+  --color-ink-850: #10121d;
+  --color-ink-800: #151824;
+  --color-ink-700: #1c2030;
+
+  /* Designakum brand blue, taken from the official logo assets. */
+  --color-brand-900: #0d2450;
+  --color-brand-800: #123566;
+  --color-brand-700: #17417f;
+  --color-brand-600: #1b4d9b;
+  --color-brand-500: #2563c9;
+  --color-brand-400: #3b82f6;
+  --color-brand-300: #7cb0ff;
+
+  --color-mist-50:  #f6f6fb;
+  --color-mist-300: #b9b9cc;
+  --color-mist-400: #8f8fa6;
+  --color-mist-500: #6e6e85;
+
+  --radius-card: 28px;
+}
+
+/* ---------------------------------------------------------------- foundation */
+
+:root {
+  color-scheme: dark;
+  /* Brand blue is the platform default; a client may override it per portfolio. */
+  --accent-from: #2563c9;
+  --accent-to: #1b4d9b;
+  --accent-ring: #6aa3ff;
+  --glass: rgba(255, 255, 255, 0.045);
+  --glass-strong: rgba(255, 255, 255, 0.07);
+  --hairline: rgba(255, 255, 255, 0.09);
+  --hairline-soft: rgba(255, 255, 255, 0.055);
+}
+
+[data-theme="brand"]   { --accent-from: #2563c9; --accent-to: #1b4d9b; --accent-ring: #6aa3ff; }
+[data-theme="violet"]  { --accent-from: #8b7cf6; --accent-to: #6d5ae0; --accent-ring: #a595ff; }
+[data-theme="ocean"]   { --accent-from: #22d3ee; --accent-to: #0891b2; --accent-ring: #67e8f9; }
+[data-theme="ember"]   { --accent-from: #fb923c; --accent-to: #ea580c; --accent-ring: #ffb27a; }
+[data-theme="emerald"] { --accent-from: #34d399; --accent-to: #059669; --accent-ring: #6ee7b7; }
+[data-theme="rose"]    { --accent-from: #fb7185; --accent-to: #e11d48; --accent-ring: #fda4af; }
+[data-theme="gold"]    { --accent-from: #fbbf24; --accent-to: #d97706; --accent-ring: #fcd34d; }
+
+* { -webkit-tap-highlight-color: transparent; }
+
+html { scroll-behavior: smooth; }
+
+/* The typographic logo stand-in follows the page language. */
+.brand-name-en { display: none; }
+html[lang="en"] .brand-name-ar { display: none; }
+html[lang="en"] .brand-name-en { display: inline; }
+
+/* Latin copy reads better with Inter leading the stack; Arabic keeps its own face. */
+html[lang="en"] body { font-family: "Inter", "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif; }
+
+body {
+  min-height: 100dvh;
+  background: var(--color-ink-950);
+  color: var(--color-mist-50);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
+}
+
+/* Ambient light: a soft accent wash at the top, a cooler pool at the bottom. */
+.ambient::before,
+.ambient::after {
+  content: "";
+  position: fixed;
+  inset-inline: 0;
+  height: 60vh;
+  pointer-events: none;
+  z-index: 0;
+}
+.ambient::before {
+  top: -22vh;
+  background: radial-gradient(62% 58% at 50% 50%, color-mix(in oklab, var(--accent-from) 55%, transparent), transparent 70%);
+  filter: blur(34px);
+  opacity: 0.5;
+  animation: haze 13s ease-in-out infinite;
+}
+.ambient::after {
+  bottom: -28vh;
+  background: radial-gradient(58% 52% at 50% 50%, color-mix(in oklab, var(--accent-to) 45%, transparent), transparent 72%);
+  filter: blur(44px);
+  opacity: 0.42;
+  animation: haze 17s ease-in-out infinite reverse;
+}
+
+/* -------------------------------------------------------------------- glass */
+
+.glass {
+  background: linear-gradient(160deg, var(--glass-strong), var(--glass));
+  border: 1px solid var(--hairline);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+}
+
+.card {
+  border-radius: var(--radius-card);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.062), rgba(255, 255, 255, 0.028));
+  border: 1px solid var(--hairline);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+    0 24px 60px -30px rgba(0, 0, 0, 0.9);
+}
+
+.card-tight { border-radius: 20px; }
+
+.panel {
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.032);
+  border: 1px solid var(--hairline-soft);
+}
+
+.shell {
+  position: relative;
+  z-index: 1;
+  border-radius: 38px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015) 45%, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--hairline);
+  backdrop-filter: blur(26px) saturate(150%);
+  -webkit-backdrop-filter: blur(26px) saturate(150%);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.07) inset,
+    0 40px 100px -50px rgba(0, 0, 0, 1);
+}
+
+/* ------------------------------------------------------------------ accents */
+
+.accent-grad { background-image: linear-gradient(135deg, var(--accent-from), var(--accent-to)); }
+
+.accent-text {
+  background-image: linear-gradient(120deg, var(--accent-ring), var(--accent-from));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.accent-glow { box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent-ring) 45%, transparent), 0 14px 40px -16px color-mix(in oklab, var(--accent-from) 70%, transparent); }
+
+.hairline { border-color: var(--hairline); }
+
+/* ------------------------------------------------------------------ controls */
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--hairline);
+  color: var(--color-mist-300);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.25s, color 0.25s, border-color 0.25s;
+}
+.icon-btn:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: color-mix(in oklab, var(--accent-ring) 50%, transparent);
+  color: #fff;
+}
+.icon-btn:active { transform: translateY(-1px) scale(0.96); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 16px;
+  padding: 13px 20px;
+  font-weight: 600;
+  font-size: 15px;
+  border: 1px solid transparent;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.2s, background 0.2s, border-color 0.2s, opacity 0.2s;
+  cursor: pointer;
+}
+.btn:active { transform: scale(0.985); }
+.btn:disabled { opacity: 0.55; cursor: progress; }
+
+.btn-primary { color: #fff; background-image: linear-gradient(135deg, var(--accent-from), var(--accent-to)); box-shadow: 0 16px 40px -20px color-mix(in oklab, var(--accent-from) 90%, transparent); }
+.btn-primary:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-2px); }
+
+.btn-ghost { background: rgba(255, 255, 255, 0.05); border-color: var(--hairline); color: var(--color-mist-50); }
+.btn-ghost:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); transform: translateY(-2px); }
+
+.btn-danger { background: rgba(244, 63, 94, 0.12); border-color: rgba(244, 63, 94, 0.32); color: #fda4af; }
+.btn-danger:hover:not(:disabled) { background: rgba(244, 63, 94, 0.2); }
+
+.btn-whatsapp {
+  width: 100%;
+  padding: 17px 20px;
+  font-size: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--hairline);
+  color: #fff;
+}
+.btn-whatsapp:hover {
+  transform: translateY(-2px);
+  background: rgba(37, 211, 102, 0.12);
+  border-color: rgba(37, 211, 102, 0.4);
+  box-shadow: 0 18px 46px -24px rgba(37, 211, 102, 0.8);
+}
+
+.field {
+  width: 100%;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--hairline);
+  padding: 12px 15px;
+  font-size: 15px;
+  color: var(--color-mist-50);
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.field::placeholder { color: var(--color-mist-500); }
+.field:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: color-mix(in oklab, var(--accent-ring) 60%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent-from) 16%, transparent);
+}
+textarea.field { resize: vertical; min-height: 96px; line-height: 1.8; }
+select.field { appearance: none; background-image: none; }
+select.field option { background: #15151f; }
+
+.label { font-size: 12.5px; font-weight: 600; color: var(--color-mist-400); margin-bottom: 7px; display: block; }
+
+/* --------------------------------------------------------------- animations */
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+.rise { animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+@keyframes haze {
+  0%, 100% { opacity: 0.45; transform: translate3d(0, 0, 0) scale(1); }
+  50% { opacity: 0.68; transform: translate3d(0, -14px, 0) scale(1.06); }
+}
+.haze { animation: haze 11s ease-in-out infinite; }
+
+@keyframes sheen {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(220%); }
+}
+
+.lift { transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s, border-color 0.35s; }
+.lift:hover {
+  transform: translateY(-5px);
+  border-color: color-mix(in oklab, var(--accent-ring) 38%, transparent);
+  box-shadow: 0 30px 60px -34px color-mix(in oklab, var(--accent-from) 75%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ------------------------------------------------------------------ details */
+
+::selection { background: color-mix(in oklab, var(--accent-from) 45%, transparent); }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 99px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); background-clip: content-box; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+.snap-x-mandatory { scroll-snap-type: x mandatory; }
+.snap-start { scroll-snap-align: start; }
+
+/* Arabic numerals stay Latin for stat figures, which reads cleaner in this layout. */
+.tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }

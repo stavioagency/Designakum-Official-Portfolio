@@ -1,0 +1,245 @@
+import "server-only";
+import { all, get, now, run } from "./db";
+import { newId } from "./ids";
+import type { Portfolio, Report, ReportStatus, User } from "./types";
+
+export const REPORT_STATUSES: ReportStatus[] = ["pending", "reviewing", "resolved", "dismissed"];
+
+export const REPORT_STATUS_LABEL: Record<ReportStatus, string> = {
+  pending: "قيد الانتظار",
+  reviewing: "تحت المراجعة",
+  resolved: "تمت المعالجة",
+  dismissed: "مرفوض",
+};
+
+/* --------------------------------------------------------------- reporting */
+
+export function createReport(input: {
+  portfolioId: string;
+  reporterId?: string | null;
+  reporterEmail: string;
+  reason: string;
+  description: string;
+  evidenceUrl?: string;
+}): Report {
+  const ts = now();
+  const id = newId("rep");
+  run(
+    `INSERT INTO reports (id, portfolio_id, reporter_id, reporter_email, reason, description,
+       evidence_url, status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+    id,
+    input.portfolioId,
+    input.reporterId ?? null,
+    input.reporterEmail,
+    input.reason,
+    input.description,
+    input.evidenceUrl ?? "",
+    ts,
+    ts,
+  );
+  return get<Report>("SELECT * FROM reports WHERE id = ?", id)!;
+}
+
+/** Stops one person filing the same complaint about the same page repeatedly. */
+export function hasRecentReport(portfolioId: string, reporterEmail: string, withinMs = 86_400_000) {
+  return Boolean(
+    get<{ id: string }>(
+      "SELECT id FROM reports WHERE portfolio_id = ? AND reporter_email = ? AND created_at > ?",
+      portfolioId,
+      reporterEmail,
+      now() - withinMs,
+    ),
+  );
+}
+
+/* ------------------------------------------------------------------- queue */
+
+export interface ReportRow extends Report {
+  portfolio_name: string;
+  portfolio_slug: string;
+  portfolio_suspended: number;
+  owner_email: string;
+  owner_id: string;
+  assignee_email: string | null;
+  note_count: number;
+}
+
+export function listReports(query: {
+  status?: ReportStatus | "all";
+  search?: string;
+  limit?: number;
+  offset?: number;
+} = {}) {
+  const where: string[] = [];
+  const params: unknown[] = [];
+
+  if (query.status && query.status !== "all") {
+    where.push("r.status = ?");
+    params.push(query.status);
+  }
+  if (query.search) {
+    where.push("(p.name LIKE ? OR p.slug LIKE ? OR r.reporter_email LIKE ? OR r.description LIKE ?)");
+    const like = `%${query.search}%`;
+    params.push(like, like, like, like);
+  }
+
+  const clause = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  const limit = query.limit ?? 25;
+  const offset = query.offset ?? 0;
+
+  const rows = all<ReportRow>(
+    `SELECT r.*, p.name AS portfolio_name, p.slug AS portfolio_slug,
+            p.suspended AS portfolio_suspended, u.email AS owner_email, u.id AS owner_id,
+            a.email AS assignee_email,
+            (SELECT COUNT(*) FROM report_notes n WHERE n.report_id = r.id) AS note_count
+       FROM reports r
+       JOIN portfolios p ON p.id = r.portfolio_id
+       JOIN users u ON u.id = p.user_id
+       LEFT JOIN users a ON a.id = r.assignee_id
+       ${clause}
+      ORDER BY CASE r.status WHEN 'pending' THEN 0 WHEN 'reviewing' THEN 1 ELSE 2 END,
+               r.created_at DESC
+      LIMIT ? OFFSET ?`,
+    ...params,
+    limit,
+    offset,
+  );
+
+  const total =
+    get<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM reports r JOIN portfolios p ON p.id = r.portfolio_id ${clause}`,
+      ...params,
+    )?.n ?? 0;
+
+  return { rows, total };
+}
+
+export function reportCounts(): Record<ReportStatus | "all", number> {
+  const rows = all<{ status: ReportStatus; n: number }>(
+    "SELECT status, COUNT(*) AS n FROM reports GROUP BY status",
+  );
+  const counts = { pending: 0, reviewing: 0, resolved: 0, dismissed: 0, all: 0 };
+  for (const row of rows) {
+    counts[row.status] = row.n;
+    counts.all += row.n;
+  }
+  return counts;
+}
+
+export function getReport(id: string) {
+  return get<ReportRow>(
+    `SELECT r.*, p.name AS portfolio_name, p.slug AS portfolio_slug,
+            p.suspended AS portfolio_suspended, u.email AS owner_email, u.id AS owner_id,
+            a.email AS assignee_email, 0 AS note_count
+       FROM reports r
+       JOIN portfolios p ON p.id = r.portfolio_id
+       JOIN users u ON u.id = p.user_id
+       LEFT JOIN users a ON a.id = r.assignee_id
+      WHERE r.id = ?`,
+    id,
+  );
+}
+
+export function reportsForPortfolio(portfolioId: string) {
+  return all<Report>(
+    "SELECT * FROM reports WHERE portfolio_id = ? ORDER BY created_at DESC",
+    portfolioId,
+  );
+}
+
+/* ------------------------------------------------------------------- notes */
+
+export interface ReportNote {
+  id: string;
+  report_id: string;
+  author_id: string | null;
+  author_name: string;
+  body: string;
+  created_at: number;
+}
+
+export function addReportNote(reportId: string, author: User, body: string) {
+  run(
+    "INSERT INTO report_notes (id, report_id, author_id, author_name, body, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+    newId("rnt"),
+    reportId,
+    author.id,
+    author.display_name || author.email,
+    body,
+    now(),
+  );
+  run("UPDATE reports SET updated_at = ? WHERE id = ?", now(), reportId);
+}
+
+export function reportNotes(reportId: string) {
+  return all<ReportNote>(
+    "SELECT * FROM report_notes WHERE report_id = ? ORDER BY created_at",
+    reportId,
+  );
+}
+
+/* ------------------------------------------------------------- transitions */
+
+export function setReportStatus(reportId: string, status: ReportStatus, resolution = "") {
+  run(
+    `UPDATE reports SET status = ?, resolution = CASE WHEN ? = '' THEN resolution ELSE ? END,
+       resolved_at = CASE WHEN ? IN ('resolved','dismissed') THEN ? ELSE NULL END, updated_at = ?
+     WHERE id = ?`,
+    status,
+    resolution,
+    resolution,
+    status,
+    now(),
+    now(),
+    reportId,
+  );
+}
+
+export function assignReport(reportId: string, assigneeId: string | null) {
+  run(
+    `UPDATE reports SET assignee_id = ?, status = CASE WHEN status = 'pending' AND ? IS NOT NULL
+       THEN 'reviewing' ELSE status END, updated_at = ? WHERE id = ?`,
+    assigneeId,
+    assigneeId,
+    now(),
+    reportId,
+  );
+}
+
+/* -------------------------------------------------------------- enforcement */
+
+/**
+ * Suspension hides a portfolio from the public without touching its content: the
+ * client keeps every project, image and setting, and the moderation history stays
+ * attached to the account.
+ */
+export function suspendPortfolio(portfolioId: string, reason: string, untilMs: number | null) {
+  run(
+    "UPDATE portfolios SET suspended = 1, suspended_reason = ?, suspended_at = ?, suspended_until = ?, updated_at = ? WHERE id = ?",
+    reason,
+    now(),
+    untilMs,
+    now(),
+    portfolioId,
+  );
+}
+
+export function restorePortfolio(portfolioId: string) {
+  run(
+    "UPDATE portfolios SET suspended = 0, suspended_reason = '', suspended_at = NULL, suspended_until = NULL, updated_at = ? WHERE id = ?",
+    now(),
+    portfolioId,
+  );
+}
+
+/**
+ * A temporary suspension lifts itself the first time anyone looks at the page,
+ * so no scheduler is needed for the common case.
+ */
+export function liftExpiredSuspension(portfolio: Portfolio): boolean {
+  if (portfolio.suspended !== 1 || !portfolio.suspended_until) return false;
+  if (portfolio.suspended_until > now()) return false;
+  restorePortfolio(portfolio.id);
+  return true;
+}

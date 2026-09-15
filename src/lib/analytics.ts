@@ -1,0 +1,244 @@
+import "server-only";
+import { all, get, now, run } from "./db";
+import { newId } from "./ids";
+import { planDefinitions } from "./billing";
+
+export type EventKind = "view" | "whatsapp" | "social" | "project";
+export const EVENT_KINDS: EventKind[] = ["view", "whatsapp", "social", "project"];
+
+export const EVENT_LABEL: Record<EventKind, string> = {
+  view: "مشاهدات",
+  whatsapp: "نقرات واتساب",
+  social: "نقرات التواصل",
+  project: "نقرات الأعمال",
+};
+
+export const dayKey = (ms = now()) => new Date(ms).toISOString().slice(0, 10);
+
+export function recordPortfolioEvent(portfolioId: string, kind: EventKind, day = dayKey()) {
+  run(
+    `INSERT INTO portfolio_events (id, portfolio_id, kind, day, count) VALUES (?, ?, ?, ?, 1)
+     ON CONFLICT(portfolio_id, kind, day) DO UPDATE SET count = count + 1`,
+    newId("pev"),
+    portfolioId,
+    kind,
+    day,
+  );
+}
+
+/**
+ * Marks a visitor as seen for the day. The hash is derived from request headers
+ * and never stored alongside anything identifying, which is enough to count
+ * unique visitors without building a profile of them.
+ */
+export function markUniqueVisitor(portfolioId: string, visitorHash: string, day = dayKey()) {
+  run(
+    `INSERT INTO visit_marks (portfolio_id, day, visitor_hash) VALUES (?, ?, ?)
+     ON CONFLICT(portfolio_id, day, visitor_hash) DO NOTHING`,
+    portfolioId,
+    day,
+    visitorHash,
+  );
+}
+
+/* ------------------------------------------------------------------ series */
+
+function lastDays(days: number): string[] {
+  const out: string[] = [];
+  const today = Date.now();
+  for (let i = days - 1; i >= 0; i--) out.push(dayKey(today - i * 86_400_000));
+  return out;
+}
+
+export interface Series {
+  day: string;
+  value: number;
+}
+
+function seriesFrom(rows: { day: string; value: number }[], days: number): Series[] {
+  const map = new Map(rows.map((r) => [r.day, r.value]));
+  return lastDays(days).map((day) => ({ day, value: map.get(day) ?? 0 }));
+}
+
+export function eventSeries(kind: EventKind, days = 30, portfolioId?: string): Series[] {
+  const rows = all<{ day: string; value: number }>(
+    `SELECT day, SUM(count) AS value FROM portfolio_events
+      WHERE kind = ? ${portfolioId ? "AND portfolio_id = ?" : ""} AND day >= ?
+      GROUP BY day`,
+    ...(portfolioId ? [kind, portfolioId] : [kind]),
+    lastDays(days)[0],
+  );
+  return seriesFrom(rows, days);
+}
+
+export function uniqueVisitorSeries(days = 30): Series[] {
+  const rows = all<{ day: string; value: number }>(
+    "SELECT day, COUNT(*) AS value FROM visit_marks WHERE day >= ? GROUP BY day",
+    lastDays(days)[0],
+  );
+  return seriesFrom(rows, days);
+}
+
+export function registrationSeries(days = 30): Series[] {
+  const since = Date.now() - days * 86_400_000;
+  const rows = all<{ day: string; value: number }>(
+    `SELECT date(created_at / 1000, 'unixepoch') AS day, COUNT(*) AS value
+       FROM users WHERE role = 'client' AND created_at >= ? GROUP BY day`,
+    since,
+  );
+  return seriesFrom(rows, days);
+}
+
+export function subscriptionSeries(days = 30): Series[] {
+  const since = Date.now() - days * 86_400_000;
+  const rows = all<{ day: string; value: number }>(
+    `SELECT date(created_at / 1000, 'unixepoch') AS day, COUNT(*) AS value
+       FROM subscriptions WHERE created_at >= ? GROUP BY day`,
+    since,
+  );
+  return seriesFrom(rows, days);
+}
+
+export const seriesTotal = (series: Series[]) => series.reduce((sum, p) => sum + p.value, 0);
+
+/* ------------------------------------------------------------------ totals */
+
+export function eventTotal(kind: EventKind, days?: number, portfolioId?: string): number {
+  const params: unknown[] = [kind];
+  let clause = "WHERE kind = ?";
+  if (portfolioId) {
+    clause += " AND portfolio_id = ?";
+    params.push(portfolioId);
+  }
+  if (days) {
+    clause += " AND day >= ?";
+    params.push(lastDays(days)[0]);
+  }
+  return (
+    get<{ n: number }>(`SELECT COALESCE(SUM(count), 0) AS n FROM portfolio_events ${clause}`, ...params)
+      ?.n ?? 0
+  );
+}
+
+export function uniqueVisitorTotal(days?: number): number {
+  return days
+    ? get<{ n: number }>(
+        "SELECT COUNT(*) AS n FROM visit_marks WHERE day >= ?",
+        lastDays(days)[0],
+      )?.n ?? 0
+    : get<{ n: number }>("SELECT COUNT(*) AS n FROM visit_marks")?.n ?? 0;
+}
+
+export interface TopPortfolio {
+  id: string;
+  name: string;
+  slug: string;
+  views: number;
+  suspended: number;
+  owner_email: string;
+}
+
+export function topPortfolios(limit = 8, days?: number) {
+  if (!days) {
+    return all<TopPortfolio>(
+      `SELECT p.id, p.name, p.slug, p.views, p.suspended, u.email AS owner_email
+         FROM portfolios p JOIN users u ON u.id = p.user_id
+        ORDER BY p.views DESC LIMIT ?`,
+      limit,
+    );
+  }
+  return all<TopPortfolio>(
+    `SELECT p.id, p.name, p.slug, p.suspended, u.email AS owner_email,
+            COALESCE(SUM(e.count), 0) AS views
+       FROM portfolios p
+       JOIN users u ON u.id = p.user_id
+       LEFT JOIN portfolio_events e
+         ON e.portfolio_id = p.id AND e.kind = 'view' AND e.day >= ?
+      GROUP BY p.id
+      ORDER BY views DESC LIMIT ?`,
+    lastDays(days)[0],
+    limit,
+  );
+}
+
+/* ----------------------------------------------------------------- revenue */
+
+export interface RevenueSnapshot {
+  mrr: number;
+  arr: number;
+  monthlyCount: number;
+  yearlyCount: number;
+  compedCount: number;
+  paidCount: number;
+}
+
+/**
+ * Only subscriptions that actually billed money count toward revenue: comped and
+ * invited accounts are real subscriptions but contribute 0, and a yearly plan is
+ * spread across twelve months for MRR.
+ */
+export function revenueSnapshot(): RevenueSnapshot {
+  const rows = all<{ plan: string; source: string; amount: number; n: number }>(
+    `SELECT s.plan, s.source, s.amount, COUNT(*) AS n
+       FROM subscriptions s
+      WHERE s.status = 'active'
+        AND (s.current_period_end IS NULL OR s.current_period_end > ?)
+        AND s.id = (SELECT s2.id FROM subscriptions s2 WHERE s2.user_id = s.user_id
+                     ORDER BY s2.created_at DESC, s2.rowid DESC LIMIT 1)
+      GROUP BY s.plan, s.source, s.amount`,
+    now(),
+  );
+
+  const plans = planDefinitions();
+  let mrr = 0;
+  let monthlyCount = 0;
+  let yearlyCount = 0;
+  let compedCount = 0;
+  let paidCount = 0;
+
+  for (const row of rows) {
+    if (row.plan === "monthly") monthlyCount += row.n;
+    if (row.plan === "yearly") yearlyCount += row.n;
+
+    if (row.source === "paid") {
+      paidCount += row.n;
+      const amount = row.amount || plans[row.plan as "monthly" | "yearly"].amount;
+      mrr += row.plan === "yearly" ? (amount / 12) * row.n : amount * row.n;
+    } else {
+      compedCount += row.n;
+    }
+  }
+
+  return { mrr, arr: mrr * 12, monthlyCount, yearlyCount, compedCount, paidCount };
+}
+
+/** Cancellations and expiries in the window, over what was live going into it. */
+export function churnRate(days = 30): { lost: number; base: number; percent: number } {
+  const since = Date.now() - days * 86_400_000;
+  const lost =
+    get<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM subscriptions
+        WHERE status IN ('canceled','expired') AND updated_at >= ?`,
+      since,
+    )?.n ?? 0;
+
+  const activeNow =
+    get<{ n: number }>(
+      `SELECT COUNT(DISTINCT user_id) AS n FROM subscriptions
+        WHERE status = 'active' AND (current_period_end IS NULL OR current_period_end > ?)`,
+      now(),
+    )?.n ?? 0;
+
+  const base = activeNow + lost;
+  return { lost, base, percent: base > 0 ? (lost / base) * 100 : 0 };
+}
+
+/** Share of client accounts that have ever held a subscription. */
+export function conversionRate(): { converted: number; total: number; percent: number } {
+  const total = get<{ n: number }>("SELECT COUNT(*) AS n FROM users WHERE role = 'client'")?.n ?? 0;
+  const converted =
+    get<{ n: number }>(
+      "SELECT COUNT(DISTINCT user_id) AS n FROM subscriptions",
+    )?.n ?? 0;
+  return { converted, total, percent: total > 0 ? (converted / total) * 100 : 0 };
+}
