@@ -147,3 +147,61 @@ describe("an English account is English all the way down", () => {
     }
   });
 });
+
+describe("the report dialog follows the visitor, not the designer", () => {
+  /**
+   * Everything else on a public page belongs to its designer and renders in
+   * their language. This one control belongs to whoever is filing the report.
+   */
+  test("an English visitor gets an English report button on an Arabic page", async () => {
+    // Its own portfolio: the report button only renders on a page that is
+    // actually public, and which seeded portfolio is public at any moment
+    // depends on whichever billing test ran last.
+    const connection = db();
+    const owner = await connection
+      .prepare(
+        `SELECT s.user_id FROM subscriptions s
+          WHERE s.status = 'active'
+            AND (s.current_period_end IS NULL OR s.current_period_end > ?)
+          ORDER BY s.created_at DESC LIMIT 1`,
+      )
+      .get(Date.now());
+    assert.ok(owner, "the seed should leave a subscribed customer");
+
+    const slug = `report-probe-${Math.random().toString(36).slice(2, 10)}`;
+    const id = `pf_${slug}`;
+    await connection
+      .prepare(
+        `INSERT INTO portfolios (id, user_id, slug, name, title, locale, published, created_at, updated_at)
+         VALUES (?, ?, ?, 'مصمم تجريبي', 'مصمم', 'ar', 1, ?, ?)`,
+      )
+      .run(id, owner.user_id, slug, Date.now(), Date.now());
+
+    try {
+      await checkTriggerLanguage(slug);
+    } finally {
+      await connection.prepare("DELETE FROM portfolios WHERE id = ?").run(id);
+      connection.close();
+    }
+  });
+
+  async function checkTriggerLanguage(slug) {
+    const english = await visit(`/p/${slug}`, { locale: "en" });
+    assert.ok(contains(english, "Report this portfolio"), "the trigger should be English");
+    assert.ok(
+      !contains(english, "الإبلاغ عن هذا المعرض"),
+      "and not also carry the Arabic one",
+    );
+    // The page around it is still the designer's.
+    assert.match(english.body, /lang="ar"/);
+
+    const arabicVisitor = await visit(`/p/${slug}`, { locale: "ar" });
+    assert.ok(contains(arabicVisitor, "الإبلاغ عن هذا المعرض"));
+  }
+
+  test("an Arabic visitor gets an Arabic report button on an English page", async () => {
+    const page = await visit("/p/alex", { locale: "ar" });
+    assert.ok(contains(page, "الإبلاغ عن هذا المعرض"));
+    assert.match(page.body, /lang="en"/, "the portfolio itself stays English");
+  });
+});

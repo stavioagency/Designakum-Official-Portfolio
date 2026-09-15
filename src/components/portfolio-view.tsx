@@ -4,8 +4,9 @@ import { TrackEvents } from "./track-events";
 import { ReportDialog } from "./report-dialog";
 import { SOCIAL_META, STAT_ICONS, Whatsapp } from "./icons";
 import { DIR, dict, fill } from "@/lib/i18n";
+import type { Dictionary } from "@/lib/i18n";
 import { safeUrl, socialHref } from "@/lib/safe-url";
-import type { PortfolioBundle } from "@/lib/types";
+import type { PortfolioBundle, Locale } from "@/lib/types";
 
 function waHref(number: string) {
   const digits = number.replace(/[^\d]/g, "");
@@ -54,12 +55,20 @@ export function PortfolioView({
   live = false,
   reportsOpen = false,
   rules = "",
+  reportCopy,
+  viewerLocale,
 }: {
   bundle: PortfolioBundle;
   /** True on the real public page — previews must not record analytics. */
   live?: boolean;
   reportsOpen?: boolean;
   rules?: string;
+  /**
+   * The report dialog is the one thing on this page that does not belong to the
+   * designer, so it speaks the visitor's language rather than the portfolio's.
+   */
+  reportCopy?: Dictionary["report"];
+  viewerLocale?: Locale;
 }) {
   const { portfolio, slides, projects, stats, socials } = bundle;
   const locale = portfolio.locale;
@@ -274,8 +283,14 @@ export function PortfolioView({
             © {portfolio.footer_note || `${d.rights} — ${portfolio.name}`}{" "}
             {new Date().getFullYear()}
           </p>
-          {reportsOpen && (
-            <ReportDialog portfolioId={portfolio.id} portfolioName={portfolio.name} rules={rules} />
+          {reportsOpen && reportCopy && (
+            <ReportDialog
+              portfolioId={portfolio.id}
+              portfolioName={portfolio.name}
+              rules={rules}
+              copy={reportCopy}
+              locale={viewerLocale ?? portfolio.locale}
+            />
           )}
         </footer>
       </main>

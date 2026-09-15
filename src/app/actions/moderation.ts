@@ -48,41 +48,43 @@ function refresh(reportId?: string) {
  */
 export async function submitReportAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   try {
+    // Keys, not sentences: a public visitor files this in whichever language
+    // they chose, and the action cannot know which that is.
     if (!(await readSettings())["features.reports"]) {
-      return { error: "استقبال البلاغات متوقف حاليًا" };
+      return { error: "closed" };
     }
 
     const fingerprint = await callerFingerprint();
     const limit = await rateLimit(`report:${fingerprint}`, 5, 60 * 60 * 1000);
     if (!limit.ok) {
-      return { error: `تجاوزت عدد البلاغات المسموح بها. حاول بعد ${Math.ceil(limit.retryAfterSeconds / 60)} دقيقة.` };
+      return { error: `rateLimited:${Math.ceil(limit.retryAfterSeconds / 60)}` };
     }
 
     const portfolioId = str(fd, "portfolioId");
     const portfolio = await getPortfolioById(portfolioId);
-    if (!portfolio) return { error: "المعرض غير موجود" };
+    if (!portfolio) return { error: "missingPortfolio" };
 
     const reason = str(fd, "reason");
-    if (!REPORT_REASONS.some((r) => r.value === reason)) return { error: "اختر سبب البلاغ" };
+    if (!REPORT_REASONS.some((r) => r.value === reason)) return { error: "badReason" };
 
     const description = str(fd, "description").slice(0, 2000);
-    if (description.length < 10) return { error: "اكتب وصفًا واضحًا للمخالفة (10 أحرف على الأقل)" };
+    if (description.length < 10) return { error: "shortDescription" };
 
     const viewer = await currentUser();
     const email = (viewer?.email ?? str(fd, "email")).toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      return { error: "أدخل بريدًا إلكترونيًا صحيحًا لنتمكن من الرد عليك" };
+      return { error: "badEmail" };
     }
     if (viewer && viewer.id === portfolio.user_id) {
-      return { error: "لا يمكنك الإبلاغ عن معرضك الخاص" };
+      return { error: "ownPortfolio" };
     }
     if (await hasRecentReport(portfolioId, email)) {
-      return { error: "لديك بلاغ مسجّل على هذا المعرض خلال آخر 24 ساعة" };
+      return { error: "duplicate" };
     }
 
     const evidenceUrl = str(fd, "evidenceUrl").slice(0, 500);
     if (evidenceUrl && !isSafeUrl(evidenceUrl)) {
-      return { error: "رابط الدليل غير صالح — استخدم عنوانًا يبدأ بـ https://" };
+      return { error: "badEvidence" };
     }
 
     await createReport({
@@ -95,7 +97,7 @@ export async function submitReportAction(_prev: ActionState, fd: FormData): Prom
     });
 
     refresh();
-    return { ok: "تم استلام بلاغك وسيراجعه فريق ديزاينكم." };
+    return { ok: "sent" };
   } catch (error) {
     return fail(error);
   }

@@ -129,6 +129,8 @@ export default async function PublicPortfolioPage({ params }: Props) {
         live
         reportsOpen={settings["features.reports"]}
         rules={localized(settings, "rules.portfolio", locale)}
+        reportCopy={d.report}
+        viewerLocale={locale}
       />
       {canEdit && (
         <Link
