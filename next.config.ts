@@ -49,8 +49,9 @@ const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
 
   experimental: {
-    // Keep uploaded binaries out of the RSC payload; they are streamed by a route handler.
-    serverActions: { bodySizeLimit: "8mb" },
+    // Vercel caps a serverless request body at 4.5 MB, so anything larger here
+    // would be rejected by the platform before the action ever runs.
+    serverActions: { bodySizeLimit: "4mb" },
   },
 
   poweredByHeader: false,

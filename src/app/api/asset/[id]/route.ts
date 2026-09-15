@@ -1,6 +1,7 @@
-import { readAsset } from "@/lib/assets";
+import { openAsset, readAsset } from "@/lib/assets";
 import { currentUser } from "@/lib/auth";
 import { isStaff } from "@/lib/permissions";
+import { reportError } from "@/lib/observability";
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
@@ -13,12 +14,30 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     return new Response("Not found", { status: 404 });
   }
 
-  return new Response(new Uint8Array(asset.bytes), {
+  let opened;
+  try {
+    opened = await openAsset(asset);
+  } catch (error) {
+    reportError(error, { area: "asset", assetId: id });
+    return new Response("Unavailable", { status: 502 });
+  }
+  if (!opened) return new Response("Not found", { status: 404 });
+
+  // Deliberately not `immutable`: a suspension has to take effect for people who
+  // already loaded the page, and an hour is an acceptable takedown lag.
+  const cache = "public, max-age=3600, stale-while-revalidate=86400";
+
+  if (opened.kind === "redirect") {
+    return new Response(null, {
+      status: 307,
+      headers: { Location: opened.url, "Cache-Control": cache },
+    });
+  }
+
+  return new Response(new Uint8Array(opened.bytes), {
     headers: {
       "Content-Type": asset.mime,
-      // Deliberately not `immutable`: a suspension has to take effect for people
-      // who already loaded the page, and an hour is an acceptable takedown lag.
-      "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+      "Cache-Control": cache,
       "X-Content-Type-Options": "nosniff",
       "Content-Security-Policy": "sandbox; default-src 'none'",
     },
