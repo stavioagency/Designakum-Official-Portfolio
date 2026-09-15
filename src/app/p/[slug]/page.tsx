@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { get } from "@/lib/db";
-import { entitlementsFor } from "@/lib/billing";
+import { canPublish } from "@/lib/billing";
 import { getPortfolioBySlug, loadBundle, recordView } from "@/lib/portfolios";
 import { liftExpiredSuspension } from "@/lib/moderation";
 import { isStaff } from "@/lib/permissions";
@@ -82,7 +82,14 @@ export default async function PublicPortfolioPage({ params }: Props) {
     );
   }
 
-  if (!portfolio.published && !canEdit) {
+  // The owner's subscription decides whether this page is public at all. Checking
+  // it here means a lapse takes effect immediately and re-subscribing restores the
+  // page exactly as it was — no batch job, nothing lost.
+  const owner = await get<User>("SELECT * FROM users WHERE id = ?", portfolio.user_id);
+  const ownerMayPublish = owner ? await canPublish(owner) : false;
+  const publiclyVisible = portfolio.published === 1 && ownerMayPublish;
+
+  if (!publiclyVisible && !canEdit) {
     return (
       <main className="relative z-10 grid min-h-dvh place-items-center px-6 text-center">
         <div className="card max-w-sm p-8">
@@ -97,15 +104,10 @@ export default async function PublicPortfolioPage({ params }: Props) {
 
   if (!canEdit) await recordView(portfolio.id, await callerFingerprint());
 
-  // The badge follows the page owner's subscription, not the viewer's.
-  const owner = await get<User>("SELECT * FROM users WHERE id = ?", portfolio.user_id);
-  const showBadge = owner ? (await entitlementsFor(owner)).showBadge : true;
-
   return (
     <>
       <PortfolioView
         bundle={await loadBundle(portfolio)}
-        showBadge={showBadge}
         live
         reportsOpen={settings["features.reports"]}
         rules={settings["rules.portfolio"]}

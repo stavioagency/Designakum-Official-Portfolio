@@ -6,6 +6,7 @@ import { getPortfolioForUser, loadBundle } from "@/lib/portfolios";
 import { PortfolioView } from "@/components/portfolio-view";
 import { PreviewFrame } from "@/components/preview-frame";
 import { PublishBar } from "@/components/editor/publish-bar";
+import { canPublish } from "@/lib/billing";
 
 export const metadata: Metadata = { title: "معاينة" };
 export const dynamic = "force-dynamic";
@@ -31,7 +32,7 @@ export default async function PreviewPage() {
         </Link>
       </div>
 
-      <PublishBar portfolio={portfolio} />
+      <PublishBar portfolio={portfolio} canPublish={await canPublish(user)} />
 
       <div className="mt-6">
         <PreviewFrame>

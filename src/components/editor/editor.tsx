@@ -26,12 +26,14 @@ export function Editor({
   origin,
   preview,
   hasPassword,
+  canPublish,
 }: {
   bundle: PortfolioBundle;
   user: User;
   origin: string;
   preview: React.ReactNode;
   hasPassword: boolean;
+  canPublish: boolean;
 }) {
   const [tab, setTab] = useState<TabKey>("profile");
   const { portfolio, slides, projects, stats, socials } = bundle;
@@ -188,6 +190,7 @@ export function Editor({
             user={user}
             origin={origin}
             hasPassword={hasPassword}
+            canPublish={canPublish}
           />
         )}
       </div>

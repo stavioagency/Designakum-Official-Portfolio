@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { activeSubscription, subscriptionHistory, billingEvents } from "@/lib/billing";
+import { activeSubscription, subscriptionHistory, billingEvents, canPublish } from "@/lib/billing";
 import { auditForTarget } from "@/lib/audit";
 import { getCustomer, portfolioOf } from "@/lib/customers";
 import { can, guardPage, ROLE_LABEL } from "@/lib/permissions";
@@ -395,6 +395,7 @@ export default async function CustomerProfilePage({
             origin={origin}
             preview={<PortfolioView bundle={await loadBundle(portfolio)} />}
             hasPassword={customer.password_hash !== ""}
+            canPublish={await canPublish(customer)}
           />
         </section>
       )}

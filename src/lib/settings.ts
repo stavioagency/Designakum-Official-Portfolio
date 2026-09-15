@@ -21,9 +21,6 @@ export const SETTING_DEFAULTS = {
   "pricing.sar_per_usd": 3.75,
   "pricing.charge_currency": "USD",
 
-  "limits.free_projects": 6,
-  "limits.free_slides": 2,
-
   "platform.maintenance": false,
   "platform.maintenance_includes_portfolios": true,
   "platform.maintenance_message":

@@ -15,8 +15,6 @@ export interface PricingCopy {
   twelveMonths: string;
   saved: string;
   savedPercent: string;
-  freeProjects: number;
-  freeSlides: number;
   /** The provider settles in this currency; the riyal price is still the real price. */
   chargeCurrency: string;
   monthlyCharged: string;
@@ -184,8 +182,7 @@ export function Pricing({
       </div>
 
       <p className="mx-auto mt-5 max-w-lg text-center text-[12.5px] leading-relaxed text-mist-500">
-        <span className="font-semibold text-mist-400">{d.freeTitle}:</span>{" "}
-        {d.freeBody(copy.freeProjects, copy.freeSlides)}
+        <span className="font-semibold text-mist-400">{d.freeTitle}:</span> {d.freeBody}
       </p>
     </section>
   );

@@ -19,12 +19,15 @@ export function SettingsSection({
   user,
   origin,
   hasPassword,
+  canPublish,
 }: {
   portfolio: Portfolio;
   user: User;
   origin: string;
   /** Google-only accounts are offered "set a password" instead of "change". */
   hasPassword: boolean;
+  /** The subscription gates publishing and nothing else. */
+  canPublish: boolean;
 }) {
   const [slugState, saveSlug] = useActionState(saveSlugAction, null);
   const [passwordState, changePassword] = useActionState(changePasswordAction, null);
@@ -94,23 +97,30 @@ export function SettingsSection({
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">حالة النشر</h2>
-            <p className="mt-1 text-[13px] text-mist-400">
-              {isPublished
-                ? "معرضك ظاهر للجميع عبر الرابط العام."
-                : "معرضك مخفي حاليًا، ولا يراه إلا أنت."}
+            <p className="mt-1 text-[13px] leading-relaxed text-mist-400">
+              {!canPublish
+                ? "التعديل والمعاينة مجانيان بالكامل. النشر للعامة هو ما يفتحه الاشتراك."
+                : isPublished
+                  ? "معرضك ظاهر للجميع عبر الرابط العام."
+                  : "معرضك مخفي حاليًا، ولا يراه إلا أنت."}
             </p>
           </div>
           <span
             className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${
-              isPublished
+              isPublished && canPublish
                 ? "bg-emerald-400/12 text-emerald-300"
                 : "bg-amber-400/12 text-amber-300"
             }`}
           >
-            {isPublished ? "منشور" : "مسودة"}
+            {!canPublish ? "يحتاج اشتراكًا" : isPublished ? "منشور" : "مسودة"}
           </span>
         </header>
 
+        {!canPublish ? (
+          <Link href="/dashboard/billing" className="btn btn-primary">
+            فعّل الاشتراك للنشر
+          </Link>
+        ) : (
         <form action={publish} className="flex flex-wrap items-center gap-3">
           <input type="hidden" name="portfolioId" value={portfolio.id} />
           <input type="hidden" name="value" value={isPublished ? "0" : "1"} />
@@ -122,6 +132,7 @@ export function SettingsSection({
           </Submit>
           <Status state={publishState} />
         </form>
+        )}
       </section>
 
       <section className="card space-y-3 p-5 sm:p-6">

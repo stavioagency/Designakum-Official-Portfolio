@@ -44,13 +44,11 @@ export default async function SettingsPage() {
 
       <div className="space-y-4">
         <SettingsGroup
-          title="الأسعار والحدود"
-          description="تنعكس فورًا على صفحة الأسعار ولوحات العملاء."
+          title="الأسعار"
+          description="تنعكس فورًا على صفحة الأسعار ولوحات العملاء. الاشتراك يفتح النشر للعامة، ولا شيء غيره."
           fields={[
             { key: "pricing.monthly_halalas", label: "سعر الباقة الشهرية", type: "money", value: settings["pricing.monthly_halalas"] },
             { key: "pricing.yearly_halalas", label: "سعر الباقة السنوية", type: "money", value: settings["pricing.yearly_halalas"] },
-            { key: "limits.free_projects", label: "حد الأعمال في الخطة المجانية", type: "number", value: settings["limits.free_projects"] },
-            { key: "limits.free_slides", label: "حد الشرائح في الخطة المجانية", type: "number", value: settings["limits.free_slides"] },
           ]}
         />
 

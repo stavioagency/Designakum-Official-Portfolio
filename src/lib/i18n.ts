@@ -40,7 +40,7 @@ const ar = {
 
   pricing: {
     title: "اشتراك واحد، كل المزايا",
-    sub: "ابدأ شهريًا، أو وفّر أكثر مع الاشتراك السنوي.",
+    sub: "ابنِ معرضك مجانًا بالكامل. الاشتراك يفتح النشر للعامة فقط.",
     monthly: "شهري",
     yearly: "سنوي",
     perMonth: "شهريًا",
@@ -54,16 +54,16 @@ const ar = {
     cta: "ابدأ الآن",
     currentPlan: "باقتك الحالية",
     features: [
-      "معرض كامل برابط خاص بك",
-      "مشاريع وشرائح بلا حد",
-      "رفع صورك وقصّها بنفسك",
-      "سبع هويات لونية",
-      "إحصائيات المشاهدات",
-      "إزالة شارة ديزاينكم",
+      "نشر معرضك على رابطك الخاص",
+      "صفحتك مرئية للجميع ولمحركات البحث",
+      "زر واتساب وروابط تواصل تعمل مع زوارك",
+      "إحصائيات المشاهدات والنقرات",
+      "تعديلات فورية تظهر مباشرة",
+      "إلغاء في أي وقت — يبقى عملك كما هو",
     ],
-    freeTitle: "الخطة المجانية",
-    freeBody: (projects: number, slides: number) =>
-      `حتى ${projects} أعمال و${slides} شرائح، مع شارة ديزاينكم في أسفل صفحتك.`,
+    freeTitle: "بدون اشتراك",
+    freeBody:
+      "المحرّر مفتوح بالكامل ومجانًا: أعمال وشرائح وصور بلا حدود، ومعاينة كاملة لصفحتك. الاشتراك يفتح شيئًا واحدًا — نشرها للعامة.",
   },
 
   auth: {
@@ -166,7 +166,7 @@ const en: typeof ar = {
 
   pricing: {
     title: "One subscription, everything included",
-    sub: "Start monthly, or save more with the yearly plan.",
+    sub: "Build your whole portfolio free. The subscription unlocks publishing.",
     monthly: "Monthly",
     yearly: "Yearly",
     perMonth: "per month",
@@ -180,16 +180,16 @@ const en: typeof ar = {
     cta: "Get started",
     currentPlan: "Your current plan",
     features: [
-      "A full portfolio on your own link",
-      "Unlimited projects and slides",
-      "Upload and crop your own images",
-      "Seven accent identities",
-      "View statistics",
-      "Designakum badge removed",
+      "Publish your portfolio on your own link",
+      "Visible to everyone, and to search engines",
+      "WhatsApp button and social links that reach you",
+      "View and click statistics",
+      "Edits go live the moment you save",
+      "Cancel any time — your work stays yours",
     ],
-    freeTitle: "Free plan",
-    freeBody: (projects: number, slides: number) =>
-      `Up to ${projects} projects and ${slides} slides, with a Designakum badge at the bottom of your page.`,
+    freeTitle: "Without a subscription",
+    freeBody:
+      "The editor is free and uncapped: unlimited projects, slides and images, and a full preview of your page. The subscription unlocks one thing — making it public.",
   },
 
   auth: {

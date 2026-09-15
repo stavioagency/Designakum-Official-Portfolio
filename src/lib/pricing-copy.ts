@@ -1,6 +1,6 @@
 import "server-only";
 import { brandAsset } from "./brand";
-import { FREE_LIMITS, inChargeCurrency, planDefinitions, riyals, yearlySaving } from "./billing";
+import { inChargeCurrency, planDefinitions, riyals, yearlySaving } from "./billing";
 import { dict } from "./i18n";
 import type { PricingCopy } from "@/components/pricing";
 import type { Locale } from "./types";
@@ -9,7 +9,6 @@ import type { Locale } from "./types";
 export async function pricingCopy(locale: Locale): Promise<PricingCopy>{
   const plans = await planDefinitions();
   const saving = await yearlySaving();
-  const limits = await FREE_LIMITS();
   const monthlyCharge = await inChargeCurrency(plans.monthly.amount);
   const yearlyCharge = await inChargeCurrency(plans.yearly.amount);
 
@@ -23,8 +22,6 @@ export async function pricingCopy(locale: Locale): Promise<PricingCopy>{
     twelveMonths: riyals(saving.twelveMonths),
     saved: riyals(saving.saved),
     savedPercent: saving.percentLabel,
-    freeProjects: limits.maxProjects,
-    freeSlides: limits.maxSlides,
     chargeCurrency: monthlyCharge.currency,
     monthlyCharged: monthlyCharge.display,
     yearlyCharged: yearlyCharge.display,

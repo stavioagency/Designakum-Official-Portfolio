@@ -99,19 +99,17 @@ export default async function BillingPage() {
           </span>
         </div>
 
-        <ul className="mt-5 grid gap-2.5 sm:grid-cols-2">
-          {[
-            limits.maxProjects === Infinity ? "أعمال بلا حد" : `حتى ${limits.maxProjects} أعمال`,
-            limits.maxSlides === Infinity ? "شرائح بلا حد" : `حتى ${limits.maxSlides} شرائح`,
-            limits.showBadge ? "شارة ديزاينكم تظهر في صفحتك" : "بدون شارة ديزاينكم",
-            limits.analytics ? "إحصائيات مفصّلة" : "إحصائيات أساسية",
-          ].map((line) => (
-            <li key={line} className="flex items-start gap-2.5 text-[13.5px] text-mist-300">
-              <Check className="mt-[3px] h-4 w-4 shrink-0 text-mist-500" />
-              {line}
-            </li>
-          ))}
-        </ul>
+        <p
+          className={`mt-5 rounded-2xl border px-4 py-3.5 text-[13.5px] leading-relaxed ${
+            limits.canPublish
+              ? "border-emerald-400/25 bg-emerald-400/[0.07] text-emerald-200"
+              : "border-amber-400/25 bg-amber-400/[0.07] text-amber-200"
+          }`}
+        >
+          {limits.canPublish
+            ? "صفحتك قابلة للنشر، وأي تعديل تحفظه يظهر للزوار مباشرة."
+            : "المحرّر مفتوح لك بالكامل بلا حدود — أعمال وشرائح وصور بلا عدد — لكن النشر للعامة يحتاج اشتراكًا فعّالًا."}
+        </p>
 
         {subscription && (
           <div className="mt-5 border-t border-white/8 pt-5">

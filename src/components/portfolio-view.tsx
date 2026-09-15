@@ -1,6 +1,5 @@
 import { HeroSlider } from "./hero-slider";
 import { ShareButton } from "./share-button";
-import { Wordmark } from "./brand/logo";
 import { TrackEvents } from "./track-events";
 import { ReportDialog } from "./report-dialog";
 import { SOCIAL_META, STAT_ICONS, Whatsapp } from "./icons";
@@ -52,14 +51,11 @@ function Avatar({
 
 export function PortfolioView({
   bundle,
-  showBadge = false,
   live = false,
   reportsOpen = false,
   rules = "",
 }: {
   bundle: PortfolioBundle;
-  /** Free plans carry a small Designakum credit in the footer. */
-  showBadge?: boolean;
   /** True on the real public page — previews must not record analytics. */
   live?: boolean;
   reportsOpen?: boolean;
@@ -280,15 +276,6 @@ export function PortfolioView({
           </p>
           {reportsOpen && (
             <ReportDialog portfolioId={portfolio.id} portfolioName={portfolio.name} rules={rules} />
-          )}
-          {showBadge && (
-            <a
-              href="/"
-              className="panel inline-flex items-center gap-2 px-3 py-2 text-[11.5px] text-mist-500 transition hover:text-mist-300"
-            >
-              <Wordmark height={13} className="opacity-70" />
-              <span>{d.poweredBy}</span>
-            </a>
           )}
         </footer>
       </main>

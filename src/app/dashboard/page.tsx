@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
+import { canPublish } from "@/lib/billing";
 import { getPortfolioForUser, loadBundle } from "@/lib/portfolios";
 import { requestOrigin } from "@/lib/origin";
 import { Editor } from "@/components/editor/editor";
@@ -59,6 +60,7 @@ export default async function DashboardPage() {
         origin={origin}
         preview={<PortfolioView bundle={bundle} />}
         hasPassword={user.password_hash !== ""}
+        canPublish={await canPublish(user)}
       />
     </main>
   );

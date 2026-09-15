@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { storeImage } from "@/lib/assets";
-import { entitlementsFor } from "@/lib/billing";
+import { canPublish } from "@/lib/billing";
 import { isSafeUrl, socialHref } from "@/lib/safe-url";
 import { all } from "@/lib/db";
 import {
@@ -124,6 +124,14 @@ export async function publishAction(_prev: ActionState, fd: FormData): Promise<A
   try {
     const { user, id, slug } = await withPortfolio(fd);
     const publish = str(fd, "value") === "1";
+
+    // The subscription buys publishing and nothing else, so this is the one gate.
+    if (publish && !(await canPublish(user))) {
+      return {
+        error: "النشر متاح للمشتركين. فعّل اشتراكك لتصبح صفحتك مرئية للجميع.",
+      };
+    }
+
     await setPublished(id, user, publish);
     refresh(slug);
     return { ok: publish ? "تم نشر معرضك" : "تم إخفاء معرضك عن الزوار" };
@@ -138,22 +146,6 @@ export async function addItemAction(_prev: ActionState, fd: FormData): Promise<A
   try {
     const { user, id, slug } = await withPortfolio(fd);
     const t = table(fd);
-
-    // Free accounts are capped; a paid subscription lifts the cap entirely.
-    const limits = await entitlementsFor(user);
-    const cap = t === "projects" ? limits.maxProjects : t === "slides" ? limits.maxSlides : Infinity;
-    if (Number.isFinite(cap)) {
-      const count = (await all<{ n: number }>(
-        `SELECT COUNT(*) AS n FROM ${t} WHERE portfolio_id = ?`,
-        id,
-      ))[0].n;
-      if (count >= cap) {
-        const noun = t === "projects" ? "من الأعمال" : "من الشرائح";
-        return {
-          error: `وصلت إلى الحد الأقصى ${cap} ${noun} في الخطة المجانية. رقِّ اشتراكك لإضافة المزيد.`,
-        };
-      }
-    }
 
     const defaults: Record<ChildTable, Record<string, string>> = {
       slides: { headline: "عنوان جديد", subline: "" },

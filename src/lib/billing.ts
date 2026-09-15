@@ -76,36 +76,26 @@ export async function yearlySaving() {
 
 /* -------------------------------------------------------------- entitlements */
 
+/**
+ * The subscription buys exactly one thing: the right to publish.
+ *
+ * Everything else — the editor, unlimited projects and slides, image uploads,
+ * cropping, themes, previewing the finished page — is free and uncapped. A
+ * designer can build their entire portfolio without paying and see precisely what
+ * it will look like; the payment is for making it public.
+ *
+ * This is deliberately simple to reason about: there is no partial state where a
+ * page is half-visible, and nothing a customer builds is ever taken away from
+ * them when a subscription lapses — only the publishing stops.
+ */
 export interface Entitlements {
   plan: Plan;
   active: boolean;
-  maxProjects: number;
-  maxSlides: number;
-  showBadge: boolean;
-  analytics: boolean;
+  /** The only thing the subscription gates. */
+  canPublish: boolean;
+  /** Reserved for the custom-domain feature. */
   customDomain: boolean;
 }
-
-async function freeLimits(): Promise<Omit<Entitlements, "plan" | "active">>{
-  const settings = await readSettings();
-  return {
-    maxProjects: settings["limits.free_projects"],
-    maxSlides: settings["limits.free_slides"],
-    showBadge: true,
-    analytics: false,
-    customDomain: false,
-  };
-}
-
-const PAID: Omit<Entitlements, "plan" | "active"> = {
-  maxProjects: Number.POSITIVE_INFINITY,
-  maxSlides: Number.POSITIVE_INFINITY,
-  showBadge: false,
-  analytics: true,
-  customDomain: true,
-};
-
-export const FREE_LIMITS = freeLimits;
 
 /* ------------------------------------------------------------ subscriptions */
 
@@ -146,15 +136,21 @@ export async function activeSubscription(userId: string): Promise<Subscription |
   return subscription.status === "active" ? subscription : null;
 }
 
-export async function entitlementsFor(user: User): Promise<Entitlements>{
-  // The platform owner is never gated by billing.
-  if (user.role === "owner") {
-    return { plan: "yearly", active: true, ...PAID };
+export async function entitlementsFor(user: User): Promise<Entitlements> {
+  // Staff are never gated by billing.
+  if (user.role === "owner" || user.role === "support") {
+    return { plan: "yearly", active: true, canPublish: true, customDomain: true };
   }
+
   const subscription = await activeSubscription(user.id);
   return subscription
-    ? { plan: subscription.plan, active: true, ...PAID }
-    : { plan: "free", active: false, ...(await freeLimits()) };
+    ? { plan: subscription.plan, active: true, canPublish: true, customDomain: true }
+    : { plan: "free", active: false, canPublish: false, customDomain: false };
+}
+
+/** Whether this account's portfolio may currently be seen by the public. */
+export async function canPublish(user: User): Promise<boolean> {
+  return (await entitlementsFor(user)).canPublish;
 }
 
 export async function setSubscriptionStatus(id: string, status: SubscriptionStatus) {
