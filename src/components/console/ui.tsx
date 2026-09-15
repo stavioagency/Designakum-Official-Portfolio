@@ -47,21 +47,24 @@ export function formatDate(
 export const formatDateTime = (ms: number | null | undefined, locale: Locale = "ar") =>
   formatDate(ms, locale, true);
 
-const UNITS: [limit: number, divisor: number, one: string, many: string][] = [
-  [60_000, 1000, "ثانية", "ثانية"],
-  [3_600_000, 60_000, "دقيقة", "دقيقة"],
-  [86_400_000, 3_600_000, "ساعة", "ساعة"],
-  [2_592_000_000, 86_400_000, "يوم", "يوم"],
+const UNITS: [limit: number, divisor: number, ar: string, en: string][] = [
+  [60_000, 1000, "ثانية", "s"],
+  [3_600_000, 60_000, "دقيقة", "min"],
+  [86_400_000, 3_600_000, "ساعة", "h"],
+  [2_592_000_000, 86_400_000, "يوم", "d"],
 ];
 
-export function timeAgo(ms: number | null | undefined): string {
+export function timeAgo(ms: number | null | undefined, locale: Locale = "ar"): string {
   if (!ms) return "—";
   const diff = Date.now() - ms;
-  if (diff < 45_000) return "الآن";
-  for (const [limit, divisor, unit] of UNITS) {
-    if (diff < limit) return `قبل ${Math.round(diff / divisor)} ${unit}`;
+  if (diff < 45_000) return locale === "en" ? "just now" : "الآن";
+
+  for (const [limit, divisor, ar, en] of UNITS) {
+    if (diff >= limit) continue;
+    const n = Math.round(diff / divisor);
+    return locale === "en" ? `${n}${en} ago` : `قبل ${n} ${ar}`;
   }
-  return formatDate(ms);
+  return formatDate(ms, locale);
 }
 
 /** Halalas → a plain riyal figure; the symbol is rendered separately. */

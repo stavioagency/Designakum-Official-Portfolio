@@ -5,11 +5,16 @@ import { can } from "@/lib/permissions";
 import { reportCounts } from "@/lib/moderation";
 import { openTicketCount } from "@/lib/support";
 import { ConsoleShell } from "@/components/console/shell";
+import { currentLocale } from "@/lib/locale";
+import { dict } from "@/lib/i18n";
 
-export const metadata: Metadata = {
-  title: { default: "لوحة الإدارة", template: "%s · لوحة إدارة ديزاينكم" },
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const nav = dict(await currentLocale()).console.nav;
+  return {
+    title: { default: nav.title, template: nav.titleTemplate },
+    robots: { index: false, follow: false },
+  };
+}
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +24,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
   // Clients never learn the console exists: they land back on their own dashboard.
   if (!can(user, "console.access")) redirect("/dashboard");
 
+  const locale = await currentLocale();
   const reports = can(user, "moderation.review") ? await reportCounts() : { pending: 0, reviewing: 0 };
   const tickets = can(user, "support.manage") ? await openTicketCount() : 0;
 
@@ -26,6 +32,8 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
     <ConsoleShell
       user={user}
       counts={{ reports: reports.pending + reports.reviewing, tickets }}
+      copy={dict(locale).console}
+      locale={locale}
     >
       {children}
     </ConsoleShell>

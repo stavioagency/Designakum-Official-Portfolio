@@ -1,6 +1,8 @@
-export default function ConsoleLoading() {
+import { dict } from "@/lib/i18n";
+import { currentLocale } from "@/lib/locale";
+export default async function ConsoleLoading() {
   return (
-    <div className="animate-pulse space-y-6" aria-busy aria-label="جارٍ التحميل">
+    <div className="animate-pulse space-y-6" aria-busy aria-label={dict(await currentLocale()).console.common.loading}>
       <div className="h-8 w-56 rounded-xl bg-white/[0.06]" />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 8 }).map((_, i) => (

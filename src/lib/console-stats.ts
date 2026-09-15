@@ -102,7 +102,7 @@ export async function recentActivity(limit = 14): Promise<ActivityItem[]>{
 
   const subscriptions = await all<ActivityItem>(
     `SELECT s.id AS id, 'subscription' AS kind,
-            CASE s.plan WHEN 'monthly' THEN 'اشتراك شهري' ELSE 'اشتراك سنوي' END AS title,
+            s.plan AS title,
             u.email || ' · ' || s.source AS detail,
             '/console/customers/' || u.id AS href, s.created_at AS created_at
        FROM subscriptions s JOIN users u ON u.id = s.user_id
@@ -111,7 +111,7 @@ export async function recentActivity(limit = 14): Promise<ActivityItem[]>{
   );
 
   const reports = await all<ActivityItem>(
-    `SELECT r.id AS id, 'report' AS kind, 'بلاغ عن ' || p.name AS title,
+    `SELECT r.id AS id, 'report' AS kind, p.name AS title,
             r.reason AS detail, '/console/moderation/' || r.id AS href, r.created_at AS created_at
        FROM reports r JOIN portfolios p ON p.id = r.portfolio_id
       ORDER BY r.created_at DESC LIMIT ?`,

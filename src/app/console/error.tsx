@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle } from "@/components/icons";
+import { dict, isLocale } from "@/lib/i18n";
 
 export default function ConsoleError({
   error,
@@ -10,6 +11,16 @@ export default function ConsoleError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  // An error boundary is a client component and cannot read the locale cookie, but
+  // the language it should speak is already stamped on <html> by the root layout.
+  const [locale, setLocale] = useState<"ar" | "en">("ar");
+  useEffect(() => {
+    const lang = document.documentElement.lang;
+    if (isLocale(lang)) setLocale(lang);
+  }, []);
+
+  const copy = dict(locale).console.common;
+
   useEffect(() => {
     console.error("console error:", error);
   }, [error]);
@@ -19,9 +30,9 @@ export default function ConsoleError({
       <span className="mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-rose-500/12 text-rose-300">
         <AlertTriangle className="h-6 w-6" />
       </span>
-      <h1 className="text-lg font-semibold">تعذّر عرض هذه الصفحة</h1>
+      <h1 className="text-lg font-semibold">{copy.errorTitle}</h1>
       <p className="mx-auto mt-2 max-w-sm text-[13px] leading-relaxed text-mist-400">
-        حدث خطأ غير متوقع أثناء تحميل البيانات. جرّب مرة أخرى، وإن تكرر الأمر راجع سجل الخادم.
+        {copy.errorBody}
       </p>
       {error.digest && (
         <code dir="ltr" className="mt-3 text-[11px] text-mist-600">
@@ -29,7 +40,7 @@ export default function ConsoleError({
         </code>
       )}
       <button onClick={reset} className="btn btn-primary mt-6">
-        إعادة المحاولة
+        {copy.retry}
       </button>
     </div>
   );

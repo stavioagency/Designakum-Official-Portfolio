@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { currentLocale } from "@/lib/locale";
+import { dict, fill } from "@/lib/i18n";
 import { currentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { platformStats, recentActivity } from "@/lib/console-stats";
@@ -36,23 +38,12 @@ import type { ActivityKind } from "@/lib/console-stats";
 
 export const dynamic = "force-dynamic";
 
-const ACTIVITY_STYLE: Record<ActivityKind, { label: string; tone: "neutral" | "good" | "warn" | "bad" | "accent" }> = {
-  signup: { label: "تسجيل", tone: "accent" },
-  subscription: { label: "اشتراك", tone: "good" },
-  report: { label: "بلاغ", tone: "bad" },
-  ticket: { label: "تذكرة", tone: "warn" },
-  audit: { label: "إجراء", tone: "neutral" },
-};
-
-const DENIED_LABEL: Record<string, string> = {
-  "billing.manage": "إدارة الاشتراكات",
-  "invitations.manage": "الدعوات",
-  "settings.manage": "إعدادات المنصة",
-  "audit.view": "سجل التدقيق",
-  "announcements.manage": "الإعلانات",
-  "staff.manage": "إدارة الفريق",
-  "customers.delete": "حذف الحسابات",
-  "moderation.enforce": "إجراءات الإيقاف",
+const ACTIVITY_TONE: Record<ActivityKind, "neutral" | "good" | "warn" | "bad" | "accent"> = {
+  signup: "accent",
+  subscription: "good",
+  report: "bad",
+  ticket: "warn",
+  audit: "neutral",
 };
 
 export default async function ConsoleDashboard({
@@ -63,6 +54,8 @@ export default async function ConsoleDashboard({
   const user = (await currentUser())!;
   const { denied } = await searchParams;
   const stats = await platformStats();
+  const locale = await currentLocale();
+  const t = dict(locale).console.overview;
   const activity = await recentActivity(14);
   const riyalSrc = brandAsset("riyal");
 
@@ -74,20 +67,20 @@ export default async function ConsoleDashboard({
   return (
     <>
       <PageHeader
-        title="نظرة عامة"
-        description="حالة منصة ديزاينكم الآن، مبنية على بيانات التطبيق الفعلية."
+        title={t.title}
+        description={t.description}
         actions={
           <>
             {stats.pendingReports > 0 && can(user, "moderation.review") && (
               <Link href="/console/moderation" className="btn btn-ghost !py-2.5">
                 <Flag className="h-4 w-4" />
-                {stats.pendingReports} بلاغ بانتظارك
+                {fill(t.pendingReports, { n: stats.pendingReports })}
               </Link>
             )}
             {stats.openTickets > 0 && can(user, "support.manage") && (
               <Link href="/console/support" className="btn btn-ghost !py-2.5">
                 <LifeBuoy className="h-4 w-4" />
-                {stats.openTickets} تذكرة مفتوحة
+                {fill(t.openTickets, { n: stats.openTickets })}
               </Link>
             )}
           </>
@@ -97,48 +90,51 @@ export default async function ConsoleDashboard({
       {denied && (
         <p className="panel mb-4 flex items-center gap-2.5 px-4 py-3 text-[13px] text-amber-200">
           <Ban className="h-4 w-4 shrink-0" />
-          {DENIED_LABEL[denied]
-            ? `قسم «${DENIED_LABEL[denied]}» متاح لمالك المنصة فقط.`
-            : "ليست لديك صلاحية فتح هذا القسم."}
+          {t.denied[denied as keyof typeof t.denied]
+            ? fill(t.deniedSection, { section: t.denied[denied as keyof typeof t.denied] })
+            : t.deniedGeneric}
         </p>
       )}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="إجمالي العملاء"
+          label={t.totalCustomers}
           value={nf.format(stats.totalUsers)}
-          hint={`${nf.format(stats.newThisMonth)} خلال 30 يومًا`}
+          hint={fill(t.newIn30, { n: nf.format(stats.newThisMonth) })}
           icon={<Users className="h-4 w-4" />}
           tone="accent"
           href="/console/customers"
           series={signups}
         />
         <StatCard
-          label="عملاء نشطون"
+          label={t.activeCustomers}
           value={nf.format(stats.activeUsers)}
-          hint="ظهروا خلال آخر 30 يومًا"
+          hint={t.activeHint}
           icon={<Sparkle className="h-4 w-4" />}
           tone="good"
         />
         <StatCard
-          label="اشتراكات نشطة"
+          label={t.activeSubscriptions}
           value={nf.format(stats.activeSubscriptions)}
-          hint={`${nf.format(stats.monthlySubscribers)} شهري · ${nf.format(stats.yearlySubscribers)} سنوي`}
+          hint={fill(t.planSplit, {
+            monthly: nf.format(stats.monthlySubscribers),
+            yearly: nf.format(stats.yearlySubscribers),
+          })}
           icon={<CreditCard className="h-4 w-4" />}
           tone="good"
           href={can(user, "billing.manage") ? "/console/subscriptions" : undefined}
         />
         {showRevenue ? (
           <StatCard
-            label="الإيراد الشهري المتكرر"
+            label={t.mrr}
             value={money(stats.mrr)}
-            hint={`سنويًا ${money(stats.arr)} · معدل التسرب ${stats.churnPercent.toFixed(1)}%`}
+            hint={fill(t.mrrHint, { arr: money(stats.arr), churn: stats.churnPercent.toFixed(1) })}
             icon={<Wallet className="h-4 w-4" />}
             tone="accent"
           />
         ) : (
           <StatCard
-            label="معارض منشورة"
+            label={t.publishedPortfolios}
             value={`${nf.format(stats.publishedPortfolios)}/${nf.format(stats.totalPortfolios)}`}
             icon={<Eye className="h-4 w-4" />}
           />
@@ -147,28 +143,28 @@ export default async function ConsoleDashboard({
 
       <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="بدون اشتراك"
+          label={t.unsubscribed}
           value={nf.format(stats.freeUsers)}
-          hint={`منهم ${nf.format(stats.compedSubscribers)} اشتراك مجاني ممنوح`}
+          hint={fill(t.compedHint, { n: nf.format(stats.compedSubscribers) })}
           icon={<Gift className="h-4 w-4" />}
         />
         <StatCard
-          label="حسابات موقوفة"
+          label={t.suspendedAccounts}
           value={nf.format(stats.suspendedUsers)}
-          hint={`${nf.format(stats.suspendedPortfolios)} معرض موقوف`}
+          hint={fill(t.suspendedHint, { n: nf.format(stats.suspendedPortfolios) })}
           icon={<Ban className="h-4 w-4" />}
           tone={stats.suspendedUsers > 0 ? "bad" : "neutral"}
         />
         <StatCard
-          label="اشتراكات منتهية أو ملغاة"
+          label={t.endedSubscriptions}
           value={nf.format(stats.endedSubscriptions)}
           icon={<CreditCard className="h-4 w-4" />}
           tone={stats.endedSubscriptions > 0 ? "warn" : "neutral"}
         />
         <StatCard
-          label="بلاغات وتذاكر مفتوحة"
+          label={t.openQueues}
           value={`${nf.format(stats.pendingReports)} · ${nf.format(stats.openTickets)}`}
-          hint="بلاغات · تذاكر"
+          hint={t.openQueuesHint}
           icon={<Bell className="h-4 w-4" />}
           tone={stats.pendingReports + stats.openTickets > 0 ? "warn" : "neutral"}
         />
@@ -176,12 +172,15 @@ export default async function ConsoleDashboard({
 
       <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
         <SectionCard
-          title="حركة المعارض خلال 30 يومًا"
-          description={`${nf.format(seriesTotal(views))} مشاهدة · ${nf.format(seriesTotal(visitors))} زائر مختلف`}
+          title={t.traffic}
+          description={fill(t.trafficHint, {
+            views: nf.format(seriesTotal(views)),
+            visitors: nf.format(seriesTotal(visitors)),
+          })}
           actions={
             can(user, "analytics.view") && (
               <Link href="/console/analytics" className="btn btn-ghost !px-3 !py-1.5 !text-[12.5px]">
-                التحليلات
+                {t.toAnalytics}
               </Link>
             )
           }
@@ -190,8 +189,8 @@ export default async function ConsoleDashboard({
             {seriesTotal(views) === 0 ? (
               <EmptyState
                 icon={<Eye className="h-5 w-5" />}
-                title="لا توجد مشاهدات بعد"
-                body="ستظهر هنا حركة الزوار بمجرد أن يبدأ العملاء بمشاركة روابط معارضهم."
+                title={t.noViewsTitle}
+                body={t.noViewsBody}
               />
             ) : (
               <>
@@ -213,7 +212,11 @@ export default async function ConsoleDashboard({
                           />
                         </div>
                         <span className="glass pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 hidden -translate-x-1/2 whitespace-nowrap rounded-lg px-2 py-1 text-[10.5px] group-hover:block">
-                          {point.day} · {point.value} مشاهدة · {unique} زائر
+                          {fill(t.pointTooltip, {
+                            day: point.day,
+                            views: point.value,
+                            visitors: unique,
+                          })}
                         </span>
                       </div>
                     );
@@ -222,11 +225,11 @@ export default async function ConsoleDashboard({
                 <div className="mt-3 flex items-center gap-4 text-[11.5px] text-mist-500">
                   <span className="flex items-center gap-1.5">
                     <span className="accent-grad h-2.5 w-2.5 rounded-sm" />
-                    زوار مختلفون
+                    {t.uniqueVisitors}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <span className="h-2.5 w-2.5 rounded-sm bg-white/[0.12]" />
-                    إجمالي المشاهدات
+                    {t.totalViews}
                   </span>
                 </div>
               </>
@@ -234,21 +237,29 @@ export default async function ConsoleDashboard({
           </div>
         </SectionCard>
 
-        <SectionCard title="آخر النشاطات" description="من كل أنحاء المنصة">
+        <SectionCard title={t.recent} description={t.recentHint}>
           {activity.length === 0 ? (
-            <EmptyState title="لا نشاط بعد" body="سيظهر هنا كل تسجيل واشتراك وبلاغ وتذكرة فور حدوثه." />
+            <EmptyState title={t.noActivityTitle} body={t.noActivityBody} />
           ) : (
             <ul className="divide-y divide-white/6">
               {activity.map((item) => {
-                const style = ACTIVITY_STYLE[item.kind];
+                // The queries return the bare fact (a plan name, a portfolio
+                // name); the sentence around it is written here, in the reader's
+                // language, rather than in SQL.
+                const title =
+                  item.kind === "subscription"
+                    ? t.activity[item.title === "yearly" ? "yearly" : "monthly"]
+                    : item.kind === "report"
+                      ? fill(t.activity.report, { name: item.title })
+                      : item.title;
                 const row = (
                   <>
-                    <Badge tone={style.tone}>{style.label}</Badge>
+                    <Badge tone={ACTIVITY_TONE[item.kind]}>{t.kind[item.kind]}</Badge>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13.5px]">{item.title}</span>
+                      <span className="block truncate text-[13.5px]">{title}</span>
                       <span className="block truncate text-[11.5px] text-mist-500">{item.detail}</span>
                     </span>
-                    <span className="shrink-0 text-[11px] text-mist-600">{timeAgo(item.created_at)}</span>
+                    <span className="shrink-0 text-[11px] text-mist-600">{timeAgo(item.created_at, locale)}</span>
                   </>
                 );
                 return (
@@ -273,7 +284,7 @@ export default async function ConsoleDashboard({
 
       {showRevenue && (
         <p className="mt-4 flex items-center gap-1.5 text-[12px] text-mist-600">
-          كل المبالغ بالريال السعودي
+          {t.currencyNote}
           <Riyal src={riyalSrc} size="0.9em" />
         </p>
       )}

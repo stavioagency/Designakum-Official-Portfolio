@@ -50,7 +50,7 @@ export default async function CustomerTicketPage({
           <h1 className="text-[24px] font-bold">{ticket.subject}</h1>
           <p className="mt-1 text-[12.5px] text-mist-500">
             {ticketCategoryLabel(ticket.category, locale)} ·{" "}
-            {fill(t.openedAgo, { ago: timeAgo(ticket.created_at) })}
+            {fill(t.openedAgo, { ago: timeAgo(ticket.created_at, locale) })}
           </p>
         </div>
         <Badge tone={ticket.status === "resolved" ? "neutral" : "warn"}>

@@ -68,6 +68,16 @@ export const ROLE_LABEL: Record<Role, string> = {
   client: "عميل",
 };
 
+const ROLE_LABEL_EN: Record<Role, string> = {
+  owner: "Platform owner",
+  support: "Support team",
+  client: "Customer",
+};
+
+/** The role's name in the reader's language. */
+export const roleLabel = (role: Role, locale: string) =>
+  (locale === "en" ? ROLE_LABEL_EN : ROLE_LABEL)[role] ?? role;
+
 export function isStaff(user: User | null | undefined): boolean {
   return !!user && STAFF_ROLES.includes(user.role);
 }

@@ -74,7 +74,7 @@ export default async function CustomerSupportPage() {
                   <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold">
                     {ticket.subject}
                   </span>
-                  <span className="text-[11px] text-mist-600">{timeAgo(ticket.last_reply_at)}</span>
+                  <span className="text-[11px] text-mist-600">{timeAgo(ticket.last_reply_at, locale)}</span>
                 </Link>
               </li>
             ))}
