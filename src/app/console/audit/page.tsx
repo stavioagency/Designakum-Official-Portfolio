@@ -8,6 +8,7 @@ import {
   Pagination,
   SectionCard,
   formatDate,
+  formatDateTime,
   nf,
 } from "@/components/console/ui";
 import { FilterSelect, SearchField } from "@/components/console/forms";
@@ -103,7 +104,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                       </>
                     )}
                     <span className="ms-auto shrink-0 text-[11px] text-mist-600">
-                      {formatDate(entry.created_at, true)}
+                      {formatDateTime(entry.created_at)}
                     </span>
                   </div>
 

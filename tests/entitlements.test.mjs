@@ -96,10 +96,12 @@ describe("subscription entitlements", () => {
       .all(Date.now());
     connection.close();
 
-    const expectedMrr = paid.reduce(
-      (total, row) => total + (row.plan === "yearly" ? row.amount / 12 : row.amount),
-      0,
-    );
+    // Number(): pg hands bigint columns back as strings, and `total + row.amount`
+    // on a string concatenates. With one paid row that happened to look right.
+    const expectedMrr = paid.reduce((total, row) => {
+      const amount = Number(row.amount);
+      return total + (row.plan === "yearly" ? amount / 12 : amount);
+    }, 0);
 
     const page = await visit("/console/subscriptions", {
       cookie: await sessionFor("admin@designakum.sa"),

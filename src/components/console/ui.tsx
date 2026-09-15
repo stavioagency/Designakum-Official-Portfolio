@@ -5,15 +5,31 @@ import type { Series } from "@/lib/analytics";
 
 export const nf = new Intl.NumberFormat("en-US");
 
+/**
+ * Always Riyadh, never the server's clock.
+ *
+ * Vercel runs in UTC, so an unpinned formatter would have shown a Riyadh evening
+ * as the previous day — the same three-hour skew that was wrong in the analytics
+ * buckets, just in the rendering instead of the query.
+ */
+const DISPLAY_TIMEZONE = process.env.REPORTING_TIMEZONE ?? "Asia/Riyadh";
+
 export function formatDate(ms: number | null | undefined, withTime = false): string {
   if (!ms) return "—";
   return new Date(ms).toLocaleDateString("ar-SA-u-nu-latn-ca-gregory", {
+    timeZone: DISPLAY_TIMEZONE,
     year: "numeric",
     month: "short",
     day: "numeric",
     ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}),
   });
 }
+
+/**
+ * For anything where "which day" is not enough: money moving, a staff action, a
+ * message in a thread. Support and billing arguments are settled on the minute.
+ */
+export const formatDateTime = (ms: number | null | undefined) => formatDate(ms, true);
 
 const UNITS: [limit: number, divisor: number, one: string, many: string][] = [
   [60_000, 1000, "ثانية", "ثانية"],

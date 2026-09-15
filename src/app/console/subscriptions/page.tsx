@@ -15,6 +15,7 @@ import {
   StatCard,
   Tabs,
   formatDate,
+  formatDateTime,
   money,
   nf,
 } from "@/components/console/ui";
@@ -229,7 +230,7 @@ export default async function SubscriptionsPage({
                 <span className="text-[11.5px] text-mist-600">
                   {row.status === "active"
                     ? `${row.cancel_at_period_end ? "ينتهي" : "يتجدد"} ${formatDate(row.current_period_end)}`
-                    : formatDate(row.canceled_at ?? row.updated_at ?? row.created_at)}
+                    : formatDateTime(row.canceled_at ?? row.updated_at ?? row.created_at)}
                 </span>
               </li>
             ))}

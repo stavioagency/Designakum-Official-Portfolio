@@ -15,6 +15,7 @@ import { Pricing } from "@/components/pricing";
 import { CancelSubscription, CheckoutButton } from "@/components/billing/plan-actions";
 import { RedeemInvite } from "@/components/billing/redeem-invite";
 import { Check, Shield, Sparkle } from "@/components/icons";
+import { formatDate, formatDateTime } from "@/components/console/ui";
 
 export const metadata: Metadata = { title: "الاشتراك" };
 export const dynamic = "force-dynamic";
@@ -33,12 +34,7 @@ const PLAN_LABEL: Record<string, string> = {
   yearly: "السنوية",
 };
 
-const formatDate = (ms: number) =>
-  new Date(ms).toLocaleDateString("ar-SA-u-nu-latn-ca-gregory", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+
 
 export default async function BillingPage() {
   const user = await currentUser();
@@ -159,7 +155,7 @@ export default async function BillingPage() {
               <li key={event.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
                 <span className="text-[13px] text-mist-300">{event.kind}</span>
                 <span className="text-[12px] text-mist-500">{event.detail}</span>
-                <span className="text-[12px] text-mist-500">{formatDate(event.created_at)}</span>
+                <span className="text-[12px] text-mist-500">{formatDateTime(event.created_at)}</span>
               </li>
             ))}
           </ul>

@@ -18,6 +18,7 @@ import {
   SectionCard,
   Sparkline,
   formatDate,
+  formatDateTime,
   money,
   nf,
   timeAgo,
@@ -282,7 +283,7 @@ export default async function CustomerProfilePage({
                           ? "دعوة مجانية"
                           : "ممنوح يدويًا"}
                     </KeyValue>
-                    <KeyValue label="بدأ في">{formatDate(subscription.started_at ?? subscription.created_at)}</KeyValue>
+                    <KeyValue label="بدأ في">{formatDateTime(subscription.started_at ?? subscription.created_at)}</KeyValue>
                     <KeyValue label={subscription.cancel_at_period_end ? "ينتهي في" : "يتجدد في"}>
                       {formatDate(subscription.current_period_end)}
                     </KeyValue>
@@ -332,7 +333,7 @@ export default async function CustomerProfilePage({
                     <code dir="ltr" className="text-mist-300">{event.kind}</code>
                     <span className="truncate text-mist-500">{event.detail}</span>
                     <span className="shrink-0 text-[11px] text-mist-600">
-                      {formatDate(event.created_at)}
+                      {formatDateTime(event.created_at)}
                     </span>
                   </li>
                 ))}

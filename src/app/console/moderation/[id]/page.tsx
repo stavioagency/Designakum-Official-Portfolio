@@ -12,6 +12,7 @@ import {
   PageHeader,
   SectionCard,
   formatDate,
+  formatDateTime,
   timeAgo,
 } from "@/components/console/ui";
 import {
@@ -87,7 +88,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                 <KeyValue label="نوع المُبلِّغ">
                   {report.reporter_id ? "عميل مسجّل" : "زائر"}
                 </KeyValue>
-                <KeyValue label="تاريخ البلاغ">{formatDate(report.created_at, true)}</KeyValue>
+                <KeyValue label="تاريخ البلاغ">{formatDateTime(report.created_at)}</KeyValue>
                 <KeyValue label="المسؤول">
                   {report.assignee_email ?? "غير مُسند"}
                 </KeyValue>

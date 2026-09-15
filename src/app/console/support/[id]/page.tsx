@@ -12,6 +12,7 @@ import {
   PageHeader,
   SectionCard,
   formatDate,
+  formatDateTime,
   timeAgo,
 } from "@/components/console/ui";
 import { StaffReplyForm, TicketControls } from "@/components/console/support-actions";
@@ -80,7 +81,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
                       )}
                       {message.internal === 1 && <Badge tone="warn">ملاحظة داخلية</Badge>}
                       <span className="ms-auto text-[11px] text-mist-600">
-                        {formatDate(message.created_at, true)}
+                        {formatDateTime(message.created_at)}
                       </span>
                     </div>
                     <p className="mt-2 whitespace-pre-wrap text-[13.5px] leading-[1.9] text-mist-200">

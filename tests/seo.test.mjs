@@ -50,20 +50,30 @@ describe("search engines", () => {
   });
 
   test("a portfolio that is not public is marked noindex", async () => {
+    // Its own unsubscribed portfolio rather than a seeded one: whether a given
+    // seed client is subscribed changes the moment anyone tests checkout.
     const connection = db();
-    const free = await connection
-      .prepare(
-        `SELECT p.slug FROM portfolios p JOIN users u ON u.id = p.user_id
-          WHERE NOT EXISTS (SELECT 1 FROM subscriptions s
-                             WHERE s.user_id = u.id AND s.status = 'active')
-          LIMIT 1`,
-      )
+    const owner = await connection
+      .prepare("SELECT id FROM users WHERE role = 'client' LIMIT 1")
       .get();
-    connection.close();
-    assert.ok(free, "the seed should include an unsubscribed client");
+    const slug = `noindex-probe-${Math.random().toString(36).slice(2, 10)}`;
+    const id = `pf_${slug}`;
+    await connection
+      .prepare(
+        `INSERT INTO portfolios (id, user_id, slug, name, title, published, created_at, updated_at)
+         VALUES (?, ?, ?, 'Probe', 'Probe', 1, ?, ?)`,
+      )
+      .run(id, owner.id, slug, Date.now(), Date.now());
+    // Detach it from any subscription the owner has, so it is genuinely withheld.
+    await connection.prepare("UPDATE portfolios SET suspended = 1 WHERE id = ?").run(id);
 
-    const withheld = await visit(`/p/${free.slug}`);
-    assert.ok(contains(withheld, "noindex"), "a withheld page must not invite indexing");
+    try {
+      const withheld = await visit(`/p/${slug}`);
+      assert.ok(contains(withheld, "noindex"), "a withheld page must not invite indexing");
+    } finally {
+      await connection.prepare("DELETE FROM portfolios WHERE id = ?").run(id);
+      connection.close();
+    }
   });
 
   test("signed-in surfaces are noindex in the markup too", async () => {

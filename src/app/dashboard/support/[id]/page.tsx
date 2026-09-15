@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { getTicket, ticketMessages } from "@/lib/support";
 import { TICKET_CATEGORY_LABEL, TICKET_STATUS_LABEL } from "@/lib/support-labels";
-import { Badge, SectionCard, formatDate, timeAgo } from "@/components/console/ui";
+import { Badge, SectionCard, formatDateTime, timeAgo } from "@/components/console/ui";
 import { CustomerReplyForm } from "@/components/support/customer-forms";
 import { ArrowLeft, Shield } from "@/components/icons";
 
@@ -71,7 +71,7 @@ export default async function CustomerTicketPage({
                   </Badge>
                 )}
                 <span className="ms-auto text-[11px] text-mist-600">
-                  {formatDate(message.created_at, true)}
+                  {formatDateTime(message.created_at)}
                 </span>
               </div>
               <p className="mt-2 whitespace-pre-wrap text-[13.5px] leading-[1.9] text-mist-200">

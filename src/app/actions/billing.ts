@@ -44,7 +44,11 @@ export async function startCheckoutAction(_prev: ActionState, fd: FormData): Pro
     const checkout = await provider.createCheckout({
       user,
       plan,
-      successUrl: `${origin}/dashboard/billing?checkout=success`,
+      // The provider's return route, NOT the billing page: approval only becomes a
+      // subscription because that route re-reads it from the provider and records
+      // it. Sending the customer straight to the billing page shows them "success"
+      // for a subscription that was never saved.
+      successUrl: `${origin}/api/billing/paypal/return`,
       cancelUrl: `${origin}/dashboard/billing?checkout=cancelled`,
     });
 
