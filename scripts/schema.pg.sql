@@ -125,14 +125,6 @@ CREATE TABLE IF NOT EXISTS assets (
 );
 CREATE INDEX IF NOT EXISTS idx_assets_owner ON assets(owner_id);
 
-CREATE TABLE IF NOT EXISTS page_views (
-  id           TEXT PRIMARY KEY,
-  portfolio_id TEXT NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
-  day          TEXT NOT NULL,
-  count        BIGINT NOT NULL DEFAULT 0,
-  UNIQUE(portfolio_id, day)
-);
-
 CREATE TABLE IF NOT EXISTS subscriptions (
   seq                      BIGSERIAL,
   id                       TEXT PRIMARY KEY,

@@ -91,11 +91,18 @@ async function warmUp() {
   return warmed;
 }
 
-export async function visit(pathname, { cookie, redirect = "manual" } = {}) {
+/** What the app sees from a real visitor; anything else is classified as a bot. */
+export const BROWSER_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36";
+
+export async function visit(
+  pathname,
+  { cookie, redirect = "manual", userAgent = BROWSER_UA } = {},
+) {
   await warmUp();
 
   const response = await fetch(`${BASE}${pathname}`, {
-    headers: cookie ? { cookie } : {},
+    headers: { "user-agent": userAgent, ...(cookie ? { cookie } : {}) },
     redirect,
     cache: "no-store",
   });

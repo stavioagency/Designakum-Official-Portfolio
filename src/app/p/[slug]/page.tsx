@@ -5,6 +5,7 @@ import { currentUser } from "@/lib/auth";
 import { get } from "@/lib/db";
 import { canPublish } from "@/lib/billing";
 import { getPortfolioBySlug, loadBundle, recordView } from "@/lib/portfolios";
+import { callerIsBot } from "@/lib/bots";
 import { liftExpiredSuspension } from "@/lib/moderation";
 import { isStaff } from "@/lib/permissions";
 import { callerFingerprint } from "@/lib/rate-limit";
@@ -102,7 +103,10 @@ export default async function PublicPortfolioPage({ params }: Props) {
     );
   }
 
-  if (!canEdit) await recordView(portfolio.id, await callerFingerprint());
+  // Staff previews and crawlers are not audience, so neither is counted.
+  if (!canEdit && !(await callerIsBot())) {
+    await recordView(portfolio.id, await callerFingerprint());
+  }
 
   return (
     <>

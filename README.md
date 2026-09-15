@@ -6,9 +6,12 @@ every client with their own account, editor, subscription and public URL.
 
 ```bash
 npm install
+npm run migrate   # create/update the schema, then apply pending migrations
 npm run seed      # demo owner + two client portfolios
 npm run dev       # http://localhost:3000
 ```
+
+Both read `DATABASE_URL`; `npm run migrate` falls back to the one in `.env.local`.
 
 ### Demo accounts
 
@@ -21,9 +24,7 @@ npm run dev       # http://localhost:3000
 | Client (free) | `noura@designakum.sa` | `Noura#2026` | `/dashboard` → `/p/noura` |
 
 The seed also leaves one open report, one open ticket, a live announcement and an
-unused invitation code (`DZKM1-WELCM`) so the console has real work in it. Restart
-`npm run dev` after re-seeding — the running server keeps the old database file
-open otherwise.
+unused invitation code (`DZKM1-WELCM`) so the console has real work in it.
 
 Copy `.env.example` to `.env.local` and fill in what you have. Nothing there is
 required to run the app, but `AUTH_SECRET` should be set in production — the dev
@@ -75,16 +76,16 @@ src/lib/          db.ts (schema + query helpers) · auth.ts (scrypt + signed coo
 src/app/actions/  server actions: auth · portfolio (client edits) · admin (owner only)
 src/app/          routes, grouped by audience
 src/components/   portfolio-view (public render) · editor/* · admin/* · icons
-scripts/          schema.sql (single source of truth) · seed.mjs
+scripts/          schema.pg.sql · migrations/* · migrate.mjs · seed.mjs · bootstrap.mjs
 ```
 
-**Storage.** SQLite through Node's built-in `node:sqlite` — no native modules, no
-external service. The schema lives in `scripts/schema.sql` and is applied on
-startup, so both the app and the seed script agree by construction. Every table
-is keyed by `portfolio_id` and cascades from `users`, so deleting an account
-removes its portfolio, projects, slides, stats, socials, sessions and images in
-one statement. Moving to Postgres later means swapping `src/lib/db.ts` and the
-schema file; nothing above the repository layer knows which engine is underneath.
+**Storage.** PostgreSQL through `pg`, hosted on Supabase. The schema lives in
+`scripts/schema.pg.sql` with anything it cannot express in `scripts/migrations/`,
+so the app and the seed script agree by construction. Every table is keyed by
+`portfolio_id` and cascades from `users`, so deleting an account removes its
+portfolio, projects, slides, stats, socials, sessions and images in one
+statement. Uploaded images live in object storage (`src/lib/storage.ts`), not in
+the database. Nothing above `src/lib/db.ts` knows which engine is underneath.
 
 **Tenant isolation.** `assertCanEdit(portfolioId, user)` in
 `src/lib/portfolios.ts` is the only door into a write. A client may touch only a
@@ -139,19 +140,25 @@ AUTH_SECRET="$(openssl rand -base64 48)" npm start
    would make every session forgeable.
 2. Run behind TLS. `Strict-Transport-Security` and `secure` cookies switch on
    automatically in production.
-3. Schedule backups: `npm run backup` writes a consistent copy with
-   `VACUUM INTO`, verifies it, and keeps the newest 14. A daily cron entry is
-   enough, with the directory shipped off-box.
-   Restore with `npm run restore -- data/backups/platform-<timestamp>.db`.
+3. Schedule backups: `npm run backup` writes a `pg_dump` of the database,
+   verifies it, and keeps the newest 14. A daily cron entry is enough, with the
+   directory shipped off-box. Supabase takes its own backups; this one exists so
+   a copy lives somewhere Supabase does not control.
+   Restore with `npm run restore -- data/backups/designakum-<timestamp>.sql`.
 4. Fill in the terms and privacy text in the console settings; the pages are live
    and currently say the documents have not been published.
 5. Connect a payment provider (see Billing) and an email provider (see below), or
    the platform cannot charge anyone or send a password reset.
 
-**One instance only.** The database is SQLite on local disk, so exactly one
-application process may own it. Scale up rather than out until you move to
-Postgres; a second instance behind a load balancer would corrupt state. WAL mode
-and a 5-second busy timeout are set so concurrent requests queue rather than fail.
+**Schema changes.** `npm run migrate` applies `scripts/schema.pg.sql` — which is
+idempotent and safe to re-run — and then any file in `scripts/migrations/` that
+has not been applied yet, each in its own transaction, recorded in
+`schema_migrations`. Anything the base schema cannot express (dropping a column,
+backfilling a table) belongs in a numbered migration. Applied migrations are
+history: their checksum is recorded and editing one afterwards is refused, so
+write a new migration instead. `npm run migrate -- --dry` lists what is pending,
+and `npm run migrate:down` reverts the most recent migration when it ships with a
+matching `.down.sql`.
 
 **Email.** `EMAIL_PROVIDER`, `EMAIL_API_KEY` and `EMAIL_FROM` enable password
 reset delivery. Without them nothing is faked: the message is written to the
@@ -197,7 +204,7 @@ before/after states. Every mutation in `src/app/actions/console.ts`,
 `moderation.ts`, `support.ts`, `invitations.ts`, `announcements.ts` and
 `settings.ts` records one.
 
-**Rate limiting** is a fixed-window counter in SQLite (`src/lib/rate-limit.ts`),
+**Rate limiting** is a fixed-window counter in the database (`src/lib/rate-limit.ts`),
 applied to sign-in attempts, report submissions, ticket creation, invitation
 redemption and the analytics endpoint. It survives a restart, which an in-memory
 map would not.

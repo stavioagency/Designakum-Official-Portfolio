@@ -10,7 +10,7 @@ export interface RateLimitResult {
 }
 
 /**
- * Fixed-window counter kept in SQLite. Good enough for the abuse this app sees
+ * Fixed-window counter kept in the database. Good enough for the abuse this app sees
  * (login guessing, report and ticket spam) and it survives a restart, which an
  * in-memory map would not.
  */

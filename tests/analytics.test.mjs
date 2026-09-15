@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { db } from "./helpers.mjs";
+import { BASE, db, visit } from "./helpers.mjs";
 
 /**
  * The day columns are cut in the reporting timezone. Two different engines do
@@ -62,5 +62,89 @@ describe("analytics days", () => {
 
     assert.equal(typeof row.value, "number", "COUNT must be cast, or the charts add up strings");
     assert.ok(row.value >= 0);
+  });
+});
+
+describe("bot traffic", () => {
+  /**
+   * A portfolio of this suite's own. The shared seed portfolios are visited and
+   * suspended by other test files running at the same time, and a view counter
+   * cannot be asserted on while someone else is moving it.
+   */
+  async function withProbePortfolio(body) {
+    const connection = db();
+    const owner = await connection
+      .prepare(
+        `SELECT p.user_id FROM portfolios p
+          WHERE p.published = 1 AND p.suspended = 0 LIMIT 1`,
+      )
+      .get();
+    assert.ok(owner, "the seed should leave at least one live portfolio");
+
+    const slug = `bot-probe-${Math.random().toString(36).slice(2, 10)}`;
+    const id = `pf_${slug}`;
+    await connection
+      .prepare(
+        `INSERT INTO portfolios (id, user_id, slug, name, title, published, created_at, updated_at)
+         VALUES (?, ?, ?, 'Probe', 'Probe', 1, ?, ?)`,
+      )
+      .run(id, owner.user_id, slug, Date.now(), Date.now());
+
+    const views = async () =>
+      (await connection.prepare("SELECT views::int AS views FROM portfolios WHERE id = ?").get(id))
+        .views;
+
+    try {
+      await body({ id, slug, views });
+    } finally {
+      await connection.prepare("DELETE FROM portfolios WHERE id = ?").run(id);
+      connection.close();
+    }
+  }
+
+  test("a crawler's visit is not counted, a browser's is", async () => {
+    await withProbePortfolio(async ({ slug, views }) => {
+      const before = await views();
+
+      for (const userAgent of [
+        "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+        "WhatsApp/2.23.20.0",
+        "facebookexternalhit/1.1",
+        "curl/8.4.0",
+      ]) {
+        const page = await visit(`/p/${slug}`, { userAgent });
+        assert.equal(page.status, 200, `${userAgent} should still be served the page`);
+      }
+
+      assert.equal(await views(), before, "crawlers must not inflate the count");
+
+      await visit(`/p/${slug}`);
+      assert.equal(await views(), before + 1, "a real browser must still be counted");
+    });
+  });
+
+  test("the tracking endpoint accepts but ignores a bot's ping", async () => {
+    await withProbePortfolio(async ({ id }) => {
+      const connection = db();
+      const clicks = async () =>
+        (
+          await connection
+            .prepare(
+              `SELECT COALESCE(SUM(count), 0)::int AS n FROM portfolio_events
+                WHERE portfolio_id = ? AND kind = 'whatsapp'`,
+            )
+            .get(id)
+        ).n;
+
+      const before = await clicks();
+      const response = await fetch(`${BASE}/api/track`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "user-agent": "Googlebot/2.1" },
+        body: JSON.stringify({ portfolioId: id, kind: "whatsapp" }),
+      });
+      assert.equal(response.status, 204);
+      assert.equal(await clicks(), before, "a bot's click must not be recorded");
+      connection.close();
+    });
   });
 });

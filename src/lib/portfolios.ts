@@ -176,20 +176,14 @@ export async function setPublished(portfolioId: string, user: User, published: b
 export async function recordView(portfolioId: string, visitorHash?: string) {
   const day = dayKey();
   await run("UPDATE portfolios SET views = views + 1 WHERE id = ?", portfolioId);
-  await run(
-    `INSERT INTO page_views (id, portfolio_id, day, count) VALUES (?, ?, ?, 1)
-     ON CONFLICT(portfolio_id, day) DO UPDATE SET count = page_views.count + 1`,
-    newId("pv"),
-    portfolioId,
-    day,
-  );
   await recordPortfolioEvent(portfolioId, "view", day);
   if (visitorHash) await markUniqueVisitor(portfolioId, visitorHash, day);
 }
 
 export async function viewsByDay(portfolioId: string, days = 14) {
   return (await all<{ day: string; count: number }>(
-    "SELECT day, count FROM page_views WHERE portfolio_id = ? ORDER BY day DESC LIMIT ?",
+    `SELECT day, count::int AS count FROM portfolio_events
+      WHERE portfolio_id = ? AND kind = 'view' ORDER BY day DESC LIMIT ?`,
     portfolioId,
     days,
   )).reverse();

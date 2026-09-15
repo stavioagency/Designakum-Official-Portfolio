@@ -226,8 +226,9 @@ async function createClient(c) {
   for (let d = 13; d >= 0; d--) {
     const day = dayKey(today.getTime() - d * 86400000);
     await run(
-      "INSERT INTO page_views (id, portfolio_id, day, count) VALUES (?, ?, ?, ?)",
-      id("pv"), pfId, day, Math.floor(Math.random() * 40) + 6,
+      `INSERT INTO portfolio_events (id, portfolio_id, kind, day, count) VALUES (?, ?, 'view', ?, ?)
+         ON CONFLICT (portfolio_id, kind, day) DO UPDATE SET count = EXCLUDED.count`,
+      id("pev"), pfId, day, Math.floor(Math.random() * 40) + 6,
     );
   }
   return { userId, pfId };

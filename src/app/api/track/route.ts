@@ -1,6 +1,7 @@
 import { getPortfolioById } from "@/lib/portfolios";
 import { EVENT_KINDS, recordPortfolioEvent, type EventKind } from "@/lib/analytics";
 import { callerFingerprint, rateLimit } from "@/lib/rate-limit";
+import { callerIsBot } from "@/lib/bots";
 
 /**
  * Interaction pings from a public portfolio (WhatsApp, social and project clicks).
@@ -25,6 +26,9 @@ export async function POST(request: Request) {
   }
   if (!await getPortfolioById(body.portfolioId)) return new Response(null, { status: 404 });
 
-  await recordPortfolioEvent(body.portfolioId, kind);
+  // A crawler cannot click a WhatsApp button, so anything claiming to have done
+  // so is a bot running JavaScript. The request is still well-formed, so it is
+  // accepted and simply not counted.
+  if (!(await callerIsBot())) await recordPortfolioEvent(body.portfolioId, kind);
   return new Response(null, { status: 204 });
 }

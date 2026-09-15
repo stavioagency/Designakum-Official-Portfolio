@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { BASE, contains, db, sessionFor, visit } from "./helpers.mjs";
+import { BASE, BROWSER_UA, contains, db, sessionFor, visit } from "./helpers.mjs";
 
 describe("response hardening", () => {
   test("security headers are present on every page", async () => {
@@ -197,7 +197,7 @@ describe("public surfaces", () => {
   test("the tracking endpoint refuses junk", async () => {
     const bad = await fetch(`${BASE}/api/track`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "user-agent": BROWSER_UA },
       body: JSON.stringify({ portfolioId: "nope", kind: "view" }),
     });
     assert.ok(bad.status === 400 || bad.status === 404, `expected a rejection, got ${bad.status}`);

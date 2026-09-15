@@ -61,13 +61,13 @@ as items are fixed: ✅ done · ⏳ in progress · ⛔ blocked on something you 
 
 - ✅ Analytics days are cut in Riyadh time (`REPORTING_TIMEZONE`), not UTC. Found alongside it: every `COUNT`/`SUM` aggregate came back from Postgres as a bigint *string*, so the charts were summing text — now cast in SQL.
 - Vercel's Hobby plan forbids commercial use; a paid product needs Pro at $20/month.
-- No bot filtering on portfolio views; crawlers inflate a designer's numbers.
-- `page_views` and `portfolio_events` both record views — one should go.
+- ✅ Bot filtering on views and interaction pings (`src/lib/bots.ts`). Crawlers, link-preview fetchers (a WhatsApp share fires one before any human opens the link) and scripted clients are served the page and not counted.
+- ✅ `page_views` folded into `portfolio_events` and dropped, counts backfilled.
 - `listInvitations` and the subscription list have no pagination.
 - The client dashboard and console are Arabic-only while the public site is bilingual.
 - No `robots.txt` or sitemap, which matters for a portfolio platform's SEO.
 - Upload hardening: no image dimension cap, so a decompression bomb is possible.
-- Column migrations are ad hoc with no version table and no rollback path.
+- ✅ Versioned migrations: `scripts/migrate.mjs`, a `schema_migrations` table, checksums that refuse an edited migration, `--dry`, and `npm run migrate:down` for a migration that ships a `.down.sql`.
 - Support tickets cannot carry attachments, which is what most real tickets need.
 - No cookie/consent notice (PDPL).
 - CSP still allows `'unsafe-inline'` for scripts; tightening to per-request nonces
@@ -78,7 +78,5 @@ as items are fixed: ✅ done · ⏳ in progress · ⛔ blocked on something you 
 
 - Two-factor authentication for staff (columns and session design already allow it).
 - Custom domains per portfolio (`portfolios.custom_domain` is in place and unique).
-- Object storage for images instead of database blobs, once volume justifies it.
 - Customer data export and deletion self-service (PDPL rights).
 - Payment webhooks, dunning, invoices and VAT handling.
-- Moving from SQLite to Postgres when a second app instance is needed.
