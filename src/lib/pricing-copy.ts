@@ -1,6 +1,6 @@
 import "server-only";
 import { brandAsset } from "./brand";
-import { FREE_LIMITS, planDefinitions, riyals, yearlySaving } from "./billing";
+import { FREE_LIMITS, inChargeCurrency, planDefinitions, riyals, yearlySaving } from "./billing";
 import { dict } from "./i18n";
 import type { PricingCopy } from "@/components/pricing";
 import type { Locale } from "./types";
@@ -23,5 +23,8 @@ export function pricingCopy(locale: Locale): PricingCopy {
     savedPercent: saving.percentLabel,
     freeProjects: limits.maxProjects,
     freeSlides: limits.maxSlides,
+    chargeCurrency: inChargeCurrency(plans.monthly.amount).currency,
+    monthlyCharged: inChargeCurrency(plans.monthly.amount).display,
+    yearlyCharged: inChargeCurrency(plans.yearly.amount).display,
   };
 }
