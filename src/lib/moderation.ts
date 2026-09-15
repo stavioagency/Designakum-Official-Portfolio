@@ -12,6 +12,17 @@ export const REPORT_STATUS_LABEL: Record<ReportStatus, string> = {
   dismissed: "مرفوض",
 };
 
+const REPORT_STATUS_LABEL_EN: Record<ReportStatus, string> = {
+  pending: "Waiting",
+  reviewing: "Under review",
+  resolved: "Handled",
+  dismissed: "Dismissed",
+};
+
+/** A report's state in the reader's language. */
+export const reportStatusLabel = (status: ReportStatus, locale: string) =>
+  (locale === "en" ? REPORT_STATUS_LABEL_EN : REPORT_STATUS_LABEL)[status] ?? status;
+
 /* --------------------------------------------------------------- reporting */
 
 export async function createReport(input: {

@@ -1,7 +1,13 @@
 import Link from "next/link";
+import { currentLocale } from "@/lib/locale";
+import { dict, fill } from "@/lib/i18n";
 import type { Metadata } from "next";
 import { listTickets, ticketCounts } from "@/lib/support";
-import { TICKET_CATEGORY_LABEL, TICKET_PRIORITY_LABEL, TICKET_STATUS_LABEL } from "@/lib/support-labels";
+import {
+  ticketCategoryLabel,
+  ticketPriorityLabel,
+  ticketStatusLabel,
+} from "@/lib/support-labels";
 import { guardPage } from "@/lib/permissions";
 import {
   Badge,
@@ -16,7 +22,9 @@ import { SearchField } from "@/components/console/forms";
 import { LifeBuoy } from "@/components/icons";
 import type { TicketPriority, TicketStatus } from "@/lib/types";
 
-export const metadata: Metadata = { title: "الدعم" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: dict(await currentLocale()).console.nav.support };
+}
 export const dynamic = "force-dynamic";
 
 const PER_PAGE = 20;
@@ -51,6 +59,9 @@ export default async function SupportQueuePage({
   const page = Math.max(1, Number(one(params.page)) || 1);
 
   const counts = await ticketCounts();
+  const locale = await currentLocale();
+  const c = dict(locale).console;
+  const t = c.tickets;
   const { rows, total } = await listTickets({
     status,
     search,
@@ -70,7 +81,7 @@ export default async function SupportQueuePage({
 
   return (
     <>
-      <PageHeader title="تذاكر الدعم" description="طلبات العملاء الواردة من لوحاتهم." />
+      <PageHeader title={t.title} description={t.description} />
 
       <div className="mb-4 space-y-3">
         <Tabs
@@ -79,22 +90,22 @@ export default async function SupportQueuePage({
           tabs={[
             {
               key: "open_like",
-              label: "قيد العمل",
+              label: t.inProgress,
               count: counts.open + counts.in_progress + counts.waiting_customer,
             },
-            { key: "open", label: TICKET_STATUS_LABEL.open, count: counts.open },
-            { key: "in_progress", label: TICKET_STATUS_LABEL.in_progress, count: counts.in_progress },
+            { key: "open", label: ticketStatusLabel("open", locale), count: counts.open },
+            { key: "in_progress", label: ticketStatusLabel("in_progress", locale), count: counts.in_progress },
             {
               key: "waiting_customer",
-              label: TICKET_STATUS_LABEL.waiting_customer,
+              label: ticketStatusLabel("waiting_customer", locale),
               count: counts.waiting_customer,
             },
-            { key: "resolved", label: TICKET_STATUS_LABEL.resolved, count: counts.resolved },
-            { key: "all", label: "الكل", count: counts.all },
+            { key: "resolved", label: ticketStatusLabel("resolved", locale), count: counts.resolved },
+            { key: "all", label: c.common.all, count: counts.all },
           ]}
         />
         <div className="card flex flex-wrap items-center gap-3 p-4">
-          <SearchField placeholder="ابحث بعنوان التذكرة أو بريد العميل…" />
+          <SearchField placeholder={t.searchPlaceholder} clearLabel={c.common.clearSearch} />
         </div>
       </div>
 
@@ -102,8 +113,8 @@ export default async function SupportQueuePage({
         {rows.length === 0 ? (
           <EmptyState
             icon={<LifeBuoy className="h-5 w-5" />}
-            title="لا تذاكر هنا"
-            body="عندما يرسل عميل طلب دعم من لوحته ستجده في هذه القائمة."
+            title={t.empty}
+            body={t.emptyBody}
           />
         ) : (
           <>
@@ -115,29 +126,29 @@ export default async function SupportQueuePage({
                     className="flex flex-wrap items-center gap-3 px-4 py-3.5 transition hover:bg-white/[0.03] sm:px-5"
                   >
                     <Badge tone={STATUS_TONE[ticket.status]}>
-                      {TICKET_STATUS_LABEL[ticket.status]}
+                      {ticketStatusLabel(ticket.status, locale)}
                     </Badge>
 
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[14px] font-semibold">{ticket.subject}</span>
                       <span className="mt-0.5 flex items-center gap-2 text-[11.5px] text-mist-500">
                         <span dir="ltr">{ticket.customer_email}</span>
-                        <span>· {TICKET_CATEGORY_LABEL[ticket.category] ?? ticket.category}</span>
+                        <span>· {ticketCategoryLabel(ticket.category, locale) ?? ticket.category}</span>
                       </span>
                     </span>
 
                     <span className="flex shrink-0 items-center gap-2">
                       {ticket.priority !== "normal" && (
                         <Badge tone={PRIORITY_TONE[ticket.priority]}>
-                          {TICKET_PRIORITY_LABEL[ticket.priority]}
+                          {ticketPriorityLabel(ticket.priority, locale)}
                         </Badge>
                       )}
                       {ticket.assignee_email ? (
                         <Badge tone="accent">{ticket.assignee_email.split("@")[0]}</Badge>
                       ) : (
-                        <Badge>غير مُسند</Badge>
+                        <Badge>{t.unassigned}</Badge>
                       )}
-                      <span className="text-[11px] text-mist-600">{timeAgo(ticket.last_reply_at)}</span>
+                      <span className="text-[11px] text-mist-600">{timeAgo(ticket.last_reply_at, locale)}</span>
                     </span>
                   </Link>
                 </li>

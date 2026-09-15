@@ -1,8 +1,14 @@
 import Link from "next/link";
+import { currentLocale } from "@/lib/locale";
+import { dict, fill } from "@/lib/i18n";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getTicket, ticketMessages } from "@/lib/support";
-import { TICKET_CATEGORY_LABEL, TICKET_STATUS_LABEL } from "@/lib/support-labels";
+import {
+  ticketCategoryLabel,
+  ticketPriorityLabel,
+  ticketStatusLabel,
+} from "@/lib/support-labels";
 import { staffMembers } from "@/lib/customers";
 import { guardPage } from "@/lib/permissions";
 import { activeSubscription } from "@/lib/billing";
@@ -18,7 +24,9 @@ import {
 import { StaffReplyForm, TicketControls } from "@/components/console/support-actions";
 import { ArrowLeft, Shield } from "@/components/icons";
 
-export const metadata: Metadata = { title: "تذكرة" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: dict(await currentLocale()).meta.ticket };
+}
 export const dynamic = "force-dynamic";
 
 export default async function TicketPage({ params }: { params: Promise<{ id: string }> }) {
@@ -30,6 +38,9 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
 
   // Staff see internal notes; the customer's own view never requests them.
   const messages = await ticketMessages(id, true);
+  const locale = await currentLocale();
+  const c = dict(locale).console;
+  const t = c.tickets;
   const members = (await staffMembers()).map((member) => ({
     id: member.id,
     label: member.display_name || member.email,
@@ -43,20 +54,22 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
         className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] text-mist-400 transition hover:text-white"
       >
         <ArrowLeft className="h-4 w-4" />
-        قائمة التذاكر
+        {t.backToList}
       </Link>
 
       <PageHeader
         title={ticket.subject}
-        description={`${TICKET_CATEGORY_LABEL[ticket.category] ?? ticket.category} · فُتحت ${timeAgo(ticket.created_at)}`}
+        description={`${ticketCategoryLabel(ticket.category, locale)} · ${fill(t.openedAgo, {
+          ago: timeAgo(ticket.created_at, locale),
+        })}`}
         actions={<Badge tone={ticket.status === "resolved" ? "neutral" : "warn"}>
-          {TICKET_STATUS_LABEL[ticket.status]}
+          {ticketStatusLabel(ticket.status, locale)}
         </Badge>}
       />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,320px)] xl:items-start">
         <div className="min-w-0 space-y-4">
-          <SectionCard title="المحادثة">
+          <SectionCard title={t.conversation}>
             <ul className="space-y-3 p-5">
               {messages.map((message) => {
                 const staffSide = message.author_side === "staff";
@@ -76,12 +89,12 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
                       {staffSide && (
                         <Badge tone="accent">
                           <Shield className="h-3 w-3" />
-                          ديزاينكم
+                          {t.brand}
                         </Badge>
                       )}
-                      {message.internal === 1 && <Badge tone="warn">ملاحظة داخلية</Badge>}
+                      {message.internal === 1 && <Badge tone="warn">{t.internalNoteBadge}</Badge>}
                       <span className="ms-auto text-[11px] text-mist-600">
-                        {formatDateTime(message.created_at)}
+                        {formatDateTime(message.created_at, locale)}
                       </span>
                     </div>
                     <p className="mt-2 whitespace-pre-wrap text-[13.5px] leading-[1.9] text-mist-200">
@@ -93,17 +106,19 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
             </ul>
           </SectionCard>
 
-          <SectionCard title="الرد">
+          <SectionCard title={t.reply}>
             <div className="p-5">
-              <StaffReplyForm ticketId={ticket.id} />
+              <StaffReplyForm ticketId={ticket.id} copy={t} />
             </div>
           </SectionCard>
         </div>
 
         <div className="space-y-4">
-          <SectionCard title="إدارة التذكرة">
+          <SectionCard title={t.manage}>
             <div className="p-5">
               <TicketControls
+            copy={t}
+            locale={locale}
                 ticketId={ticket.id}
                 status={ticket.status}
                 priority={ticket.priority}
@@ -113,22 +128,27 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
             </div>
           </SectionCard>
 
-          <SectionCard title="العميل">
+          <SectionCard title={t.customer}>
             <div className="space-y-2.5 p-5">
-              <KeyValue label="الاسم">{ticket.customer_name || "—"}</KeyValue>
-              <KeyValue label="البريد">
+              <KeyValue label={t.customerName}>{ticket.customer_name || "—"}</KeyValue>
+              <KeyValue label={t.customerEmail}>
                 <span dir="ltr">{ticket.customer_email}</span>
               </KeyValue>
-              <KeyValue label="الاشتراك">
+              <KeyValue label={t.customerPlan}>
                 {subscription
-                  ? `${subscription.plan === "monthly" ? "شهري" : "سنوي"} · نشط`
-                  : "بدون اشتراك"}
+                  ? fill(t.planActive, {
+                      plan:
+                        subscription.plan === "monthly"
+                          ? c.plans.monthly
+                          : c.plans.yearly,
+                    })
+                  : c.plans.none}
               </KeyValue>
               <Link
                 href={`/console/customers/${ticket.user_id}`}
                 className="btn btn-ghost mt-1 w-full !py-2 !text-[13px]"
               >
-                فتح ملف العميل
+                {t.openCustomer}
               </Link>
             </div>
           </SectionCard>

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { currentLocale } from "@/lib/locale";
+import { dict, fill } from "@/lib/i18n";
 import type { Metadata } from "next";
 import { listCustomers, type CustomerFilter } from "@/lib/customers";
 import { guardPage } from "@/lib/permissions";
@@ -15,22 +17,14 @@ import {
 import { FilterSelect, SearchField } from "@/components/console/forms";
 import { Ban, ExternalLink, Eye, Flag, LifeBuoy, Users } from "@/components/icons";
 
-export const metadata: Metadata = { title: "العملاء" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: dict(await currentLocale()).console.customers.title };
+}
 export const dynamic = "force-dynamic";
 
 const PER_PAGE = 20;
 
-const PLAN_LABEL: Record<string, string> = {
-  free: "مجانية",
-  monthly: "شهرية",
-  yearly: "سنوية",
-};
 
-const SOURCE_LABEL: Record<string, string> = {
-  paid: "مدفوع",
-  manual: "ممنوح",
-  invitation: "دعوة",
-};
 
 type Search = Record<string, string | string[] | undefined>;
 
@@ -71,43 +65,48 @@ export default async function CustomersPage({
   };
 
   const filtered = Boolean(search) || plan !== "all" || status !== "all";
+  const locale = await currentLocale();
+  const c = dict(locale).console;
+  const t = c.customers;
+  const planLabel: Record<string, string> = c.plans;
+  const sourceLabel: Record<string, string> = c.sources;
 
   return (
     <>
       <PageHeader
-        title="العملاء"
-        description={`${nf.format(total)} حساب${filtered ? " مطابق للبحث" : ""}`}
+        title={t.title}
+        description={fill(filtered ? t.countFiltered : t.count, { n: nf.format(total) })}
       />
 
       <div className="card mb-4 flex flex-wrap items-center gap-3 p-4">
-        <SearchField placeholder="ابحث بالاسم أو البريد أو رابط المعرض…" />
+        <SearchField placeholder={t.searchPlaceholder} clearLabel={c.common.clearSearch} />
         <FilterSelect
           paramName="plan"
-          label="الباقة"
+          label={t.plan}
           options={[
-            { value: "all", label: "الكل" },
-            { value: "monthly", label: "شهرية" },
-            { value: "yearly", label: "سنوية" },
-            { value: "free", label: "بدون اشتراك" },
+            { value: "all", label: c.common.all },
+            { value: "monthly", label: c.plans.monthly },
+            { value: "yearly", label: c.plans.yearly },
+            { value: "free", label: c.plans.none },
           ]}
         />
         <FilterSelect
           paramName="status"
-          label="الحالة"
+          label={t.status}
           options={[
-            { value: "all", label: "الكل" },
-            { value: "active", label: "نشط" },
-            { value: "suspended", label: "موقوف" },
-            { value: "portfolio_suspended", label: "معرض موقوف" },
+            { value: "all", label: c.common.all },
+            { value: "active", label: t.statusActive },
+            { value: "suspended", label: t.statusSuspended },
+            { value: "portfolio_suspended", label: t.statusPortfolioSuspended },
           ]}
         />
         <FilterSelect
           paramName="sort"
-          label="الترتيب"
+          label={t.sort}
           options={[
-            { value: "recent", label: "الأحدث" },
-            { value: "views", label: "الأكثر مشاهدة" },
-            { value: "name", label: "الاسم" },
+            { value: "recent", label: t.sortRecent },
+            { value: "views", label: t.sortViews },
+            { value: "name", label: t.sortName },
           ]}
         />
       </div>
@@ -116,16 +115,16 @@ export default async function CustomersPage({
         {rows.length === 0 ? (
           <EmptyState
             icon={<Users className="h-5 w-5" />}
-            title={filtered ? "لا نتائج مطابقة" : "لا يوجد عملاء بعد"}
+            title={filtered ? t.emptyFiltered : t.empty}
             body={
               filtered
-                ? "جرّب تعديل كلمات البحث أو إزالة بعض عوامل التصفية."
-                : "سيظهر هنا كل من ينشئ حسابًا على ديزاينكم."
+                ? t.emptyFilteredBody
+                : t.emptyBody
             }
             action={
               filtered ? (
                 <Link href="/console/customers" className="btn btn-ghost">
-                  إزالة التصفية
+                  {t.clearFilters}
                 </Link>
               ) : undefined
             }
@@ -155,11 +154,11 @@ export default async function CustomersPage({
                           {row.status === "suspended" && (
                             <Badge tone="bad">
                               <Ban className="h-3 w-3" />
-                              موقوف
+                              {t.suspended}
                             </Badge>
                           )}
                           {row.suspended === 1 && row.status !== "suspended" && (
-                            <Badge tone="warn">معرض موقوف</Badge>
+                            <Badge tone="warn">{t.portfolioSuspended}</Badge>
                           )}
                         </span>
                         <span dir="ltr" className="block truncate text-start text-[11.5px] text-mist-500">
@@ -171,13 +170,13 @@ export default async function CustomersPage({
                     <div className="flex flex-wrap items-center gap-2">
                       {row.subscription_status === "active" ? (
                         <Badge tone={row.subscription_source === "paid" ? "good" : "accent"}>
-                          {PLAN_LABEL[row.subscription_plan ?? "free"]}
+                          {planLabel[row.subscription_plan ?? "free"]}
                           {row.subscription_source && row.subscription_source !== "paid"
-                            ? ` · ${SOURCE_LABEL[row.subscription_source]}`
+                            ? ` · ${sourceLabel[row.subscription_source]}`
                             : ""}
                         </Badge>
                       ) : (
-                        <Badge>بدون اشتراك</Badge>
+                        <Badge>{c.plans.none}</Badge>
                       )}
 
                       {row.open_reports > 0 && (
@@ -199,14 +198,14 @@ export default async function CustomersPage({
                       </span>
 
                       <span className="hidden text-[11.5px] text-mist-600 lg:block">
-                        {row.last_seen_at ? timeAgo(row.last_seen_at) : formatDate(row.created_at)}
+                        {row.last_seen_at ? timeAgo(row.last_seen_at, locale) : formatDate(row.created_at, locale)}
                       </span>
 
                       {row.slug && (
                         <Link
                           href={`/p/${row.slug}`}
                           target="_blank"
-                          aria-label="فتح المعرض"
+                          aria-label={t.openPortfolio}
                           className="icon-btn !h-8 !w-8"
                         >
                           <ExternalLink className="h-4 w-4" />
@@ -216,7 +215,7 @@ export default async function CustomersPage({
                         href={`/console/customers/${row.id}`}
                         className="btn btn-ghost !px-3 !py-1.5 !text-[12.5px]"
                       >
-                        إدارة
+                        {t.manage}
                       </Link>
                     </div>
                   </div>

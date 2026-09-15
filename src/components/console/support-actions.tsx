@@ -4,11 +4,11 @@ import { useActionState } from "react";
 import { replyAsStaffAction, updateTicketAction } from "@/app/actions/support";
 import { Status, Submit } from "@/components/editor/ui";
 import { AutoSubmitSelect } from "./forms";
-import {
-  TICKET_PRIORITY_LABEL,
-  TICKET_STATUS_LABEL,
-} from "@/lib/support-labels";
-import type { TicketPriority, TicketStatus } from "@/lib/types";
+import { TICKET_PRIORITY, TICKET_STATUS } from "@/lib/support-labels";
+import type { Dictionary } from "@/lib/i18n";
+import type { Locale, TicketPriority, TicketStatus } from "@/lib/types";
+
+type Copy = Dictionary["console"]["tickets"];
 
 export function TicketControls({
   ticketId,
@@ -16,12 +16,16 @@ export function TicketControls({
   priority,
   assigneeId,
   staff,
+  copy,
+  locale,
 }: {
   ticketId: string;
   status: TicketStatus;
   priority: TicketPriority;
   assigneeId: string | null;
   staff: { id: string; label: string }[];
+  copy: Copy;
+  locale: Locale;
 }) {
   const [state, action] = useActionState(updateTicketAction, null);
 
@@ -31,9 +35,12 @@ export function TicketControls({
         <input type="hidden" name="ticketId" value={ticketId} />
         <AutoSubmitSelect
           name="status"
-          ariaLabel="حالة التذكرة"
+          ariaLabel={copy.ticketStatus}
           defaultValue={status}
-          options={Object.entries(TICKET_STATUS_LABEL).map(([value, label]) => ({ value, label }))}
+          options={Object.entries(TICKET_STATUS).map(([value, label]) => ({
+            value,
+            label: label[locale] ?? label.ar,
+          }))}
         />
       </form>
 
@@ -41,9 +48,12 @@ export function TicketControls({
         <input type="hidden" name="ticketId" value={ticketId} />
         <AutoSubmitSelect
           name="priority"
-          ariaLabel="أولوية التذكرة"
+          ariaLabel={copy.ticketPriority}
           defaultValue={priority}
-          options={Object.entries(TICKET_PRIORITY_LABEL).map(([value, label]) => ({ value, label }))}
+          options={Object.entries(TICKET_PRIORITY).map(([value, label]) => ({
+            value,
+            label: label[locale] ?? label.ar,
+          }))}
         />
       </form>
 
@@ -51,10 +61,10 @@ export function TicketControls({
         <input type="hidden" name="ticketId" value={ticketId} />
         <AutoSubmitSelect
           name="assigneeId"
-          ariaLabel="إسناد التذكرة"
+          ariaLabel={copy.ticketAssignee}
           defaultValue={assigneeId ?? ""}
           options={[
-            { value: "", label: "بدون إسناد" },
+            { value: "", label: copy.unassigned },
             ...staff.map((member) => ({ value: member.id, label: member.label })),
           ]}
         />
@@ -65,7 +75,7 @@ export function TicketControls({
   );
 }
 
-export function StaffReplyForm({ ticketId }: { ticketId: string }) {
+export function StaffReplyForm({ ticketId, copy }: { ticketId: string; copy: Copy }) {
   const [state, action] = useActionState(replyAsStaffAction, null);
 
   return (
@@ -75,20 +85,20 @@ export function StaffReplyForm({ ticketId }: { ticketId: string }) {
         name="body"
         rows={4}
         className="field"
-        placeholder="اكتب ردك للعميل…"
+        placeholder={copy.replyPlaceholder}
         required
         minLength={2}
       />
       <div className="flex flex-wrap items-center gap-2">
-        <Submit className="btn btn-primary">إرسال للعميل</Submit>
+        <Submit className="btn btn-primary">{copy.replyToCustomer}</Submit>
         <button
           type="submit"
           name="internal"
           value="1"
           className="btn btn-ghost !px-3.5 !py-2 !text-[13px]"
-          title="ملاحظة داخلية لا يراها العميل"
+          title={copy.internalNoteTitle}
         >
-          حفظ كملاحظة داخلية
+          {copy.internalNote}
         </button>
         <Status state={state} />
       </div>

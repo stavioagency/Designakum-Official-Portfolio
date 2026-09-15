@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { currentLocale } from "@/lib/locale";
+import { dict, fill } from "@/lib/i18n";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getReport, reportNotes, REPORT_STATUS_LABEL } from "@/lib/moderation";
+import { getReport, reportNotes, reportStatusLabel } from "@/lib/moderation";
 import { getPortfolioById } from "@/lib/portfolios";
 import { staffMembers } from "@/lib/customers";
 import { can, guardPage } from "@/lib/permissions";
@@ -27,7 +29,9 @@ import { ArrowLeft, ExternalLink } from "@/components/icons";
 import { REPORT_REASONS, type ReportStatus } from "@/lib/types";
 import { safeUrl } from "@/lib/safe-url";
 
-export const metadata: Metadata = { title: "بلاغ" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: dict(await currentLocale()).console.report.metaTitle };
+}
 export const dynamic = "force-dynamic";
 
 const REASON_LABEL = Object.fromEntries(REPORT_REASONS.map((r) => [r.value, r.label]));
@@ -52,6 +56,8 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
     id: member.id,
     label: member.display_name || member.email,
   }));
+  const locale = await currentLocale();
+  const t = dict(locale).console.report;
 
   return (
     <>
@@ -60,18 +66,18 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] text-mist-400 transition hover:text-white"
       >
         <ArrowLeft className="h-4 w-4" />
-        قائمة البلاغات
+        {t.backToList}
       </Link>
 
       <PageHeader
-        title={`بلاغ عن ${report.portfolio_name}`}
+        title={fill(t.title, { name: report.portfolio_name })}
         description={REASON_LABEL[report.reason] ?? report.reason}
         actions={
           <>
-            <Badge tone={STATUS_TONE[report.status]}>{REPORT_STATUS_LABEL[report.status]}</Badge>
+            <Badge tone={STATUS_TONE[report.status]}>{reportStatusLabel(report.status, locale)}</Badge>
             <Link href={`/p/${report.portfolio_slug}`} target="_blank" className="btn btn-ghost !py-2.5">
               <ExternalLink className="h-4 w-4" />
-              فتح المعرض
+              {t.openPortfolio}
             </Link>
           </>
         }
@@ -79,23 +85,23 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,340px)] xl:items-start">
         <div className="min-w-0 space-y-4">
-          <SectionCard title="تفاصيل البلاغ">
+          <SectionCard title={t.details}>
             <div className="space-y-4 p-5">
               <dl className="grid gap-3 sm:grid-cols-2">
-                <KeyValue label="المُبلِّغ">
+                <KeyValue label={t.reporter}>
                   <span dir="ltr">{report.reporter_email}</span>
                 </KeyValue>
-                <KeyValue label="نوع المُبلِّغ">
-                  {report.reporter_id ? "عميل مسجّل" : "زائر"}
+                <KeyValue label={t.reporterKind}>
+                  {report.reporter_id ? t.reporterClient : t.reporterVisitor}
                 </KeyValue>
-                <KeyValue label="تاريخ البلاغ">{formatDateTime(report.created_at)}</KeyValue>
-                <KeyValue label="المسؤول">
-                  {report.assignee_email ?? "غير مُسند"}
+                <KeyValue label={t.filedOn}>{formatDateTime(report.created_at, locale)}</KeyValue>
+                <KeyValue label={t.assignee}>
+                  {report.assignee_email ?? t.unassigned}
                 </KeyValue>
               </dl>
 
               <div className="panel p-4">
-                <p className="mb-1.5 text-[11.5px] text-mist-500">وصف المخالفة</p>
+                <p className="mb-1.5 text-[11.5px] text-mist-500">{t.description}</p>
                 <p className="whitespace-pre-wrap text-[13.5px] leading-[1.9] text-mist-200">
                   {report.description}
                 </p>
@@ -110,11 +116,11 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                     className="btn btn-ghost !px-3.5 !py-2 !text-[13px]"
                   >
                     <ExternalLink className="h-4 w-4" />
-                    فتح المرفق الذي أرسله المُبلِّغ
+                    {t.openEvidence}
                   </a>
                 ) : (
                   <p className="panel px-3.5 py-2.5 text-[12px] text-mist-500">
-                    أرفق المُبلِّغ رابطًا غير صالح، وهو معروض كنص فقط:{" "}
+                    {t.badEvidence}{" "}
                     <code dir="ltr" className="break-all text-mist-400">
                       {report.evidence_url}
                     </code>
@@ -123,24 +129,24 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
 
               {report.resolution && (
                 <div className="panel border border-emerald-400/20 p-4">
-                  <p className="mb-1.5 text-[11.5px] text-emerald-300">الخلاصة</p>
+                  <p className="mb-1.5 text-[11.5px] text-emerald-300">{t.resolution}</p>
                   <p className="text-[13px] leading-relaxed text-mist-200">{report.resolution}</p>
                 </div>
               )}
             </div>
           </SectionCard>
 
-          <SectionCard title="الملاحظات الداخلية" description="مرئية لفريق ديزاينكم فقط">
+          <SectionCard title={t.notes} description={t.notesHint}>
             <div className="space-y-4 p-5">
               {notes.length === 0 ? (
-                <EmptyState title="لا ملاحظات بعد" body="سجّل ما توصّلت إليه ليبقى القرار مفهومًا لاحقًا." />
+                <EmptyState title={t.noNotes} body={t.noNotesBody} />
               ) : (
                 <ul className="space-y-3">
                   {notes.map((note) => (
                     <li key={note.id} className="panel p-3.5">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[12.5px] font-semibold">{note.author_name}</span>
-                        <span className="text-[11px] text-mist-600">{timeAgo(note.created_at)}</span>
+                        <span className="text-[11px] text-mist-600">{timeAgo(note.created_at, locale)}</span>
                       </div>
                       <p className="mt-1.5 whitespace-pre-wrap text-[13px] leading-relaxed text-mist-300">
                         {note.body}
@@ -149,34 +155,34 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                   ))}
                 </ul>
               )}
-              <ReportNoteForm reportId={report.id} />
+              <ReportNoteForm copy={t} reportId={report.id} />
             </div>
           </SectionCard>
         </div>
 
         <div className="space-y-4">
-          <SectionCard title="الإسناد">
+          <SectionCard title={t.assignment}>
             <div className="p-5">
-              <AssignReport reportId={report.id} assigneeId={report.assignee_id} staff={members} />
+              <AssignReport copy={t} reportId={report.id} assigneeId={report.assignee_id} staff={members} />
             </div>
           </SectionCard>
 
-          <SectionCard title="القرار">
+          <SectionCard title={t.decision}>
             <div className="p-5">
-              <ReportDecision reportId={report.id} status={report.status} />
+              <ReportDecision copy={t} reportId={report.id} status={report.status} />
             </div>
           </SectionCard>
 
           {can(staff, "moderation.enforce") ? (
             <>
-              <SectionCard title="تنبيه العميل">
+              <SectionCard title={t.warnCustomer}>
                 <div className="p-5">
-                  <WarnOwnerForm reportId={report.id} />
+                  <WarnOwnerForm copy={t} reportId={report.id} />
                 </div>
               </SectionCard>
 
               {portfolio && (
-                <SectionCard title="إيقاف المعرض">
+                <SectionCard title={t.suspendPortfolio}>
                   <div className="p-5">
                     <PortfolioSuspensionControl
                       portfolioId={portfolio.id}
@@ -188,9 +194,9 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                 </SectionCard>
               )}
 
-              <SectionCard title="إيقاف الحساب" className="border-rose-500/20">
+              <SectionCard title={t.suspendAccount} className="border-rose-500/20">
                 <div className="p-5">
-                  <BanAccountForm
+                  <BanAccountForm copy={t}
                     userId={report.owner_id}
                     email={report.owner_email}
                     reportId={report.id}
@@ -199,16 +205,15 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                     href={`/console/customers/${report.owner_id}`}
                     className="mt-3 block text-[12px] text-mist-500 underline decoration-white/20 underline-offset-4 hover:text-white"
                   >
-                    فتح ملف العميل الكامل
+                    {t.openCustomer}
                   </Link>
                 </div>
               </SectionCard>
             </>
           ) : (
-            <SectionCard title="إجراءات التنفيذ">
+            <SectionCard title={t.enforcement}>
               <p className="p-5 text-[12.5px] leading-relaxed text-mist-500">
-                التحذير وإيقاف المعارض والحسابات متاح لمالك المنصة. يمكنك مراجعة البلاغ وتدوين
-                الملاحظات وتحويله للمالك.
+                {t.enforcementDenied}
               </p>
             </SectionCard>
           )}

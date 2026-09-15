@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { currentLocale } from "@/lib/locale";
+import { dict, fill } from "@/lib/i18n";
 import type { Metadata } from "next";
 import { auditActions, queryAudit } from "@/lib/audit";
 import { guardPage } from "@/lib/permissions";
@@ -14,7 +16,9 @@ import {
 import { FilterSelect, SearchField } from "@/components/console/forms";
 import { History } from "@/components/icons";
 
-export const metadata: Metadata = { title: "سجل التدقيق" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: dict(await currentLocale()).console.audit.title };
+}
 export const dynamic = "force-dynamic";
 
 const PER_PAGE = 40;
@@ -37,6 +41,9 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
     offset: (page - 1) * PER_PAGE,
   });
   const actions = await auditActions();
+  const locale = await currentLocale();
+  const c = dict(locale).console;
+  const t = c.audit;
 
   const build = (next: number) => {
     const query = new URLSearchParams();
@@ -50,17 +57,17 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   return (
     <>
       <PageHeader
-        title="سجل التدقيق"
-        description={`${nf.format(total)} إجراء مسجّل — من نفّذه، وماذا تغيّر، ومتى.`}
+        title={t.title}
+        description={fill(t.description, { n: nf.format(total) })}
       />
 
       <div className="card mb-4 flex flex-wrap items-center gap-3 p-4">
-        <SearchField placeholder="ابحث بالبريد أو الإجراء أو اسم الحساب…" />
+        <SearchField placeholder={t.searchPlaceholder} clearLabel={c.common.clearSearch} />
         <FilterSelect
           paramName="action"
-          label="الإجراء"
+          label={t.action}
           options={[
-            { value: "", label: "كل الإجراءات" },
+            { value: "", label: t.allActions },
             ...actions.map((name) => ({ value: name, label: name })),
           ]}
         />
@@ -70,8 +77,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         {rows.length === 0 ? (
           <EmptyState
             icon={<History className="h-5 w-5" />}
-            title="لا إجراءات مطابقة"
-            body="يسجّل النظام هنا كل إيقاف ومنح اشتراك وقرار بلاغ وتغيير إعدادات."
+            title={t.empty}
+            body={t.emptyBody}
           />
         ) : (
           <>
@@ -104,7 +111,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                       </>
                     )}
                     <span className="ms-auto shrink-0 text-[11px] text-mist-600">
-                      {formatDateTime(entry.created_at)}
+                      {formatDateTime(entry.created_at, locale)}
                     </span>
                   </div>
 
@@ -123,7 +130,13 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                 </li>
               ))}
             </ul>
-            <Pagination total={total} page={page} perPage={PER_PAGE} build={build} />
+            <Pagination
+        total={total}
+        page={page}
+        perPage={PER_PAGE}
+        build={build}
+        labels={{ prev: c.common.prev, next: c.common.next, range: c.common.range }}
+      />
           </>
         )}
       </SectionCard>

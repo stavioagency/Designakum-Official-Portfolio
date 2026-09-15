@@ -11,9 +11,11 @@ import { Modal } from "@/components/ui/modal";
 /** Debounced search that writes straight into the URL, so results stay linkable. */
 export function SearchField({
   placeholder = "بحث…",
+  clearLabel = "مسح البحث",
   paramName = "q",
 }: {
   placeholder?: string;
+  clearLabel?: string;
   paramName?: string;
 }) {
   const router = useRouter();
@@ -52,7 +54,7 @@ export function SearchField({
         <button
           type="button"
           onClick={() => setValue("")}
-          aria-label="مسح البحث"
+          aria-label={clearLabel}
           className="absolute inset-y-0 my-auto grid h-6 w-6 place-items-center rounded-lg text-mist-500 transition hover:text-white end-3"
         >
           <X className="h-3.5 w-3.5" />
@@ -117,6 +119,10 @@ export function ConfirmSubmit({
   className = "btn btn-danger",
   requireText,
   icon,
+  cancelLabel = "إلغاء",
+  pendingLabel = "لحظة…",
+  /** Split around the word to type, e.g. ["Type ", " to confirm"]. */
+  confirmParts = ["اكتب ", " للتأكيد"],
 }: {
   label: React.ReactNode;
   title: string;
@@ -126,6 +132,9 @@ export function ConfirmSubmit({
   /** When set, the operator must type this exact string to enable the button. */
   requireText?: string;
   icon?: React.ReactNode;
+  cancelLabel?: string;
+  pendingLabel?: string;
+  confirmParts?: [string, string];
 }) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
@@ -159,7 +168,7 @@ export function ConfirmSubmit({
         className={className}
       >
         {icon}
-        {pending ? "لحظة…" : label}
+        {pending ? pendingLabel : label}
       </button>
 
       {open && (
@@ -178,7 +187,9 @@ export function ConfirmSubmit({
             {requireText && (
               <label className="mt-4 block">
                 <span className="label">
-                  اكتب <code dir="ltr" className="text-mist-300">{requireText}</code> للتأكيد
+                  {confirmParts[0]}
+                  <code dir="ltr" className="text-mist-300">{requireText}</code>
+                  {confirmParts[1]}
                 </span>
                 <input
                   autoFocus
@@ -193,7 +204,7 @@ export function ConfirmSubmit({
 
             <div className="mt-6 flex items-center justify-end gap-2">
               <button type="button" onClick={() => setOpen(false)} className="btn btn-ghost">
-                إلغاء
+                {cancelLabel}
               </button>
               <button type="submit" form={formId} disabled={blocked} className="btn btn-danger">
                 {confirmLabel}

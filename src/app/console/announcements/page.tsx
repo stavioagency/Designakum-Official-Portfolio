@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { currentLocale } from "@/lib/locale";
+import { dict, fill } from "@/lib/i18n";
 import { announcementIsLive, listAnnouncements, SEVERITY_LABEL } from "@/lib/announcements";
 import { guardPage } from "@/lib/permissions";
 import {
@@ -15,7 +17,9 @@ import {
 import { Megaphone } from "@/components/icons";
 import type { AnnouncementSeverity } from "@/lib/types";
 
-export const metadata: Metadata = { title: "الإعلانات" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: dict(await currentLocale()).console.nav.announcements };
+}
 export const dynamic = "force-dynamic";
 
 const SEVERITY_TONE: Record<AnnouncementSeverity, "neutral" | "good" | "warn" | "bad"> = {
@@ -28,24 +32,26 @@ const SEVERITY_TONE: Record<AnnouncementSeverity, "neutral" | "good" | "warn" | 
 export default async function AnnouncementsPage() {
   await guardPage("announcements.manage");
   const announcements = await listAnnouncements();
+  const locale = await currentLocale();
+  const t = dict(locale).console.announcements;
 
   return (
     <>
       <PageHeader
-        title="إعلانات المنصة"
-        description="رسائل تظهر داخل لوحة كل عميل حتى يغلقها بنفسه."
+        title={t.title}
+        description={t.description}
       />
 
-      <SectionCard title="إعلان جديد" className="mb-4">
+      <SectionCard title={t.create} className="mb-4">
         <CreateAnnouncementForm />
       </SectionCard>
 
-      <SectionCard title="كل الإعلانات">
+      <SectionCard title={t.all}>
         {announcements.length === 0 ? (
           <EmptyState
             icon={<Megaphone className="h-5 w-5" />}
-            title="لا إعلانات بعد"
-            body="استخدم الإعلانات لإخبار العملاء بالتحديثات أو أعمال الصيانة أو العروض."
+            title={t.empty}
+            body={t.emptyBody}
           />
         ) : (
           <ul className="divide-y divide-white/6">
@@ -60,7 +66,7 @@ export default async function AnnouncementsPage() {
                     <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
                       {announcement.title}
                     </span>
-                    <Badge tone={live ? "good" : "neutral"}>{live ? "ظاهر الآن" : "غير ظاهر"}</Badge>
+                    <Badge tone={live ? "good" : "neutral"}>{live ? t.live : t.hidden}</Badge>
                     <AnnouncementControls
                       id={announcement.id}
                       title={announcement.title}
@@ -75,9 +81,13 @@ export default async function AnnouncementsPage() {
                   )}
 
                   <p className="mt-2 text-[11.5px] text-mist-600">
-                    {announcement.starts_at ? `من ${formatDate(announcement.starts_at)}` : "من الآن"}
+                    {announcement.starts_at
+                      ? fill(t.from, { date: formatDate(announcement.starts_at, locale) })
+                      : t.fromNow}
                     {" · "}
-                    {announcement.ends_at ? `حتى ${formatDate(announcement.ends_at)}` : "بلا نهاية"}
+                    {announcement.ends_at
+                      ? fill(t.until, { date: formatDate(announcement.ends_at, locale) })
+                      : t.noEnd}
                   </p>
                 </li>
               );

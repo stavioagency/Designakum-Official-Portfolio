@@ -323,11 +323,13 @@ export function Pagination({
   page,
   perPage,
   build,
+  labels = { prev: "السابق", next: "التالي", range: "{from}–{to} من {total}" },
 }: {
   total: number;
   page: number;
   perPage: number;
   build: (page: number) => string;
+  labels?: { prev: string; next: string; range: string };
 }) {
   const pages = Math.max(1, Math.ceil(total / perPage));
   if (pages <= 1) return null;
@@ -338,17 +340,20 @@ export function Pagination({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/8 px-5 py-3.5">
       <p className="tnum text-[12px] text-mist-500">
-        {from}–{to} من {total}
+        {labels.range
+          .replace("{from}", String(from))
+          .replace("{to}", String(to))
+          .replace("{total}", String(total))}
       </p>
       <div className="flex items-center gap-2">
         <PageLink href={build(page - 1)} disabled={page <= 1}>
-          السابق
+          {labels.prev}
         </PageLink>
         <span className="tnum text-[12px] text-mist-400">
           {page} / {pages}
         </span>
         <PageLink href={build(page + 1)} disabled={page >= pages}>
-          التالي
+          {labels.next}
         </PageLink>
       </div>
     </div>
