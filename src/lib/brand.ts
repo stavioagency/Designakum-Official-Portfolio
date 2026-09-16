@@ -1,6 +1,4 @@
-import "server-only";
-import fs from "node:fs";
-import path from "node:path";
+import { BRAND_MANIFEST } from "./brand-manifest";
 
 export const BRAND = {
   name: "ديزاينكم",
@@ -12,19 +10,20 @@ export const BRAND = {
   ink: "#07080e",
 } as const;
 
-const BRAND_DIR = path.join(process.cwd(), "public", "brand");
-const EXTENSIONS = [".svg", ".png", ".webp", ".jpg", ".jpeg", ".avif"];
-
 /**
- * Brand artwork is dropped into `public/brand/` by the platform owner; the base
- * name is fixed, the extension is whatever they exported. Anything still missing
- * falls back to type, so the UI is never broken by an absent file.
+ * The URL for a piece of brand artwork, or null if it has not been added.
+ *
+ * Answered from a manifest generated at build time rather than by probing the
+ * filesystem. `public/` is a real directory on a machine with a disk and is not
+ * one once the app is bundled for Workers, where it is served by the platform's
+ * asset system — a filesystem probe there returns nothing, and every logo on
+ * the site falls back to type without a single error to show for it.
+ *
+ * Staying synchronous is the point: this is called from components that are not
+ * async, and from the landing page's pricing copy.
  */
 export function brandAsset(base: string): string | null {
-  for (const ext of EXTENSIONS) {
-    if (fs.existsSync(path.join(BRAND_DIR, base + ext))) return `/brand/${base}${ext}`;
-  }
-  return null;
+  return BRAND_MANIFEST[base] ?? null;
 }
 
 export type BrandAssetName =

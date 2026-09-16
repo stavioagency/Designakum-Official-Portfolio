@@ -13,7 +13,9 @@
     "test:unit": "node --test tests/safe-url.test.ts tests/image-info.test.ts",
     "migrate": "node scripts/migrate.mjs",
     "migrate:down": "node scripts/migrate.mjs --down",
-    "bootstrap": "node scripts/bootstrap.mjs"
+    "bootstrap": "node scripts/bootstrap.mjs",
+    "brand:manifest": "node scripts/brand-manifest.mjs",
+    "prebuild": "node scripts/brand-manifest.mjs"
   },
   "dependencies": {
     "eslint-config-next": "^15.5.25",
