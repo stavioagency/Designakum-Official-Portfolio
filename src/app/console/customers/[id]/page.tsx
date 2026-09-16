@@ -421,6 +421,7 @@ export default async function CustomerProfilePage({
             hasPassword={customer.password_hash !== ""}
             canPublish={await canPublish(customer)}
             copy={dict(locale).dashboard}
+            passwordCopy={dict(locale).password}
             locale={locale}
           />
         </section>

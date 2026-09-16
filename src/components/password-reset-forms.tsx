@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { PasswordField } from "@/components/password-field";
+import type { Dictionary } from "@/lib/i18n";
 import { requestPasswordResetAction, resetPasswordAction } from "@/app/actions/auth";
 import { Field, Status, Submit } from "@/components/editor/ui";
-import type { Dictionary } from "@/lib/i18n";
 
 type Copy = Dictionary["reset"];
 
@@ -44,23 +45,21 @@ export function ForgotPasswordForm({ copy }: { copy: Copy }) {
   );
 }
 
-export function ResetPasswordForm({ token, copy }: { token: string; copy: Copy }) {
+export function ResetPasswordForm({
+  token,
+  copy,
+  passwordCopy,
+}: {
+  token: string;
+  copy: Copy;
+  passwordCopy: Dictionary["password"];
+}) {
   const [state, action] = useActionState(resetPasswordAction, null);
 
   return (
     <form action={action} className="space-y-4">
       <input type="hidden" name="token" value={token} />
-      <Field label={copy.newPassword} hint={copy.passwordHint}>
-        <input
-          name="next"
-          type="password"
-          className="field"
-          dir="ltr"
-          minLength={8}
-          required
-          autoComplete="new-password"
-        />
-      </Field>
+      <PasswordField name="next" label={copy.newPassword} copy={passwordCopy} />
       <Field label={copy.confirm}>
         <input
           name="confirm"

@@ -23,7 +23,9 @@ export default async function ResetPasswordPage({
 }) {
   const { token } = await params;
   const valid = await findValidReset(token) !== null;
-  const copy = dict(await currentLocale()).reset;
+  const d = dict(await currentLocale());
+  const copy = d.reset;
+  const passwordCopy = d.password;
 
   return (
     <main className="relative z-10 grid min-h-dvh place-items-center px-5 py-12">
@@ -36,7 +38,7 @@ export default async function ResetPasswordPage({
             <>
               <h1 className="text-2xl font-bold">{copy.newTitle}</h1>
               <p className="mb-6 mt-1.5 text-sm leading-relaxed text-mist-400">{copy.newSub}</p>
-              <ResetPasswordForm token={token} copy={copy} />
+              <ResetPasswordForm token={token} passwordCopy={passwordCopy} copy={copy} />
             </>
           ) : (
             <div className="text-center">

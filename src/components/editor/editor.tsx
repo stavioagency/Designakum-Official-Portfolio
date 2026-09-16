@@ -24,6 +24,7 @@ export function Editor({
   hasPassword,
   canPublish,
   copy,
+  passwordCopy,
   locale,
 }: {
   bundle: PortfolioBundle;
@@ -33,6 +34,7 @@ export function Editor({
   hasPassword: boolean;
   canPublish: boolean;
   copy: Dictionary["dashboard"];
+  passwordCopy: Dictionary["password"];
   /** Needed where a label lives in code rather than the dictionary, like the stat icons. */
   locale: Locale;
 }) {
@@ -237,6 +239,7 @@ export function Editor({
             hasPassword={hasPassword}
             canPublish={canPublish}
             copy={copy}
+            passwordCopy={passwordCopy}
           />
         )}
       </div>

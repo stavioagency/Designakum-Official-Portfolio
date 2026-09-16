@@ -8,6 +8,7 @@ import { Check, Link as LinkIcon } from "@/components/icons";
 import type { Portfolio, User } from "@/lib/types";
 import type { Dictionary } from "@/lib/i18n";
 import { Field, Status, Submit } from "./ui";
+import { PasswordField } from "@/components/password-field";
 
 export function SettingsSection({
   portfolio,
@@ -16,6 +17,7 @@ export function SettingsSection({
   hasPassword,
   canPublish,
   copy,
+  passwordCopy,
 }: {
   portfolio: Portfolio;
   user: User;
@@ -25,6 +27,7 @@ export function SettingsSection({
   /** The subscription gates publishing and nothing else. */
   canPublish: boolean;
   copy: Dictionary["dashboard"];
+  passwordCopy: Dictionary["password"];
 }) {
   const t = copy.settings;
   const planLabel: Record<string, string> = {
@@ -185,17 +188,7 @@ export function SettingsSection({
             </Field>
           )}
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t.newPassword} hint={t.passwordHint}>
-              <input
-                name="next"
-                type="password"
-                className="field"
-                dir="ltr"
-                minLength={8}
-                required
-                autoComplete="new-password"
-              />
-            </Field>
+            <PasswordField name="next" label={t.newPassword} copy={passwordCopy} />
             <Field label={t.confirmPassword}>
               <input
                 name="confirm"

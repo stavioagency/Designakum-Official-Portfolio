@@ -43,6 +43,7 @@ export default async function LoginPage({
             action={loginAction}
             d={d.auth}
             errors={d.authErrors}
+            passwordCopy={d.password}
             googleReady={googleConfigured() && settings["features.google_signin"]}
             initialError={error}
           />

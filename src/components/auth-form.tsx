@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import type { FormState } from "@/app/actions/auth";
 import type { Dictionary } from "@/lib/i18n";
+import { PasswordField } from "@/components/password-field";
 
 function Submit({ label, pending: pendingLabel }: { label: string; pending: string }) {
   const { pending } = useFormStatus();
@@ -35,11 +36,13 @@ export function AuthForm({
   initialError,
   inviteCode,
   inviteRequired,
+  passwordCopy,
 }: {
   mode: "login" | "signup";
   action: (prev: FormState, fd: FormData) => Promise<FormState>;
   d: Dictionary["auth"];
   errors: Dictionary["authErrors"];
+  passwordCopy: Dictionary["password"];
   googleReady: boolean;
   initialError?: string;
   inviteCode?: string;
@@ -105,29 +108,34 @@ export function AuthForm({
           <input id="email" name="email" type="email" className="field" dir="ltr" placeholder="you@studio.com" required />
         </div>
 
-        <div>
-          <div className="flex items-baseline justify-between gap-2">
-            <label className="label" htmlFor="password">{d.password}</label>
-            {!isSignup && (
+        {/* Signing up states the rules while you type; signing in must not —
+            the rules may have tightened since an account was made, and telling
+            someone their existing password is unacceptable helps nobody. */}
+        {isSignup ? (
+          <PasswordField name="password" label={d.password} copy={passwordCopy} />
+        ) : (
+          <div>
+            <div className="flex items-baseline justify-between gap-2">
+              <label className="label" htmlFor="password">{d.password}</label>
               <Link
                 href="/forgot"
                 className="mb-[7px] text-[11.5px] text-mist-500 transition hover:text-mist-300"
               >
                 {d.forgot}
               </Link>
-            )}
+            </div>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              className="field"
+              dir="ltr"
+              placeholder="••••••••"
+              autoComplete="current-password"
+              required
+            />
           </div>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            className="field"
-            dir="ltr"
-            placeholder="••••••••"
-            minLength={isSignup ? 8 : undefined}
-            required
-          />
-        </div>
+        )}
 
         {message && (
           <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-[13px] text-rose-200">

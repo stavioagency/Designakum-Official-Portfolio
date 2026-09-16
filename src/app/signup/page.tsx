@@ -45,6 +45,7 @@ export default async function SignupPage({
             action={signupAction}
             d={d.auth}
             errors={d.authErrors}
+            passwordCopy={d.password}
             googleReady={googleConfigured() && settings["features.google_signin"]}
             initialError={error}
             inviteCode={invite}

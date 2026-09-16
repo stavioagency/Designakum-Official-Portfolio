@@ -22,6 +22,7 @@ import { slugify } from "@/lib/ids";
 import { LOCALE_COOKIE, currentLocale, localeCookieOptions } from "@/lib/locale";
 import { isLocale } from "@/lib/i18n";
 import { readSettings } from "@/lib/settings";
+import { passwordAcceptable } from "@/lib/password-policy";
 import { checkInvitation, redeemInvitation } from "@/lib/invitations";
 import { callerFingerprint, rateLimit } from "@/lib/rate-limit";
 import { consumeReset, createPasswordReset, findValidReset } from "@/lib/password-reset";
@@ -60,7 +61,7 @@ export async function signupAction(_prev: FormState, fd: FormData): Promise<Form
   if (settings["platform.invite_only"] && !hasValidInvite) return { error: "invite_required" };
 
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: "invalid_email" };
-  if (password.length < 8) return { error: "weak_password" };
+  if (!passwordAcceptable(password)) return { error: "weak_password" };
   if (name.length < 2) return { error: "short_name" };
   if (await findUserByEmail(email)) return { error: "email_taken" };
 
@@ -188,7 +189,7 @@ export async function changePasswordAction(
     if (hasPassword && !verifyPassword(current, user.password_hash)) {
       return { error: (await messages()).wrongCurrentPassword };
     }
-    if (next.length < 8) return { error: (await messages()).weakPassword };
+    if (!passwordAcceptable(next)) return { error: (await messages()).weakPassword };
     if (next !== confirm) return { error: (await messages()).passwordMismatch };
     if (hasPassword && next === current) return { error: (await messages()).samePassword };
 
@@ -286,7 +287,7 @@ export async function resetPasswordAction(
   // chose, and an action has no business knowing which that is.
   const record = await findValidReset(token);
   if (!record) return { error: "badToken" };
-  if (next.length < 8) return { error: "weak" };
+  if (!passwordAcceptable(next)) return { error: "weak" };
   if (next !== confirm) return { error: "mismatch" };
 
   const user = await get<User>("SELECT * FROM users WHERE id = ?", record.user_id);

@@ -5,6 +5,7 @@ import { messages } from "@/lib/locale";
 import { fill } from "@/lib/i18n";
 import { audit } from "@/lib/audit";
 import { createUser, findUserByEmail, hashPassword, revokeSessionsFor } from "@/lib/auth";
+import { PASSWORD_STAFF_MIN, passwordAcceptable } from "@/lib/password-policy";
 import {
   activeSubscription,
   addMonths,
@@ -283,7 +284,10 @@ export async function createStaffAction(_prev: ActionState, fd: FormData): Promi
     const role = str(fd, "role") as Role;
 
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: (await messages()).badEmail };
-    if (password.length < 12) return { error: (await messages()).staffPasswordShort };
+    // Staff hold the console, so they carry the longer minimum.
+    if (!passwordAcceptable(password, PASSWORD_STAFF_MIN)) {
+      return { error: (await messages()).staffPasswordShort };
+    }
     if (!name) return { error: (await messages()).nameRequired };
     if (role !== "owner" && role !== "support") return { error: (await messages()).unknownRole };
     if (await findUserByEmail(email)) return { error: (await messages()).emailTaken };
@@ -355,7 +359,7 @@ export async function resetCustomerPasswordAction(_prev: ActionState, fd: FormDa
     const actor = await requirePermission("customers.suspend");
     const userId = str(fd, "userId");
     const password = String(fd.get("password") ?? "");
-    if (password.length < 8) return { error: (await messages()).passwordShort };
+    if (!passwordAcceptable(password)) return { error: (await messages()).passwordShort };
 
     const target = await getCustomer(userId);
     if (!target) return { error: (await messages()).accountMissing };
