@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { all, get, now, run } from "./db";
 import { newId } from "./ids";
 import type { Portfolio, Report, ReportStatus, User } from "./types";
@@ -126,7 +127,7 @@ export async function listReports(query: {
   return { rows, total };
 }
 
-export async function reportCounts(): Promise<Record<ReportStatus | "all", number>>{
+async function uncachedReportCounts(): Promise<Record<ReportStatus | "all", number>>{
   const rows = await all<{ status: ReportStatus; n: number }>(
     "SELECT status, COUNT(*) AS n FROM reports GROUP BY status",
   );
@@ -137,6 +138,19 @@ export async function reportCounts(): Promise<Record<ReportStatus | "all", numbe
   }
   return counts;
 }
+
+/**
+ * Deduplicated per request.
+ *
+ * This is read from several independent places while one page renders — a layout,
+ * a guard and the page itself all ask — and each ask was its own round trip. With
+ * the database in Frankfurt and the functions in Ohio, every one of those cost
+ * about a tenth of a second for an answer we already had.
+ *
+ * React's cache() scopes to a single request, so nothing goes stale: two renders
+ * still read the database twice, one render reads it once.
+ */
+export const reportCounts = cache(uncachedReportCounts);
 
 export async function getReport(id: string) {
   return await get<ReportRow>(

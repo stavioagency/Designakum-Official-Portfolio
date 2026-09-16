@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { DEFAULT_LOCALE, dict } from "./i18n";
 import { messages } from "./locale";
 import type { Locale } from "./types";
@@ -20,20 +21,46 @@ export class TenantError extends Error {}
 
 /* ------------------------------------------------------------------ retrieval */
 
-export async function getPortfolioBySlug(slug: string) {
+async function uncachedGetPortfolioBySlug(slug: string) {
   return await get<Portfolio>("SELECT * FROM portfolios WHERE slug = ?", slug);
 }
+
+/**
+ * Deduplicated per request.
+ *
+ * This is read from several independent places while one page renders — a layout,
+ * a guard and the page itself all ask — and each ask was its own round trip. With
+ * the database in Frankfurt and the functions in Ohio, every one of those cost
+ * about a tenth of a second for an answer we already had.
+ *
+ * React's cache() scopes to a single request, so nothing goes stale: two renders
+ * still read the database twice, one render reads it once.
+ */
+export const getPortfolioBySlug = cache(uncachedGetPortfolioBySlug);
 
 export async function getPortfolioById(id: string) {
   return await get<Portfolio>("SELECT * FROM portfolios WHERE id = ?", id);
 }
 
-export async function getPortfolioForUser(userId: string) {
+async function uncachedGetPortfolioForUser(userId: string) {
   return await get<Portfolio>(
     "SELECT * FROM portfolios WHERE user_id = ? ORDER BY created_at ASC LIMIT 1",
     userId,
   );
 }
+
+/**
+ * Deduplicated per request.
+ *
+ * This is read from several independent places while one page renders — a layout,
+ * a guard and the page itself all ask — and each ask was its own round trip. With
+ * the database in Frankfurt and the functions in Ohio, every one of those cost
+ * about a tenth of a second for an answer we already had.
+ *
+ * React's cache() scopes to a single request, so nothing goes stale: two renders
+ * still read the database twice, one render reads it once.
+ */
+export const getPortfolioForUser = cache(uncachedGetPortfolioForUser);
 
 export async function listPortfolios() {
   return await all<Portfolio & { email: string; owner_status: string }>(
@@ -43,27 +70,31 @@ export async function listPortfolios() {
   );
 }
 
-export async function loadBundle(portfolio: Portfolio): Promise<PortfolioBundle>{
-  return {
-    portfolio,
-    slides: await all<Slide>(
-      "SELECT * FROM slides WHERE portfolio_id = ? ORDER BY position, seq",
-      portfolio.id,
-    ),
-    projects: await all<Project>(
-      "SELECT * FROM projects WHERE portfolio_id = ? ORDER BY position, seq",
-      portfolio.id,
-    ),
-    stats: await all<Stat>(
-      "SELECT * FROM stats WHERE portfolio_id = ? ORDER BY position, seq",
-      portfolio.id,
-    ),
-    socials: await all<Social>(
-      "SELECT * FROM socials WHERE portfolio_id = ? ORDER BY position, seq",
-      portfolio.id,
-    ),
-  };
+/**
+ * A portfolio's four child collections, fetched together.
+ *
+ * An object literal with `await` in each field reads as parallel and is not —
+ * the four queries ran in sequence, which is four round trips on every public
+ * page view.
+ *
+ * Cached per request as well: the editor renders the live preview from the same
+ * bundle the page above it already loaded.
+ */
+async function uncachedLoadBundle(portfolio: Portfolio): Promise<PortfolioBundle>{
+  const child = <T,>(table: string) =>
+    all<T>(`SELECT * FROM ${table} WHERE portfolio_id = ? ORDER BY position, seq`, portfolio.id);
+
+  const [slides, projects, stats, socials] = await Promise.all([
+    child<Slide>("slides"),
+    child<Project>("projects"),
+    child<Stat>("stats"),
+    child<Social>("socials"),
+  ]);
+
+  return { portfolio, slides, projects, stats, socials };
 }
+
+export const loadBundle = cache(uncachedLoadBundle);
 
 /* ------------------------------------------------------------------ isolation */
 

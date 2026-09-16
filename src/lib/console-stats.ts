@@ -30,50 +30,74 @@ export interface PlatformStats {
   totalPortfolios: number;
 }
 
+/**
+ * Every figure on the console overview, gathered concurrently.
+ *
+ * These were awaited one after another, so the page cost fourteen sequential
+ * round trips. None of them depends on another's result, and with the database
+ * in one region and the app in another that ordering was the whole page load.
+ * Issued together, the page waits for the slowest rather than the sum.
+ */
 export async function platformStats(): Promise<PlatformStats>{
   const ts = now();
-  const revenue = await revenueSnapshot();
-  const reports = await reportCounts();
 
-  const totalUsers = await count("SELECT COUNT(*) AS n FROM users WHERE role = 'client'");
-  const activeSubscriptions = await count(
-    `SELECT COUNT(DISTINCT user_id) AS n FROM subscriptions
-      WHERE status = 'active' AND (current_period_end IS NULL OR current_period_end > ?)`,
-    ts,
-  );
+  const [
+    revenue,
+    reports,
+    totalUsers,
+    activeSubscriptions,
+    activeUsers,
+    newThisWeek,
+    newThisMonth,
+    suspendedUsers,
+    suspendedPortfolios,
+    endedSubscriptions,
+    churn,
+    openTickets,
+    publishedPortfolios,
+    totalPortfolios,
+  ] = await Promise.all([
+    revenueSnapshot(),
+    reportCounts(),
+    count("SELECT COUNT(*) AS n FROM users WHERE role = 'client'"),
+    count(
+      `SELECT COUNT(DISTINCT user_id) AS n FROM subscriptions
+        WHERE status = 'active' AND (current_period_end IS NULL OR current_period_end > ?)`,
+      ts,
+    ),
+    // "Active" means seen in the last 30 days, which is what a session touch records.
+    count("SELECT COUNT(*) AS n FROM users WHERE role = 'client' AND last_seen_at >= ?", ts - 30 * DAY),
+    count("SELECT COUNT(*) AS n FROM users WHERE role = 'client' AND created_at >= ?", ts - 7 * DAY),
+    count("SELECT COUNT(*) AS n FROM users WHERE role = 'client' AND created_at >= ?", ts - 30 * DAY),
+    count("SELECT COUNT(*) AS n FROM users WHERE status = 'suspended'"),
+    count("SELECT COUNT(*) AS n FROM portfolios WHERE suspended = 1"),
+    count("SELECT COUNT(*) AS n FROM subscriptions WHERE status IN ('canceled','expired')"),
+    churnRate(30),
+    openTicketCount(),
+    count("SELECT COUNT(*) AS n FROM portfolios WHERE published = 1"),
+    count("SELECT COUNT(*) AS n FROM portfolios"),
+  ]);
 
   return {
     totalUsers,
-    // "Active" means seen in the last 30 days, which is what a session touch records.
-    activeUsers: await count(
-      "SELECT COUNT(*) AS n FROM users WHERE role = 'client' AND last_seen_at >= ?",
-      ts - 30 * DAY,
-    ),
-    newThisWeek: await count(
-      "SELECT COUNT(*) AS n FROM users WHERE role = 'client' AND created_at >= ?",
-      ts - 7 * DAY,
-    ),
-    newThisMonth: await count(
-      "SELECT COUNT(*) AS n FROM users WHERE role = 'client' AND created_at >= ?",
-      ts - 30 * DAY,
-    ),
+    activeUsers,
+    newThisWeek,
+    newThisMonth,
     activeSubscriptions,
     monthlySubscribers: revenue.monthlyCount,
     yearlySubscribers: revenue.yearlyCount,
     compedSubscribers: revenue.compedCount,
     freeUsers: Math.max(0, totalUsers - activeSubscriptions),
-    suspendedUsers: await count("SELECT COUNT(*) AS n FROM users WHERE status = 'suspended'"),
-    suspendedPortfolios: await count("SELECT COUNT(*) AS n FROM portfolios WHERE suspended = 1"),
-    endedSubscriptions: await count(
-      "SELECT COUNT(*) AS n FROM subscriptions WHERE status IN ('canceled','expired')",
-    ),
+    suspendedUsers,
+    suspendedPortfolios,
+    endedSubscriptions,
     mrr: revenue.mrr,
     arr: revenue.arr,
-    churnPercent: (await churnRate(30)).percent,
-    openTickets: await openTicketCount(),
+    churnPercent: churn.percent,
+    openTickets,
     pendingReports: reports.pending + reports.reviewing,
-    publishedPortfolios: await count("SELECT COUNT(*) AS n FROM portfolios WHERE published = 1"),
-    totalPortfolios: await count("SELECT COUNT(*) AS n FROM portfolios"),
+    publishedPortfolios,
+    totalPortfolios,
   };
 }
 

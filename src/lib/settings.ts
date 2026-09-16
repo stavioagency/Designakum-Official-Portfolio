@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import type { Locale } from "./types";
 import { all, now, run } from "./db";
 
@@ -238,7 +239,7 @@ export function localized<K extends SettingKey & string>(
 }
 
 /** Reads every setting, overlaying stored overrides on the defaults. */
-export async function readSettings(): Promise<Settings>{
+async function uncachedReadSettings(): Promise<Settings>{
   const stored = await all<StoredRow>("SELECT key, value FROM settings");
   const merged = { ...SETTING_DEFAULTS } as Record<string, unknown>;
 
@@ -252,6 +253,19 @@ export async function readSettings(): Promise<Settings>{
   }
   return merged as Settings;
 }
+
+/**
+ * Deduplicated per request.
+ *
+ * This is read from several independent places while one page renders — a layout,
+ * a guard and the page itself all ask — and each ask was its own round trip. With
+ * the database in Frankfurt and the functions in Ohio, every one of those cost
+ * about a tenth of a second for an answer we already had.
+ *
+ * React's cache() scopes to a single request, so nothing goes stale: two renders
+ * still read the database twice, one render reads it once.
+ */
+export const readSettings = cache(uncachedReadSettings);
 
 export async function readSetting<K extends SettingKey>(key: K): Promise<Settings[K]>{
   return (await readSettings())[key];

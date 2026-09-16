@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { all, get, now, run } from "./db";
 import { newId } from "./ids";
 import type { Ticket, TicketMessage, TicketPriority, TicketStatus, User } from "./types";
@@ -184,10 +185,23 @@ export async function setTicketField(
   await run(`UPDATE tickets SET ${field} = ?, updated_at = ? WHERE id = ?`, value, now(), ticketId);
 }
 
-export async function openTicketCount() {
+async function uncachedOpenTicketCount() {
   return (
     (await get<{ n: number }>(
       "SELECT COUNT(*) AS n FROM tickets WHERE status IN ('open','in_progress','waiting_customer')",
     ))?.n ?? 0
   );
 }
+
+/**
+ * Deduplicated per request.
+ *
+ * This is read from several independent places while one page renders — a layout,
+ * a guard and the page itself all ask — and each ask was its own round trip. With
+ * the database in Frankfurt and the functions in Ohio, every one of those cost
+ * about a tenth of a second for an answer we already had.
+ *
+ * React's cache() scopes to a single request, so nothing goes stale: two renders
+ * still read the database twice, one render reads it once.
+ */
+export const openTicketCount = cache(uncachedOpenTicketCount);

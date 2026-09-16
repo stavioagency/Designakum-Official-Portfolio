@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import fs from "node:fs";
 import path from "node:path";
@@ -117,7 +118,7 @@ export async function destroySession() {
 
 /* ---------------------------------------------------------------- current user */
 
-export async function currentUser(): Promise<User | null> {
+async function uncachedCurrentUser(): Promise<User | null> {
   const jar = await cookies();
   const sessionId = await unseal(jar.get(COOKIE)?.value);
   if (!sessionId) return null;
@@ -143,6 +144,19 @@ export async function currentUser(): Promise<User | null> {
   }
   return user;
 }
+
+/**
+ * Deduplicated per request.
+ *
+ * This is read from several independent places while one page renders — a layout,
+ * a guard and the page itself all ask — and each ask was its own round trip. With
+ * the database in Frankfurt and the functions in Ohio, every one of those cost
+ * about a tenth of a second for an answer we already had.
+ *
+ * React's cache() scopes to a single request, so nothing goes stale: two renders
+ * still read the database twice, one render reads it once.
+ */
+export const currentUser = cache(uncachedCurrentUser);
 
 export async function requireUser(): Promise<User> {
   const user = await currentUser();
