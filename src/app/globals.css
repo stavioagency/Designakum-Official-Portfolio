@@ -288,3 +288,55 @@ select.field option { background: #15151f; }
 
 /* Arabic numerals stay Latin for stat figures, which reads cleaner in this layout. */
 .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+/* ===========================================================================
+   Phones
+   ---------------------------------------------------------------------------
+   The interface was typed for a desktop and then shrunk. Across the app there
+   were 266 hardcoded sizes below 14px and exactly one responsive variant, so a
+   phone got the same 11px captions as a 27" screen — which is most of what
+   "looks like nobody sweated the details" actually is.
+
+   Correcting it at 266 call sites would be a large, fragile change that the
+   next new component would immediately break. Correcting the scale is one
+   change that every existing and future use inherits.
+   =========================================================================== */
+@media (max-width: 640px) {
+  /* A readable floor. Nothing below 12.5px, and the body-ish sizes step up so
+     the hierarchy survives rather than everything collapsing to one size. */
+  .text-\[10\.5px\], .text-\[11px\], .text-\[11\.5px\] { font-size: 12.5px; }
+  .text-\[12px\], .text-\[12\.5px\]                    { font-size: 13.5px; }
+  .text-\[13px\], .text-\[13\.5px\]                    { font-size: 14.5px; }
+  .text-\[14px\], .text-\[14\.5px\]                    { font-size: 15.5px; }
+
+  /* Line height matters more than size for Arabic, which sits taller than
+     Latin and runs into itself at the desktop leading. */
+  .leading-relaxed { line-height: 1.85; }
+
+  /**
+   * 16px is not a style choice.
+   *
+   * iOS Safari zooms the whole page when a text field smaller than 16px takes
+   * focus, and never zooms back out. Every form on the site did that — you tap
+   * the email box and the layout lurches sideways. It is the single loudest
+   * "this was not tested on a phone" signal an interface can send.
+   */
+  .field,
+  input[type="text"], input[type="email"], input[type="password"],
+  input[type="search"], input[type="url"], input[type="tel"],
+  select, textarea {
+    font-size: 16px;
+    padding: 13px 15px;
+    min-height: 46px;
+  }
+
+  /* A finger is not a cursor: 44px is the smallest reliable target. */
+  .btn      { min-height: 46px; padding: 13px 18px; }
+  .icon-btn { width: 44px; height: 44px; }
+
+  /* A 28px radius on a 343px-wide card reads as bulbous rather than soft, and
+     the gutter was eating width the content needed. */
+  .card       { border-radius: 22px; }
+  .card-tight { border-radius: 16px; }
+  .panel      { border-radius: 16px; }
+}

@@ -92,7 +92,7 @@ export function FilterSelect({
           next.delete("page");
           router.replace(`?${next.toString()}`, { scroll: false });
         }}
-        className="field !w-auto !py-2 !text-[13px]"
+        className="field !w-auto !py-2 text-[13px] sm:text-[13px]"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -223,7 +223,7 @@ export function AutoSubmitSelect({
   defaultValue,
   options,
   ariaLabel,
-  className = "field !w-auto !py-2 !text-[13px]",
+  className = "field !w-auto !py-2 text-[13px] sm:text-[13px]",
 }: {
   name: string;
   defaultValue: string;

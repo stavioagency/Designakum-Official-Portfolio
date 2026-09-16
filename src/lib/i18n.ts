@@ -10,7 +10,7 @@ export function isLocale(value: unknown): value is Locale {
 }
 
 const ar = {
-  brandTagline: "منصة معارض الأعمال",
+  brandTagline: "كل روابطك في صفحة واحدة",
 
   nav: { login: "دخول", start: "ابدأ الآن", dashboard: "لوحة التحكم", pricing: "الأسعار" },
 
@@ -66,14 +66,14 @@ const ar = {
   },
 
   landing: {
-    badge: "منصة عربية لمعارض الأعمال",
-    headline1: "معرض أعمالك الشخصي،",
-    headline2: "برابط واحد أنيق",
-    sub: "هويتك، أعمالك، وطرق التواصل معك — في صفحة واحدة.",
-    ctaPrimary: "أنشئ معرضك",
+    badge: "منصة عربية — كل شيء برابط واحد",
+    headline1: "كل حساباتك وروابطك وأعمالك",
+    headline2: "في رابط واحد",
+    sub: "اجمع حساباتك، روابطك، أعمالك ومعلوماتك في صفحة واحدة، وشاركها برابط واحد.",
+    ctaPrimary: "أنشئ صفحتك",
     ctaSecondary: "شاهد نموذجًا",
     previewTitle: "هكذا تبدو صفحتك",
-    previewSub: "معرض حقيقي منشور على المنصة — جرّبه على الجوال وعلى الشاشة.",
+    previewSub: "صفحة حقيقية منشورة على المنصة — جرّبها على الجوال وعلى الشاشة.",
     mobile: "جوال",
     desktop: "شاشة",
     offerTitle: "ما نقدّمه",
@@ -1189,7 +1189,7 @@ const ar = {
     billing: "الاشتراك",
     support: "الدعم",
     ticket: "تذكرة",
-    description: "ديزاينكم: منصة عربية لإنشاء صفحات أعمال احترافية للمصممين والمستقلين، بروابط خاصة ولوحة تحكم كاملة.",
+    description: "ديزاينكم: اجمع حساباتك وروابطك وأعمالك ومعلوماتك في صفحة واحدة، وشاركها برابط واحد. عربي وإنجليزي، بلوحة تحكم كاملة.",
   },
 
   portfolio: {
@@ -1244,7 +1244,7 @@ const ar = {
 };
 
 const en: typeof ar = {
-  brandTagline: "The portfolio platform",
+  brandTagline: "Everything you share, one link",
 
   nav: { login: "Log in", start: "Get started", dashboard: "Dashboard", pricing: "Pricing" },
 
@@ -1300,14 +1300,14 @@ const en: typeof ar = {
   },
 
   landing: {
-    badge: "A portfolio platform built for Arabic",
-    headline1: "Your work, your page,",
-    headline2: "one elegant link",
-    sub: "Your identity, your work, every way to reach you — one page.",
-    ctaPrimary: "Create your portfolio",
+    badge: "Built for Arabic — everything on one link",
+    headline1: "Your accounts, links and work",
+    headline2: "on one link",
+    sub: "Gather your accounts, links, work and details on one page, and share all of it with a single link.",
+    ctaPrimary: "Create your page",
     ctaSecondary: "See an example",
     previewTitle: "This is what your page looks like",
-    previewSub: "A real portfolio published on Designakum \u2014 try it on a phone and on a screen.",
+    previewSub: "A real page published on Designakum \u2014 try it on a phone and on a screen.",
     mobile: "Phone",
     desktop: "Screen",
     offerTitle: "What we offer",
@@ -1316,11 +1316,11 @@ const en: typeof ar = {
   },
 
   features: [
-    { title: "A simple editor", body: "No code, no templates" },
-    { title: "Your own images", body: "Upload, crop, reorder" },
-    { title: "A full portfolio", body: "Slides, projects, stats" },
-    { title: "Private by default", body: "Nobody sees your panel but you" },
-    { title: "Live preview", body: "On a real phone frame" },
+    { title: "All your accounts", body: "Instagram, TikTok, Behance, LinkedIn and more" },
+    { title: "One link", body: "Put it in your bio and everywhere else" },
+    { title: "Reach you directly", body: "WhatsApp and email, one tap" },
+    { title: "Your work and details", body: "Projects, images, numbers, a bio" },
+    { title: "See who visits", body: "Views and clicks on every link" },
     { title: "Arabic and English", body: "Both treated as first class" },
   ],
 
@@ -2423,7 +2423,7 @@ const en: typeof ar = {
     billing: "Subscription",
     support: "Support",
     ticket: "Ticket",
-    description: "Designakum: a portfolio platform for Arabic-speaking designers and freelancers — your own link, your own page, edited by you.",
+    description: "Designakum: gather your accounts, links, work and details on one page and share all of it with a single link. Arabic and English, with a full dashboard.",
   },
 
   portfolio: {
