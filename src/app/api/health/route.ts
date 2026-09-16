@@ -26,6 +26,10 @@ export async function GET() {
     EMAIL_API_KEY: present("EMAIL_API_KEY"),
     PAYPAL_CLIENT_ID: present("PAYPAL_CLIENT_ID"),
     PAYPAL_WEBHOOK_ID: present("PAYPAL_WEBHOOK_ID"),
+    // Sign-in falls back silently when these are absent, which is exactly the
+    // kind of "configured or not?" question this endpoint exists to answer.
+    GOOGLE_CLIENT_ID: present("GOOGLE_CLIENT_ID"),
+    GOOGLE_CLIENT_SECRET: present("GOOGLE_CLIENT_SECRET"),
   };
 
   let database: { ok: boolean; error?: string };
