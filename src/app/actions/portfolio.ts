@@ -20,6 +20,7 @@ import {
   updateSlug,
 } from "@/lib/portfolios";
 import { THEMES, type ThemeKey, type User } from "@/lib/types";
+import { normaliseHex } from "@/lib/accent";
 import { reportError } from "@/lib/observability";
 
 export type ActionState = { ok?: string; error?: string } | null;
@@ -81,6 +82,13 @@ export async function saveProfileAction(_prev: ActionState, fd: FormData): Promi
     const theme = str(fd, "theme");
     if (!(theme in THEMES)) return { error: (await messages()).unknownTheme };
 
+    // Validated here, not just in the browser: this ends up inside a style
+    // attribute, so anything that is not a plain six-digit colour is refused
+    // rather than trusted. Empty means "use the theme".
+    const rawHex = str(fd, "accent_hex");
+    const accentHex = rawHex ? normaliseHex(rawHex) : "";
+    if (accentHex === null) return { error: (await messages()).badColour };
+
     await updateProfile(id, user, {
       name: str(fd, "name"),
       title: str(fd, "title"),
@@ -90,6 +98,7 @@ export async function saveProfileAction(_prev: ActionState, fd: FormData): Promi
       whatsapp: str(fd, "whatsapp"),
       whatsapp_label: str(fd, "whatsapp_label"),
       theme: theme as ThemeKey,
+      accent_hex: accentHex,
       footer_note: str(fd, "footer_note"),
       ...(avatar === undefined ? {} : { avatar_url: avatar }),
     });

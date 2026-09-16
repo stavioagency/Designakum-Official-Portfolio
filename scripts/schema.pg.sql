@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS portfolios (
   whatsapp         TEXT NOT NULL DEFAULT '',
   whatsapp_label   TEXT NOT NULL DEFAULT 'تواصل معي عبر واتساب',
   theme            TEXT NOT NULL DEFAULT 'brand',
+  accent_hex       TEXT NOT NULL DEFAULT '',   -- overrides theme when set
   locale           TEXT NOT NULL DEFAULT 'ar',
   footer_note      TEXT NOT NULL DEFAULT '',
   published        INTEGER NOT NULL DEFAULT 0,

@@ -8,6 +8,7 @@ import { SOCIAL_META, STAT_ICONS, Whatsapp } from "./icons";
 import { DIR, dict, fill } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n";
 import { safeUrl, socialHref } from "@/lib/safe-url";
+import { accentStyle } from "@/lib/accent";
 import type { PortfolioBundle, Locale } from "@/lib/types";
 
 function waHref(number: string) {
@@ -78,7 +79,10 @@ export function PortfolioView({
 
   return (
     <div
-      data-theme={portfolio.theme}
+      // A custom colour wins over the theme, and is set inline because it is
+      // per-portfolio data — it cannot live in a stylesheet written at build time.
+      data-theme={portfolio.accent_hex ? undefined : portfolio.theme}
+      style={accentStyle(portfolio.accent_hex)}
       lang={locale}
       dir={DIR[locale]}
       className="@container relative"

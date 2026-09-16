@@ -7,6 +7,7 @@ import type { Dictionary } from "@/lib/i18n";
 import { Field, Status, Submit } from "./ui";
 import { ImageField } from "./image-field";
 import { Check } from "@/components/icons";
+import { accentFromHex } from "@/lib/accent";
 import { useState } from "react";
 
 export function ProfileSection({
@@ -19,6 +20,10 @@ export function ProfileSection({
   const t = copy.profile;
   const [state, action] = useActionState(saveProfileAction, null);
   const [theme, setTheme] = useState<ThemeKey>(portfolio.theme);
+  // The typed value is kept raw so a half-finished "#D5" does not clear the
+  // preview on every keystroke; only a complete colour is applied.
+  const [hex, setHex] = useState(portfolio.accent_hex);
+  const custom = accentFromHex(hex);
 
   return (
     <div className="space-y-5">
@@ -107,12 +112,15 @@ export function ProfileSection({
                 reader's language — the name now lives in the accessible label. */}
             {(Object.keys(THEMES) as ThemeKey[]).map((key) => {
               const swatch = THEMES[key];
-              const active = theme === key;
+              const active = !custom && theme === key;
               return (
                 <button
                   type="button"
                   key={key}
-                  onClick={() => setTheme(key)}
+                  onClick={() => {
+                    setTheme(key);
+                    setHex("");
+                  }}
                   aria-pressed={active}
                   aria-label={copy.profile.themes[key]}
                   title={copy.profile.themes[key]}
@@ -125,6 +133,47 @@ export function ProfileSection({
                 </button>
               );
             })}
+          </div>
+
+          {/* One colour in, a gradient and a ring out. Asking for three hex
+              codes would be asking a customer to do colour theory. */}
+          <input type="hidden" name="accent_hex" value={custom ? custom.from : ""} />
+          <div className="mt-3.5 flex flex-wrap items-center gap-2.5">
+            <label className="text-[12.5px] text-mist-400" htmlFor="accent-hex">
+              {copy.profile.customColour}
+            </label>
+            <div className="field flex items-center gap-2 !w-auto !py-1.5" dir="ltr">
+              <span
+                className="h-6 w-6 shrink-0 rounded-md border border-white/15"
+                style={{
+                  backgroundImage: custom
+                    ? `linear-gradient(135deg, ${custom.from}, ${custom.to})`
+                    : undefined,
+                  background: custom ? undefined : "rgba(255,255,255,0.06)",
+                }}
+              />
+              <input
+                id="accent-hex"
+                value={hex}
+                onChange={(event) => setHex(event.target.value)}
+                placeholder="#D56637"
+                maxLength={7}
+                spellCheck={false}
+                className="w-[92px] bg-transparent text-[13px] font-medium text-mist-50 outline-none"
+              />
+            </div>
+            {hex && !custom && (
+              <span className="text-[12px] text-rose-300">{copy.profile.colourInvalid}</span>
+            )}
+            {custom && (
+              <button
+                type="button"
+                onClick={() => setHex("")}
+                className="text-[12px] text-mist-500 underline underline-offset-4 hover:text-mist-300"
+              >
+                {copy.profile.colourClear}
+              </button>
+            )}
           </div>
         </Field>
 

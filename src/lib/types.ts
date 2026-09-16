@@ -66,6 +66,8 @@ export interface Portfolio {
   whatsapp: string;
   whatsapp_label: string;
   theme: ThemeKey;
+  /** A custom accent colour. Empty means the theme decides. */
+  accent_hex: string;
   locale: Locale;
   footer_note: string;
   published: number;
