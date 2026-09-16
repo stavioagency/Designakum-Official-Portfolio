@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { publishAction, saveSlugAction } from "@/app/actions/portfolio";
 import { changePasswordAction } from "@/app/actions/auth";
+import { EmailChange } from "@/components/account/email-change";
 import { Check, Link as LinkIcon } from "@/components/icons";
 import type { Portfolio, User } from "@/lib/types";
 import type { Dictionary } from "@/lib/i18n";
@@ -161,6 +162,14 @@ export function SettingsSection({
           {t.accountNote}
         </p>
       </section>
+
+      <EmailChange
+        currentEmail={user.email}
+        hasPassword={hasPassword}
+        usesGoogle={Boolean(user.google_id)}
+        t={t}
+        saving={copy.common.saving}
+      />
 
       <section className="card space-y-4 p-5 sm:p-6">
         <header>

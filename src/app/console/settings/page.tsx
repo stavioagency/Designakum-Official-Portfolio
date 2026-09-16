@@ -12,6 +12,7 @@ import { Badge, PageHeader, SectionCard, formatDate } from "@/components/console
 import { SettingsGroup } from "@/components/console/settings-form";
 import { CreateStaffForm, StaffRoleControl } from "@/components/console/staff-forms";
 import { BrandAssets } from "@/components/admin/brand-assets";
+import { EmailChange } from "@/components/account/email-change";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: dict(await currentLocale()).console.nav.settings };
@@ -165,6 +166,17 @@ export default async function SettingsPage() {
             { key: "policy.privacy", label: t.privacy, type: "textarea", value: settings["policy.privacy"] },
             { key: "policy.privacy_en", label: t.privacyEn, hint: t.englishHint, type: "textarea", value: settings["policy.privacy_en"] },
           ]}
+        />
+
+        {/* Owners and support reach the console but not the customer dashboard —
+            two of the three owner accounts have no portfolio at all — so the
+            account's own email has to be changeable from here too. */}
+        <EmailChange
+          currentEmail={me.email}
+          hasPassword={me.password_hash !== ""}
+          usesGoogle={Boolean(me.google_id)}
+          t={dict(locale).dashboard.settings}
+          saving={dict(locale).dashboard.common.saving}
         />
 
         <SectionCard

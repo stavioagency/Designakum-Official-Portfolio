@@ -17,7 +17,6 @@
     "bootstrap": "node scripts/bootstrap.mjs",
     "brand:manifest": "node scripts/brand-manifest.mjs",
     "prebuild": "node scripts/brand-manifest.mjs",
-    "cf:build": "sh scripts/cf-build.sh",
     "build:local": "NEXT_DIST_DIR=.next-build next build",
     "start:local": "NEXT_DIST_DIR=.next-build next start -p 3000",
     "pretest": "node scripts/check-dev-server.mjs"

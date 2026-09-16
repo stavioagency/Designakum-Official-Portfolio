@@ -151,6 +151,104 @@ const invitation: Template<{ code: string; signupUrl: string; months: number }> 
   }),
 };
 
+/* --------------------------------------------------------- email change */
+
+/** To the address being moved *to*. Opening this is what proves it is theirs. */
+const emailChangeVerify: Template<{ name: string; link: string; newEmail: string }> = {
+  ar: ({ name, link, newEmail }) => ({
+    subject: "أكّد بريدك الجديد — ديزاينكم",
+    preheader: "الرابط صالح لمدة نصف ساعة.",
+    blocks: [
+      hi("مرحبًا", name),
+      { type: "p", text: "طُلب تغيير البريد الإلكتروني لحسابك في ديزاينكم إلى هذا العنوان:" },
+      { type: "link", label: "البريد الجديد", url: newEmail },
+      { type: "p", text: "افتح الرابط لتأكيد ملكيتك لهذا البريد. لن يتغيّر شيء قبل ذلك." },
+      { type: "cta", label: "أكّد البريد الجديد", url: link },
+      {
+        type: "note",
+        text: "الرابط صالح لمدة نصف ساعة. إن لم تطلب ذلك فتجاهل هذه الرسالة — لن يُستخدم بريدك في أي حساب.",
+      },
+    ],
+  }),
+  en: ({ name, link, newEmail }) => ({
+    subject: "Confirm your new email — Designakum",
+    preheader: "The link works for thirty minutes.",
+    blocks: [
+      hi("Hi", name),
+      { type: "p", text: "Someone asked to move a Designakum account to this address:" },
+      { type: "link", label: "New address", url: newEmail },
+      { type: "p", text: "Open the link to confirm the address is yours. Nothing changes until you do." },
+      { type: "cta", label: "Confirm this address", url: link },
+      {
+        type: "note",
+        text: "The link works for thirty minutes. If you didn't ask for this, ignore this message — your address will not be used on any account.",
+      },
+    ],
+  }),
+};
+
+/**
+ * To the address being moved *away from*, and sent whether or not the change is
+ * ever confirmed.
+ *
+ * This is the message that reaches someone whose account has been taken over,
+ * while they still control the old inbox. It is the last thing that can warn
+ * them, which is why it goes out at the request and not at the confirmation.
+ */
+const emailChangeNotice: Template<{ name: string; newEmail: string; resetUrl: string }> = {
+  ar: ({ name, newEmail, resetUrl }) => ({
+    subject: "طُلب تغيير بريد حسابك",
+    preheader: "إن لم تكن أنت، غيّر كلمة المرور فورًا.",
+    blocks: [
+      hi("مرحبًا", name),
+      { type: "p", text: "طُلب نقل حسابك في ديزاينكم إلى بريد إلكتروني آخر:" },
+      { type: "link", label: "البريد المطلوب", url: newEmail },
+      { type: "p", text: "لن يتم النقل إلا بعد تأكيد صاحب البريد الجديد." },
+      { type: "p", text: "إن لم تكن أنت من طلب ذلك، غيّر كلمة مرورك فورًا — الطلب يُلغى تلقائيًا عند تغييرها:" },
+      { type: "cta", label: "غيّر كلمة المرور", url: resetUrl },
+    ],
+  }),
+  en: ({ name, newEmail, resetUrl }) => ({
+    subject: "Someone asked to change your account email",
+    preheader: "If this wasn't you, change your password now.",
+    blocks: [
+      hi("Hi", name),
+      { type: "p", text: "Someone asked to move your Designakum account to a different address:" },
+      { type: "link", label: "Requested address", url: newEmail },
+      { type: "p", text: "Nothing moves until the owner of that address confirms it." },
+      {
+        type: "p",
+        text: "If this wasn't you, change your password now — doing so cancels the request:",
+      },
+      { type: "cta", label: "Change my password", url: resetUrl },
+    ],
+  }),
+};
+
+/** Confirmation to the address just adopted, so the move ends somewhere visible. */
+const emailChanged: Template<{ name: string; newEmail: string }> = {
+  ar: ({ name, newEmail }) => ({
+    subject: "تم تغيير بريد حسابك",
+    preheader: "أصبح هذا هو بريد الدخول.",
+    blocks: [
+      hi("مرحبًا", name),
+      { type: "p", text: "تم تغيير بريد حسابك في ديزاينكم. استخدم هذا العنوان لتسجيل الدخول من الآن:" },
+      { type: "link", label: "بريد الدخول", url: newEmail },
+      { type: "note", text: "كلمة المرور لم تتغيّر." },
+    ],
+  }),
+  en: ({ name, newEmail }) => ({
+    subject: "Your account email was changed",
+    preheader: "This address is now your sign-in.",
+    blocks: [
+      hi("Hi", name),
+      { type: "p", text: "Your Designakum account email has changed. Sign in with this address from now on:" },
+      { type: "link", label: "Sign-in address", url: newEmail },
+      { type: "note", text: "Your password has not changed." },
+    ],
+  }),
+};
+
 /* -------------------------------------------------------------------- welcome */
 
 const welcome: Template<{ name: string; portfolioUrl: string; dashboardUrl: string }> = {
@@ -297,6 +395,18 @@ const subscriptionEnded: Template<{ name: string; billingUrl: string }> = {
 };
 
 export const emailTemplate = {
+  emailChangeVerify: (
+    locale: Locale | null | undefined,
+    input: { name: string; link: string; newEmail: string },
+  ) => pick(emailChangeVerify, locale, input),
+  emailChangeNotice: (
+    locale: Locale | null | undefined,
+    input: { name: string; newEmail: string; resetUrl: string },
+  ) => pick(emailChangeNotice, locale, input),
+  emailChanged: (
+    locale: Locale | null | undefined,
+    input: { name: string; newEmail: string },
+  ) => pick(emailChanged, locale, input),
   passwordReset: (locale: Locale | null | undefined, input: { name: string; link: string }) =>
     pick(passwordReset, locale, input),
   passwordChanged: (

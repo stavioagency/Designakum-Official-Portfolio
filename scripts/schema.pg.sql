@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS users (
   auth_provider      TEXT NOT NULL DEFAULT 'password',  -- password | google
   locale             TEXT NOT NULL DEFAULT 'ar',
   onboarded_at       BIGINT,                            -- NULL until they have chosen their own link
+  email_verified_at  BIGINT,                            -- NULL until a link sent to it was opened
   created_at         BIGINT NOT NULL,
   updated_at         BIGINT NOT NULL
 );
@@ -324,6 +325,17 @@ CREATE TABLE IF NOT EXISTS password_resets (
   created_at BIGINT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets(user_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS email_changes (
+  id         TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  new_email  TEXT NOT NULL,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at BIGINT NOT NULL,
+  used_at    BIGINT,
+  created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_email_changes_user ON email_changes(user_id, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS mail_outbox (
   id         TEXT PRIMARY KEY,

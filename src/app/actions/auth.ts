@@ -26,6 +26,13 @@ import { passwordAcceptable } from "@/lib/password-policy";
 import { checkInvitation, redeemInvitation } from "@/lib/invitations";
 import { callerFingerprint, rateLimit } from "@/lib/rate-limit";
 import { consumeReset, createPasswordReset, findValidReset } from "@/lib/password-reset";
+import {
+  cancelPendingEmailChanges,
+  consumeEmailChange,
+  createEmailChange,
+  emailTaken,
+  findValidEmailChange,
+} from "@/lib/email-change";
 import { emailConfigured, sendMail } from "@/lib/mailer";
 import { emailTemplate } from "@/lib/emails";
 import { requestOrigin } from "@/lib/origin";
@@ -192,6 +199,10 @@ export async function changePasswordAction(
       user.id,
     );
 
+    // The notice sent to the old address says changing the password cancels a
+    // pending email change. Make that true before anything else.
+    await cancelPendingEmailChanges(user.id);
+
     // Drop every session, including this one, then re-issue for this browser.
     await revokeSessionsFor(user.id);
     await createSession(user.id);
@@ -226,6 +237,153 @@ export async function changePasswordAction(
   }
 }
 
+
+/* -------------------------------------------------------------- email change */
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+/**
+ * Starts a move to a new address. Nothing is written to the account here.
+ *
+ * Two messages go out: a link to the new address, which is the only way to
+ * prove it, and a warning to the old one, which is the only thing that reaches
+ * someone whose account is being taken from them while they can still act.
+ */
+export async function requestEmailChangeAction(
+  _prev: { ok?: string; error?: string } | null,
+  fd: FormData,
+): Promise<{ ok?: string; error?: string } | null> {
+  const m = await messages();
+  try {
+    const user = await requireUser();
+
+    // Per account, not per caller: the limit that matters is how often one
+    // inbox can be made to receive these, and the account is what picks it.
+    const limit = await rateLimit(`email-change:${user.id}`, 3, 60 * 60 * 1000);
+    if (!limit.ok) return { error: m.tooManyAttempts };
+
+    const newEmail = String(fd.get("email") ?? "").trim().toLowerCase();
+    const current = String(fd.get("current") ?? "");
+
+    if (!EMAIL_RE.test(newEmail)) return { error: m.emailInvalid };
+    if (newEmail === user.email.trim().toLowerCase()) return { error: m.emailSameAsCurrent };
+
+    // An account that has a password must prove it. One signed in with Google
+    // has none to check, and the link to the new address is the proof instead.
+    if (user.password_hash !== "" && !verifyPassword(current, user.password_hash)) {
+      return { error: m.wrongCurrentPassword };
+    }
+
+    if (await emailTaken(newEmail, user.id)) return { error: m.emailTaken };
+
+    const token = await createEmailChange(user, newEmail);
+    const origin = await requestOrigin();
+
+    const verify = emailTemplate.emailChangeVerify(user.locale, {
+      name: user.display_name || "",
+      link: `${origin}/email/${token}`,
+      newEmail,
+    });
+    const sent = await sendMail({ to: newEmail, kind: "email_change_verify", ...verify });
+
+    // Without a provider the link cannot reach anyone, and the address would sit
+    // pending forever while the customer waited for a message that never comes.
+    if (!sent.delivered && !emailConfigured()) return { error: m.emailChangeMailerOff };
+
+    // Best effort, and never fatal: the move is already pending either way, and
+    // failing the request here would leave a live token with nobody warned.
+    try {
+      const notice = emailTemplate.emailChangeNotice(user.locale, {
+        name: user.display_name || "",
+        newEmail,
+        resetUrl: `${origin}/forgot`,
+      });
+      await sendMail({ to: user.email, kind: "email_change_notice", ...notice });
+    } catch (error) {
+      reportError(error, { area: "email-change-notice", userId: user.id });
+    }
+
+    await audit({
+      actor: user,
+      action: "account.email_change_requested",
+      targetType: "user",
+      targetId: user.id,
+      targetLabel: user.email,
+      detail: newEmail,
+    });
+
+    return { ok: m.emailChangeSent };
+  } catch (error) {
+    reportError(error, { area: "email-change-request" });
+    return { error: error instanceof Error ? error.message : m.emailChangeFailed };
+  }
+}
+
+/**
+ * Adopts the address, on a POST from the confirmation page rather than on the
+ * link itself: mail clients and security scanners follow links in messages, and
+ * a GET that mutates would be confirmed by a robot before the person saw it.
+ */
+export async function confirmEmailChangeAction(
+  _prev: { ok?: string; error?: string } | null,
+  fd: FormData,
+): Promise<{ ok?: string; error?: string } | null> {
+  const m = await messages();
+  try {
+    const token = String(fd.get("token") ?? "");
+
+    const fingerprint = await callerFingerprint();
+    const limit = await rateLimit(`email-change-use:${fingerprint}`, 10, 60 * 60 * 1000);
+    if (!limit.ok) return { error: m.tooManyAttempts };
+
+    const record = await findValidEmailChange(token);
+    if (!record) return { error: m.emailChangeBadToken };
+
+    const user = await get<User>("SELECT * FROM users WHERE id = ?", record.user_id);
+    if (!user) return { error: m.emailChangeFailed };
+
+    // Checked again here, not only at request time: another account can have
+    // taken the address during the half hour this token was valid.
+    if (await emailTaken(record.new_email, user.id)) return { error: m.emailTaken };
+
+    await run(
+      "UPDATE users SET email = ?, email_verified_at = ?, updated_at = ? WHERE id = ?",
+      record.new_email,
+      now(),
+      now(),
+      user.id,
+    );
+    await consumeEmailChange(record.id);
+
+    // Every session ends, including any the person who asked for this was
+    // holding. Signing in again with the new address is the proof it worked.
+    await revokeSessionsFor(user.id);
+
+    try {
+      const composed = emailTemplate.emailChanged(user.locale, {
+        name: user.display_name || "",
+        newEmail: record.new_email,
+      });
+      await sendMail({ to: record.new_email, kind: "email_changed", ...composed });
+    } catch (error) {
+      reportError(error, { area: "email-changed-email", userId: user.id });
+    }
+
+    await audit({
+      actor: user,
+      action: "account.email_changed",
+      targetType: "user",
+      targetId: user.id,
+      targetLabel: record.new_email,
+      detail: user.email,
+    });
+
+    return { ok: m.emailChangeDone };
+  } catch (error) {
+    reportError(error, { area: "email-change-confirm" });
+    return { error: error instanceof Error ? error.message : m.emailChangeFailed };
+  }
+}
 
 /* ------------------------------------------------------------ password reset */
 
