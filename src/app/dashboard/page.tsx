@@ -75,6 +75,7 @@ export default async function DashboardPage() {
         hasPassword={user.password_hash !== ""}
         canPublish={await canPublish(user)}
         copy={copy}
+        locale={locale}
       />
     </main>
   );

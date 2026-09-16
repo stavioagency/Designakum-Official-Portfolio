@@ -420,7 +420,8 @@ export default async function CustomerProfilePage({
             preview={<PortfolioView bundle={await loadBundle(portfolio)} />}
             hasPassword={customer.password_hash !== ""}
             canPublish={await canPublish(customer)}
-            copy={dict(await currentLocale()).dashboard}
+            copy={dict(locale).dashboard}
+            locale={locale}
           />
         </section>
       )}

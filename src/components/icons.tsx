@@ -267,6 +267,93 @@ export const Link = (p: P) => (
   </Base>
 );
 
+/* ------------------------------------------------- additional statistic marks */
+
+export const Trophy = (p: P) => (
+  <Base {...p}>
+    <path d="M7.4 4h9.2v5.2a4.6 4.6 0 0 1-9.2 0z" {...stroke} />
+    <path d="M7.4 5.6H4.8v1.6a3.2 3.2 0 0 0 3.2 3.2M16.6 5.6h2.6v1.6a3.2 3.2 0 0 1-3.2 3.2M12 13.8V17M8.6 20h6.8" {...stroke} />
+  </Base>
+);
+
+export const Heart = (p: P) => (
+  <Base {...p}>
+    <path d="M12 20.2S3.4 15.3 3.4 9.5a4.6 4.6 0 0 1 8.6-2.3 4.6 4.6 0 0 1 8.6 2.3c0 5.8-8.6 10.7-8.6 10.7Z" fill="currentColor" />
+  </Base>
+);
+
+export const BadgeCheck = (p: P) => (
+  <Base {...p}>
+    <path d="m12 2.8 2.4 1.8 3-.2.9 2.9 2.5 1.7-1.1 2.8 1.1 2.8-2.5 1.7-.9 2.9-3-.2-2.4 1.8-2.4-1.8-3 .2-.9-2.9-2.5-1.7 1.1-2.8L3.2 9l2.5-1.7.9-2.9 3 .2z" {...stroke} />
+    <path d="m8.8 12 2.2 2.2 4.2-4.4" {...stroke} />
+  </Base>
+);
+
+export const Rocket = (p: P) => (
+  <Base {...p}>
+    <path d="M13.8 3.4c3.4 1 6 3.6 6.8 7-3.4 3.9-7 6.4-9.6 7.4l-4.8-4.8c1-2.6 3.6-6.2 7.6-9.6Z" {...stroke} />
+    <circle cx="14.6" cy="9.4" r="1.9" {...stroke} />
+    <path d="M6.2 13 4 15.2l1.6 1.6M11 17.8 8.8 20l-1.6-1.6M3.6 20.4l2.4-2.4" {...stroke} />
+  </Base>
+);
+
+export const Calendar = (p: P) => (
+  <Base {...p}>
+    <rect x="3.2" y="5" width="17.6" height="15.8" rx="3.4" {...stroke} />
+    <path d="M8 3.2v3.6M16 3.2v3.6M3.4 10.2h17.2" {...stroke} />
+  </Base>
+);
+
+export const Palette = (p: P) => (
+  <Base {...p}>
+    <path d="M12 3.2a8.8 8.8 0 0 0 0 17.6c1.3 0 2-.9 2-1.9 0-1.6-1.4-1.8-1.4-3.1 0-1 .8-1.8 1.9-1.8h1.9a4.8 4.8 0 0 0 4.4-4.9c0-3.4-3.6-5.9-8.8-5.9Z" {...stroke} />
+    <circle cx="8" cy="10.4" r="1.15" fill="currentColor" />
+    <circle cx="12" cy="7.8" r="1.15" fill="currentColor" />
+    <circle cx="16.2" cy="10" r="1.15" fill="currentColor" />
+  </Base>
+);
+
+export const Building = (p: P) => (
+  <Base {...p}>
+    <path d="M4.4 20.6V5.2c0-1 .8-1.8 1.8-1.8h7c1 0 1.8.8 1.8 1.8v15.4M15 10.2h2.8c1 0 1.8.8 1.8 1.8v8.6M3 20.6h18" {...stroke} />
+    <path d="M7.8 7.4h3.8M7.8 11.2h3.8M7.8 15h3.8" {...stroke} />
+  </Base>
+);
+
+export const Target = (p: P) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="8.8" {...stroke} />
+    <circle cx="12" cy="12" r="5" {...stroke} />
+    <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+  </Base>
+);
+
+export const Bolt = (p: P) => (
+  <Base {...p}>
+    <path d="M13.4 2.6 5 13.4h5.6L10.6 21.4 19 10.6h-5.6z" fill="currentColor" />
+  </Base>
+);
+
+export const Repeat = (p: P) => (
+  <Base {...p}>
+    <path d="M4 9.4a4.4 4.4 0 0 1 4.4-4.4h9.2M20 14.6a4.4 4.4 0 0 1-4.4 4.4H6.4" {...stroke} />
+    <path d="m14.8 2.2 3 2.8-3 2.8M9.2 21.8l-3-2.8 3-2.8" {...stroke} />
+  </Base>
+);
+
+export const Camera = (p: P) => (
+  <Base {...p}>
+    <path d="M3.2 8.6c0-1.3 1-2.4 2.4-2.4h1.8l1.3-2.1h6.6l1.3 2.1h1.8c1.4 0 2.4 1.1 2.4 2.4v8.8c0 1.3-1 2.4-2.4 2.4H5.6a2.4 2.4 0 0 1-2.4-2.4z" {...stroke} />
+    <circle cx="12" cy="12.8" r="3.6" {...stroke} />
+  </Base>
+);
+
+export const Download = (p: P) => (
+  <Base {...p}>
+    <path d="M12 3.4v11.4M7.6 10.6 12 15l4.4-4.4M4.2 18.2v1.2c0 .8.6 1.4 1.4 1.4h12.8c.8 0 1.4-.6 1.4-1.4v-1.2" {...stroke} />
+  </Base>
+);
+
 export const STAT_ICONS: Record<string, (p: P) => React.JSX.Element> = {
   star: Star,
   briefcase: Briefcase,
@@ -274,13 +361,45 @@ export const STAT_ICONS: Record<string, (p: P) => React.JSX.Element> = {
   clock: Clock,
   sparkle: Sparkle,
   eye: Eye,
+  trophy: Trophy,
+  heart: Heart,
+  verified: BadgeCheck,
+  rocket: Rocket,
+  calendar: Calendar,
+  palette: Palette,
+  building: Building,
+  target: Target,
+  bolt: Bolt,
+  repeat: Repeat,
+  camera: Camera,
+  download: Download,
 };
 
+/**
+ * What a designer can count on their page.
+ *
+ * The label is a suggestion, not a constraint — the number and its caption are
+ * the customer's own words, so this list only has to cover the shapes people
+ * actually reach for. "No icon" stays last because it is the way out, not a
+ * category.
+ */
 export const STAT_ICON_OPTIONS = [
   { value: "star", label: "تقييم", labelEn: "Rating" },
   { value: "briefcase", label: "أعمال", labelEn: "Projects" },
   { value: "users", label: "عملاء", labelEn: "Clients" },
   { value: "clock", label: "خبرة", labelEn: "Experience" },
+  { value: "calendar", label: "سنوات", labelEn: "Years" },
+  { value: "verified", label: "مشاريع مكتملة", labelEn: "Completed" },
+  { value: "trophy", label: "جوائز", labelEn: "Awards" },
+  { value: "heart", label: "رضا العملاء", labelEn: "Satisfaction" },
+  { value: "repeat", label: "عملاء متكررون", labelEn: "Repeat clients" },
+  { value: "building", label: "شركات", labelEn: "Companies" },
+  { value: "rocket", label: "إطلاقات", labelEn: "Launches" },
+  { value: "palette", label: "تصاميم", labelEn: "Designs" },
+  { value: "camera", label: "جلسات تصوير", labelEn: "Shoots" },
+  { value: "target", label: "أهداف", labelEn: "Goals" },
+  { value: "bolt", label: "سرعة التسليم", labelEn: "Turnaround" },
+  { value: "download", label: "تحميلات", labelEn: "Downloads" },
   { value: "sparkle", label: "تميّز", labelEn: "Highlight" },
   { value: "eye", label: "مشاهدات", labelEn: "Views" },
   { value: "", label: "بدون أيقونة", labelEn: "No icon" },

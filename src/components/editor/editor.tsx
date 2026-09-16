@@ -6,7 +6,9 @@ import { ProfileSection } from "./profile-section";
 import { SettingsSection } from "./settings-section";
 import { Field } from "./ui";
 import { ImageField } from "./image-field";
-import { SOCIAL_META, STAT_ICON_OPTIONS } from "@/components/icons";
+import { SOCIAL_META } from "@/components/icons";
+import { StatIconPicker } from "./stat-icon-picker";
+import type { Locale } from "@/lib/types";
 import type { Dictionary } from "@/lib/i18n";
 import type { PortfolioBundle, SocialPlatform, User } from "@/lib/types";
 
@@ -22,6 +24,7 @@ export function Editor({
   hasPassword,
   canPublish,
   copy,
+  locale,
 }: {
   bundle: PortfolioBundle;
   user: User;
@@ -30,6 +33,8 @@ export function Editor({
   hasPassword: boolean;
   canPublish: boolean;
   copy: Dictionary["dashboard"];
+  /** Needed where a label lives in code rather than the dictionary, like the stat icons. */
+  locale: Locale;
 }) {
   const [tab, setTab] = useState<TabKey>("profile");
   const { portfolio, slides, projects, stats, socials } = bundle;
@@ -181,13 +186,7 @@ export function Editor({
                   <input name="value" defaultValue={stat.value} className="field" placeholder="+300" />
                 </Field>
                 <Field label={copy.stats.icon}>
-                  <select name="icon" defaultValue={stat.icon} className="field">
-                    {STAT_ICON_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
+                  <StatIconPicker name="icon" defaultValue={stat.icon} locale={locale} />
                 </Field>
               </div>
             )}
