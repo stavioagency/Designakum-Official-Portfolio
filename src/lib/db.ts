@@ -28,9 +28,25 @@ function createPool(): Pool {
   });
 }
 
-// Reused across hot reloads in development so a file save does not leak a pool.
-export const pool: Pool = globalThis.__designakumPool ?? createPool();
-if (process.env.NODE_ENV !== "production") globalThis.__designakumPool = pool;
+/**
+ * The pool is built on first use, not on import.
+ *
+ * `next build` imports every route module to collect page data, so a pool
+ * created at module scope made DATABASE_URL a *build-time* requirement — the
+ * build failed on a machine that has no business holding the production
+ * database credentials. Creating it lazily keeps the error where it belongs:
+ * the first query of the first real request.
+ *
+ * Reused across hot reloads in development so a file save does not leak a pool.
+ */
+function getPool(): Pool {
+  const existing = globalThis.__designakumPool;
+  if (existing) return existing;
+
+  const created = createPool();
+  if (process.env.NODE_ENV !== "production") globalThis.__designakumPool = created;
+  return created;
+}
 
 /**
  * The queries in this codebase were written with `?` placeholders. Rewriting all
@@ -112,22 +128,22 @@ const isNumericColumn = (key: string) =>
   NUMERIC_SUFFIXES.some((suffix) => key === suffix || key.endsWith(suffix));
 
 export async function all<T = Row>(sql: string, ...params: unknown[]): Promise<T[]> {
-  const result = await pool.query(toPositional(sql), params as unknown[]);
+  const result = await getPool().query(toPositional(sql), params as unknown[]);
   return result.rows.map((row) => coerce<T>(row));
 }
 
 export async function get<T = Row>(sql: string, ...params: unknown[]): Promise<T | undefined> {
-  const result = await pool.query(toPositional(sql), params as unknown[]);
+  const result = await getPool().query(toPositional(sql), params as unknown[]);
   return result.rows.length ? coerce<T>(result.rows[0]) : undefined;
 }
 
 export async function run(sql: string, ...params: unknown[]): Promise<void> {
-  await pool.query(toPositional(sql), params as unknown[]);
+  await getPool().query(toPositional(sql), params as unknown[]);
 }
 
 /** Runs several statements atomically — used where a partial write would corrupt state. */
 export async function transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
-  const client = await pool.connect();
+  const client = await getPool().connect();
   try {
     await client.query("BEGIN");
     const result = await fn(client);
