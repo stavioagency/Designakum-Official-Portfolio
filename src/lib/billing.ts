@@ -178,6 +178,15 @@ export function addMonths(from: number, months: number): number {
 /**
  * Records a subscription. `provider` says where it came from — a payment provider
  * for a real purchase, or `manual` when the platform owner grants one directly.
+ *
+ * An account has one active subscription. Every path that creates one comes
+ * through here — a manual grant, a redeemed invitation, PayPal's return and its
+ * webhook — and each used to add a row, so granting a plan twice left two live
+ * subscriptions on one account and the console counted both.
+ *
+ * Any existing active subscription is retired first, not after: interrupted
+ * midway this leaves the account with none, which is visible and recoverable,
+ * where the other order leaves two, which is the bug being fixed.
  */
 export async function recordSubscription(input: {
   userId: string;
@@ -193,6 +202,16 @@ export async function recordSubscription(input: {
 }): Promise<Subscription>{
   const id = newId("sub");
   const ts = now();
+
+  if (input.status === "active") {
+    await run(
+      `UPDATE subscriptions SET status = 'superseded', updated_at = ?
+        WHERE user_id = ? AND status = 'active'`,
+      ts,
+      input.userId,
+    );
+  }
+
   await run(
     `INSERT INTO subscriptions
        (id, user_id, plan, status, provider, provider_customer_id, provider_subscription_id,

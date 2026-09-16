@@ -21,6 +21,9 @@ const connectionString =
     return undefined;
   })();
 
+/** Exposed so a test can hand the same database to the app's own modules. */
+export const CONNECTION_STRING = connectionString;
+
 const pool = new pg.Pool({
   connectionString,
   ssl: connectionString?.includes("supabase") ? { rejectUnauthorized: false } : undefined,

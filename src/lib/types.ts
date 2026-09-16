@@ -9,7 +9,13 @@ export type SubscriptionStatus =
   | "past_due"
   | "canceled"
   | "expired"
-  | "incomplete";
+  | "incomplete"
+  /**
+   * Replaced by a newer subscription for the same account, rather than ended.
+   * Deliberately not "canceled" or "expired": nobody cancelled it and it did not
+   * run out, and counting it as either would put a phantom loss into churn.
+   */
+  | "superseded";
 
 export interface User {
   id: string;
