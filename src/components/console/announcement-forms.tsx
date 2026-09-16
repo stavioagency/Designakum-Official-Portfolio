@@ -9,46 +9,61 @@ import {
 import { Field, Status, Submit } from "@/components/editor/ui";
 import { ConfirmSubmit } from "./forms";
 import { Megaphone } from "@/components/icons";
+import { fill, type Dictionary } from "@/lib/i18n";
 
-export function CreateAnnouncementForm() {
+export interface DialogChrome {
+  cancel: string;
+  pending: string;
+  confirmParts: [string, string];
+}
+
+type Copy = Dictionary["console"]["announcements"];
+
+export function CreateAnnouncementForm({ copy }: { copy: Copy }) {
   const [state, action] = useActionState(createAnnouncementAction, null);
 
   return (
     <form action={action} className="space-y-4 p-5">
       <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
-        <Field label="العنوان">
-          <input name="title" className="field" required minLength={3} placeholder="تحديث جديد على المنصة" />
+        <Field label={copy.formTitle}>
+          <input
+            name="title"
+            className="field"
+            required
+            minLength={3}
+            placeholder={copy.formTitlePlaceholder}
+          />
         </Field>
-        <Field label="النوع">
+        <Field label={copy.formKind}>
           <select name="severity" defaultValue="info" className="field">
-            <option value="info">معلومة</option>
-            <option value="success">خبر جيد</option>
-            <option value="warning">تنبيه</option>
-            <option value="critical">حرج</option>
+            <option value="info">{copy.kindInfo}</option>
+            <option value="success">{copy.kindSuccess}</option>
+            <option value="warning">{copy.kindWarning}</option>
+            <option value="critical">{copy.kindCritical}</option>
           </select>
         </Field>
       </div>
 
-      <Field label="النص">
-        <textarea name="body" rows={3} className="field" placeholder="اشرح التحديث بإيجاز…" />
+      <Field label={copy.formBody}>
+        <textarea name="body" rows={3} className="field" placeholder={copy.formBodyPlaceholder} />
       </Field>
 
       {/* Optional. Customers on the English interface see these instead; leaving
           them blank shows them the Arabic rather than nothing. */}
       <div className="grid gap-4 sm:grid-cols-2" dir="ltr">
-        <Field label="Title (English)" hint="اختياري — يظهر لعملاء الواجهة الإنجليزية.">
+        <Field label={copy.englishTitle} hint={copy.englishHint}>
           <input name="titleEn" className="field" placeholder="A new platform update" />
         </Field>
-        <Field label="Body (English)">
+        <Field label={copy.englishBody}>
           <textarea name="bodyEn" rows={3} className="field" placeholder="Explain the update briefly…" />
         </Field>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="يبدأ في" hint="اتركه فارغًا ليظهر فورًا.">
+        <Field label={copy.startsAt} hint={copy.startsHint}>
           <input name="startsAt" type="date" className="field" />
         </Field>
-        <Field label="ينتهي في" hint="اتركه فارغًا ليستمر حتى توقفه.">
+        <Field label={copy.endsAt} hint={copy.endsHint}>
           <input name="endsAt" type="date" className="field" />
         </Field>
       </div>
@@ -56,7 +71,7 @@ export function CreateAnnouncementForm() {
       <div className="flex flex-wrap items-center gap-3">
         <Submit className="btn btn-primary">
           <Megaphone className="h-4 w-4" />
-          نشر الإعلان
+          {copy.publish}
         </Submit>
         <Status state={state} />
       </div>
@@ -68,10 +83,14 @@ export function AnnouncementControls({
   id,
   title,
   active,
+  copy,
+  dialog,
 }: {
   id: string;
   title: string;
   active: boolean;
+  copy: Copy;
+  dialog: DialogChrome;
 }) {
   const [toggleState, toggle] = useActionState(toggleAnnouncementAction, null);
   const [deleteState, remove] = useActionState(deleteAnnouncementAction, null);
@@ -81,18 +100,21 @@ export function AnnouncementControls({
       <form action={toggle}>
         <input type="hidden" name="announcementId" value={id} />
         <Submit className="btn btn-ghost !px-3 !py-1.5 !text-[12px]" pendingLabel="…">
-          {active ? "إيقاف" : "تفعيل"}
+          {active ? copy.pause : copy.resume}
         </Submit>
       </form>
 
       <form action={remove}>
         <input type="hidden" name="announcementId" value={id} />
         <ConfirmSubmit
-          label="حذف"
+            cancelLabel={dialog.cancel}
+            pendingLabel={dialog.pending}
+            confirmParts={dialog.confirmParts}
+          label={copy.remove}
           className="btn btn-danger !px-3 !py-1.5 !text-[12px]"
-          title="حذف هذا الإعلان؟"
-          body={`سيختفي «${title}» من لوحات العملاء نهائيًا.`}
-          confirmLabel="حذف الإعلان"
+          title={copy.removeTitle}
+          body={fill(copy.removeBody, { title })}
+          confirmLabel={copy.removeConfirm}
         />
       </form>
 

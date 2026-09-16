@@ -10,6 +10,12 @@ import { ConfirmSubmit } from "./forms";
 import { Check, Gift, Link as LinkIcon } from "@/components/icons";
 import { fill, type Dictionary } from "@/lib/i18n";
 
+export interface DialogChrome {
+  cancel: string;
+  pending: string;
+  confirmParts: [string, string];
+}
+
 type Copy = Dictionary["console"]["invitations"];
 
 export function CreateInvitationForm({
@@ -98,10 +104,12 @@ export function RevokeInvitation({
   id,
   code,
   copy,
+  dialog,
 }: {
   id: string;
   code: string;
   copy: Copy;
+  dialog: DialogChrome;
 }) {
   const [state, action] = useActionState(revokeInvitationAction, null);
 
@@ -110,6 +118,9 @@ export function RevokeInvitation({
       <input type="hidden" name="invitationId" value={id} />
       <input type="hidden" name="code" value={code} />
       <ConfirmSubmit
+            cancelLabel={dialog.cancel}
+            pendingLabel={dialog.pending}
+            confirmParts={dialog.confirmParts}
         label={copy.revoke}
         className="btn btn-danger !px-3 !py-1.5 !text-[12px]"
         title={copy.revokeTitle}

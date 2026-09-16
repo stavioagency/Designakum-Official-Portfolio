@@ -31,7 +31,7 @@ export default async function SettingsPage() {
   const assetSlots = [
     ...BRAND_ASSETS.map((asset) => ({
       name: asset.name,
-      description: asset.description,
+      description: locale === "en" ? asset.descriptionEn : asset.description,
       url: brandAsset(asset.name),
       onLight: asset.name.endsWith("-dark"),
     })),
@@ -136,7 +136,7 @@ export default async function SettingsPage() {
           ]}
         />
 
-        <BrandAssets slots={assetSlots} />
+        <BrandAssets slots={assetSlots} copy={d.brandAssets} />
 
         <SettingsGroup
           saveLabel={t.save}

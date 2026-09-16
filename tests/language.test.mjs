@@ -205,3 +205,96 @@ describe("the report dialog follows the visitor, not the designer", () => {
     assert.match(page.body, /lang="en"/, "the portfolio itself stays English");
   });
 });
+
+describe("the console speaks both languages", () => {
+  /**
+   * Console pages carry customer data — names, report reasons, the owner's own
+   * Arabic policies — which stay in whatever language they were written in.
+   * What must not survive is Arabic *interface* text, so this strips the parts
+   * that are Arabic on purpose and asserts nothing is left.
+   */
+  const CONSOLE_PAGES = [
+    "/console",
+    "/console/customers",
+    "/console/moderation",
+    "/console/support",
+    "/console/subscriptions",
+    "/console/analytics",
+    "/console/invitations",
+    "/console/announcements",
+    "/console/audit",
+  ];
+
+  function chromeText(html) {
+    return html
+      .replace(/<script[\s\S]*?<\/script>/g, " ")
+      // The wordmark keeps both names in the DOM and hides one in CSS.
+      .replace(/<span class="brand-name-ar">[^<]*<\/span>/g, " ")
+      // The language switcher names each language in its own script.
+      .replace(/<form[^>]*class="panel inline-flex[\s\S]*?<\/form>/g, " ")
+      .replace(/<[^>]+>/g, " ");
+  }
+
+  test("every console page renders with no Arabic interface text", async () => {
+    const cookie = await sessionFor("admin@designakum.sa");
+
+    // Names of seeded people and the content they wrote: data, not chrome.
+    const connection = db();
+    const people = (await connection.prepare("SELECT display_name FROM users").all()).map(
+      (row) => row.display_name,
+    );
+    const reasons = (await connection.prepare("SELECT reason, description FROM reports").all())
+      .flatMap((row) => [row.reason, row.description]);
+    const announcements = (await connection.prepare("SELECT title, body FROM announcements").all())
+      .flatMap((row) => [row.title, row.body]);
+    const portfolios = (await connection.prepare("SELECT name, title FROM portfolios").all())
+      .flatMap((row) => [row.name, row.title]);
+    const tickets = (await connection.prepare("SELECT subject FROM tickets").all()).map(
+      (row) => row.subject,
+    );
+    const invitations = (await connection.prepare("SELECT note FROM invitations").all()).map(
+      (row) => row.note,
+    );
+    connection.close();
+
+    const data = [...people, ...reasons, ...announcements, ...portfolios, ...tickets, ...invitations]
+      .filter(Boolean)
+      .flatMap((value) => String(value).split(/\s+/))
+      .filter((word) => /[؀-ۿ]/.test(word));
+    const isData = new Set(data);
+    // A monogram is one letter of somebody's name.
+    const isMonogram = (word) => word.length === 1;
+
+    for (const path of CONSOLE_PAGES) {
+      const page = await visit(path, { cookie, locale: "en" });
+      assert.equal(page.status, 200, `${path} should render`);
+
+      const leftover = [
+        ...new Set(
+          chromeText(page.body)
+            .split(/\s+/)
+            .filter((word) => /[؀-ۿ]/.test(word)),
+        ),
+      ].filter((word) => !isData.has(word) && !isMonogram(word));
+
+      assert.deepEqual(leftover, [], `${path} still shows Arabic chrome: ${leftover.join(" ")}`);
+    }
+  });
+
+  test("and the same pages still render in Arabic", async () => {
+    const cookie = await sessionFor("admin@designakum.sa");
+    for (const path of CONSOLE_PAGES) {
+      const page = await visit(path, { cookie, locale: "ar" });
+      assert.equal(page.status, 200, `${path} should render in Arabic`);
+      assert.match(page.body, /dir="rtl"/, `${path} should be right-to-left in Arabic`);
+    }
+  });
+
+  test("staff can switch language from inside the console", async () => {
+    const cookie = await sessionFor("admin@designakum.sa");
+    const page = await visit("/console", { cookie, locale: "ar" });
+    // The switcher posts to the same action the customer dashboard uses.
+    assert.match(page.body, /name="locale"/, "the console needs its own language switch");
+    assert.ok(page.body.includes("English"), "and it should offer English by name");
+  });
+});

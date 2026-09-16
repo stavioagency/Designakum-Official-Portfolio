@@ -58,6 +58,13 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   }));
   const locale = await currentLocale();
   const t = dict(locale).console.report;
+  const customerCopy = dict(locale).console.customer;
+  const dialogChrome = {
+    cancel: dict(locale).console.common.cancel,
+    pending: dict(locale).console.common.saving,
+    confirmParts: [dict(locale).console.common.confirmBefore, dict(locale).console.common.confirmAfter] as [string, string],
+  };
+
 
   return (
     <>
@@ -185,6 +192,9 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                 <SectionCard title={t.suspendPortfolio}>
                   <div className="p-5">
                     <PortfolioSuspensionControl
+                      copy={customerCopy}
+                      dialog={dialogChrome}
+                      pending={dict(locale).console.common.saving}
                       portfolioId={portfolio.id}
                       slug={portfolio.slug}
                       suspended={portfolio.suspended === 1}
@@ -196,7 +206,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
 
               <SectionCard title={t.suspendAccount} className="border-rose-500/20">
                 <div className="p-5">
-                  <BanAccountForm copy={t}
+                  <BanAccountForm copy={t} dialog={dialogChrome}
                     userId={report.owner_id}
                     email={report.owner_email}
                     reportId={report.id}

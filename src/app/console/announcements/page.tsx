@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { currentLocale } from "@/lib/locale";
 import { dict, fill } from "@/lib/i18n";
-import { announcementIsLive, listAnnouncements, SEVERITY_LABEL } from "@/lib/announcements";
+import { announcementIsLive, listAnnouncements, severityLabel } from "@/lib/announcements";
 import { guardPage } from "@/lib/permissions";
 import {
   Badge,
@@ -34,6 +34,12 @@ export default async function AnnouncementsPage() {
   const announcements = await listAnnouncements();
   const locale = await currentLocale();
   const t = dict(locale).console.announcements;
+  const dialogChrome = {
+    cancel: dict(locale).console.common.cancel,
+    pending: dict(locale).console.common.saving,
+    confirmParts: [dict(locale).console.common.confirmBefore, dict(locale).console.common.confirmAfter] as [string, string],
+  };
+
 
   return (
     <>
@@ -43,7 +49,7 @@ export default async function AnnouncementsPage() {
       />
 
       <SectionCard title={t.create} className="mb-4">
-        <CreateAnnouncementForm />
+        <CreateAnnouncementForm copy={t} />
       </SectionCard>
 
       <SectionCard title={t.all}>
@@ -61,13 +67,13 @@ export default async function AnnouncementsPage() {
                 <li key={announcement.id} className="px-5 py-4">
                   <div className="flex flex-wrap items-center gap-2.5">
                     <Badge tone={SEVERITY_TONE[announcement.severity]}>
-                      {SEVERITY_LABEL[announcement.severity]}
+                      {severityLabel(announcement.severity, locale)}
                     </Badge>
                     <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
                       {announcement.title}
                     </span>
                     <Badge tone={live ? "good" : "neutral"}>{live ? t.live : t.hidden}</Badge>
-                    <AnnouncementControls
+                    <AnnouncementControls copy={t} dialog={dialogChrome}
                       id={announcement.id}
                       title={announcement.title}
                       active={announcement.active === 1}

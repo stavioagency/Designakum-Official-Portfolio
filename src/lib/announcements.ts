@@ -12,6 +12,17 @@ export const SEVERITY_LABEL: Record<AnnouncementSeverity, string> = {
   critical: "حرج",
 };
 
+const SEVERITY_LABEL_EN: Record<AnnouncementSeverity, string> = {
+  info: "Information",
+  success: "Good news",
+  warning: "Warning",
+  critical: "Critical",
+};
+
+/** An announcement's kind in the reader's language. */
+export const severityLabel = (severity: AnnouncementSeverity, locale: string) =>
+  (locale === "en" ? SEVERITY_LABEL_EN : SEVERITY_LABEL)[severity] ?? severity;
+
 export async function createAnnouncement(input: {
   title: string;
   body: string;

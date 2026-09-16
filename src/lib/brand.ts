@@ -36,14 +36,42 @@ export type BrandAssetName =
   | "mark-dark"
   | "riyal";
 
-export const BRAND_ASSETS: { name: BrandAssetName; description: string }[] = [
-  { name: "wordmark-light", description: "الشعار الكامل بالأبيض — للخلفيات الداكنة والزرقاء" },
-  { name: "wordmark-brand", description: "الشعار الكامل باللون الأزرق — للخلفيات السوداء أو الفاتحة" },
-  { name: "wordmark-dark", description: "الشعار الكامل بالأسود — للخلفيات الفاتحة" },
-  { name: "mark-light", description: "الأيقونة بالأبيض — للخلفيات الداكنة" },
-  { name: "mark-brand", description: "الأيقونة باللون الأزرق" },
-  { name: "mark-dark", description: "الأيقونة بالأسود — للخلفيات الفاتحة" },
-  { name: "riyal", description: "رمز الريال السعودي الرسمي (أحادي اللون)" },
+export const BRAND_ASSETS: {
+  name: BrandAssetName;
+  description: string;
+  descriptionEn: string;
+}[] = [
+  {
+    name: "wordmark-light",
+    description: "الشعار الكامل بالأبيض — للخلفيات الداكنة والزرقاء",
+    descriptionEn: "Full logo in white — for dark and blue backgrounds",
+  },
+  {
+    name: "wordmark-brand",
+    description: "الشعار الكامل باللون الأزرق — للخلفيات السوداء أو الفاتحة",
+    descriptionEn: "Full logo in blue — for black or light backgrounds",
+  },
+  {
+    name: "wordmark-dark",
+    description: "الشعار الكامل بالأسود — للخلفيات الفاتحة",
+    descriptionEn: "Full logo in black — for light backgrounds",
+  },
+  {
+    name: "mark-light",
+    description: "الأيقونة بالأبيض — للخلفيات الداكنة",
+    descriptionEn: "Icon in white — for dark backgrounds",
+  },
+  { name: "mark-brand", description: "الأيقونة باللون الأزرق", descriptionEn: "Icon in blue" },
+  {
+    name: "mark-dark",
+    description: "الأيقونة بالأسود — للخلفيات الفاتحة",
+    descriptionEn: "Icon in black — for light backgrounds",
+  },
+  {
+    name: "riyal",
+    description: "رمز الريال السعودي الرسمي (أحادي اللون)",
+    descriptionEn: "The official Saudi riyal symbol (monochrome)",
+  },
 ];
 
 export function missingBrandAssets(): BrandAssetName[] {

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { currentLocale } from "@/lib/locale";
+import { dict, fill } from "@/lib/i18n";
 import type { Metadata } from "next";
 import { all, get } from "@/lib/db";
 import { billingConfigured, planDefinitions, yearlySaving } from "@/lib/billing";
@@ -21,7 +23,9 @@ import {
 } from "@/components/console/ui";
 import { CreditCard, Wallet } from "@/components/icons";
 
-export const metadata: Metadata = { title: "الاشتراكات" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: dict(await currentLocale()).console.subscriptions.title };
+}
 export const dynamic = "force-dynamic";
 
 const PER_PAGE = 50;
@@ -43,20 +47,6 @@ interface SubscriptionRow {
   updated_at: number;
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  active: "نشط",
-  past_due: "متأخر السداد",
-  canceled: "ملغى",
-  expired: "منتهٍ",
-  incomplete: "غير مكتمل",
-};
-
-const SOURCE_LABEL: Record<string, string> = {
-  paid: "مدفوع",
-  manual: "ممنوح يدويًا",
-  invitation: "دعوة مجانية",
-};
-
 type Search = Record<string, string | string[] | undefined>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
@@ -76,6 +66,11 @@ export default async function SubscriptionsPage({
   const churn = await churnRate(30);
   const conversion = await conversionRate();
   const riyalSrc = brandAsset("riyal");
+  const locale = await currentLocale();
+  const c = dict(locale).console;
+  const t = c.subscriptions;
+  const statusLabel: Record<string, string> = t.status;
+  const sourceLabel: Record<string, string> = t.source;
 
   const where =
     filter === "all"
@@ -113,75 +108,89 @@ export default async function SubscriptionsPage({
   return (
     <>
       <PageHeader
-        title="الاشتراكات"
-        description="الباقات والأسعار وحالة كل اشتراك على المنصة."
+        title={t.title}
+        description={t.description}
         actions={
           <Badge tone={billingConfigured() ? "good" : "warn"}>
-            {billingConfigured() ? "مزوّد الدفع مربوط" : "لا يوجد مزوّد دفع"}
+            {billingConfigured() ? t.providerLinked : t.noProvider}
           </Badge>
         }
       />
 
       <section className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="الإيراد الشهري المتكرر"
+          label={t.mrr}
           value={money(revenue.mrr)}
-          hint={`سنويًا ${money(revenue.arr)}`}
+          hint={fill(t.arrHint, { arr: money(revenue.arr) })}
           icon={<Wallet className="h-4 w-4" />}
           tone="accent"
         />
         <StatCard
-          label="اشتراكات مدفوعة"
+          label={t.paidSubscriptions}
           value={nf.format(revenue.paidCount)}
-          hint={`${nf.format(revenue.compedCount)} ممنوحة مجانًا`}
+          hint={fill(t.compedHint, { n: nf.format(revenue.compedCount) })}
           icon={<CreditCard className="h-4 w-4" />}
           tone="good"
         />
         <StatCard
-          label="التحويل إلى مشترك"
+          label={t.conversion}
           value={`${conversion.percent.toFixed(1)}%`}
-          hint={`${nf.format(conversion.converted)} من ${nf.format(conversion.total)} عميل`}
+          hint={fill(t.conversionHint, {
+            converted: nf.format(conversion.converted),
+            total: nf.format(conversion.total),
+          })}
         />
         <StatCard
-          label="التسرب — 30 يومًا"
+          label={t.churn}
           value={`${churn.percent.toFixed(1)}%`}
-          hint={`${nf.format(churn.lost)} اشتراك انتهى أو أُلغي`}
+          hint={fill(t.churnHint, { n: nf.format(churn.lost) })}
           tone={churn.percent > 10 ? "bad" : "neutral"}
         />
       </section>
 
       <section className="mb-4 grid gap-4 sm:grid-cols-2">
         <div className="card p-5">
-          <p className="text-[12.5px] text-mist-400">الباقة الشهرية</p>
+          <p className="text-[12.5px] text-mist-400">{t.monthlyPlan}</p>
           <p className="mt-2 flex items-baseline gap-2">
             <span className="tnum text-[30px] font-bold leading-none">{money(plans.monthly.amount)}</span>
             <Riyal src={riyalSrc} size="1.1rem" />
-            <span className="text-[12.5px] text-mist-500">/ شهر</span>
+            <span className="text-[12.5px] text-mist-500">{t.perMonth}</span>
           </p>
           <p className="mt-2 text-[12px] text-mist-500">
-            {nf.format(revenue.monthlyCount)} مشترك حالي
+            {fill(t.subscriberCount, { n: nf.format(revenue.monthlyCount) })}
           </p>
         </div>
         <div className="card accent-glow p-5">
-          <p className="text-[12.5px] text-mist-400">الباقة السنوية</p>
+          <p className="text-[12.5px] text-mist-400">{t.yearlyPlan}</p>
           <p className="mt-2 flex items-baseline gap-2">
             <span className="tnum text-[30px] font-bold leading-none">{money(plans.yearly.amount)}</span>
             <Riyal src={riyalSrc} size="1.1rem" />
-            <span className="text-[12.5px] text-mist-500">/ سنة</span>
+            <span className="text-[12.5px] text-mist-500">{t.perYear}</span>
           </p>
           <p className="accent-text mt-2 text-[12px] font-semibold">
-            توفير {money(saving.saved)} مقابل {money(saving.twelveMonths)} ({saving.percentLabel}%)
+            {fill(t.saving, {
+              saved: money(saving.saved),
+              full: money(saving.twelveMonths),
+              percent: saving.percentLabel,
+            })}
           </p>
           <p className="mt-1 text-[12px] text-mist-500">
-            {nf.format(revenue.yearlyCount)} مشترك حالي
+            {fill(t.subscriberCount, { n: nf.format(revenue.yearlyCount) })}
           </p>
         </div>
       </section>
 
       <p className="panel mb-4 px-4 py-3 text-[12.5px] leading-relaxed text-mist-400">
-        الأسعار تُدار من <Link href="/console/settings" className="underline decoration-white/25 underline-offset-4">إعدادات المنصة</Link>.
+        {t.pricesManaged}{" "}
+        <Link
+          href="/console/settings"
+          className="underline decoration-white/25 underline-offset-4"
+        >
+          {t.platformSettings}
+        </Link>
+        .
         {!billingConfigured() &&
-          " لم يُربط مزوّد دفع بعد، لذلك لا تتم عمليات الشراء تلقائيًا — يمكنك منح الاشتراكات يدويًا من ملف كل عميل."}
+          t.noProviderNote}
       </p>
 
       <div className="mb-4">
@@ -189,16 +198,16 @@ export default async function SubscriptionsPage({
           current={filter}
           build={(key) => (key === "active" ? "/console/subscriptions" : `/console/subscriptions?status=${key}`)}
           tabs={[
-            { key: "active", label: "النشطة" },
-            { key: "ended", label: "المنتهية والملغاة" },
-            { key: "all", label: "الكل" },
+            { key: "active", label: t.tabActive },
+            { key: "ended", label: t.tabEnded },
+            { key: "all", label: c.common.all },
           ]}
         />
       </div>
 
-      <SectionCard title="سجل الاشتراكات" description={`${nf.format(total)} اشتراك`}>
+      <SectionCard title={t.history} description={fill(t.count, { n: nf.format(total) })}>
         {rows.length === 0 ? (
-          <EmptyState icon={<CreditCard className="h-5 w-5" />} title="لا اشتراكات في هذه القائمة" />
+          <EmptyState icon={<CreditCard className="h-5 w-5" />} title={t.empty} />
         ) : (
           <ul className="divide-y divide-white/6">
             {rows.map((row) => (
@@ -213,13 +222,13 @@ export default async function SubscriptionsPage({
                 </Link>
 
                 <Badge tone={row.plan === "yearly" ? "accent" : "neutral"}>
-                  {row.plan === "monthly" ? "شهري" : "سنوي"}
+                  {row.plan === "monthly" ? t.monthly : t.yearly}
                 </Badge>
                 <Badge tone={row.source === "paid" ? "good" : "warn"}>
-                  {SOURCE_LABEL[row.source] ?? row.source}
+                  {sourceLabel[row.source] ?? row.source}
                 </Badge>
                 <Badge tone={row.status === "active" ? "good" : "neutral"}>
-                  {STATUS_LABEL[row.status] ?? row.status}
+                  {statusLabel[row.status] ?? row.status}
                 </Badge>
 
                 <span className="tnum flex items-center gap-1 text-[12.5px] text-mist-300">
@@ -229,14 +238,22 @@ export default async function SubscriptionsPage({
 
                 <span className="text-[11.5px] text-mist-600">
                   {row.status === "active"
-                    ? `${row.cancel_at_period_end ? "ينتهي" : "يتجدد"} ${formatDate(row.current_period_end)}`
+                    ? fill(row.cancel_at_period_end ? t.endsOn : t.renewsOn, {
+                        date: formatDate(row.current_period_end, locale),
+                      })
                     : formatDateTime(row.canceled_at ?? row.updated_at ?? row.created_at)}
                 </span>
               </li>
             ))}
           </ul>
         )}
-        <Pagination total={total} page={page} perPage={PER_PAGE} build={buildPage} />
+        <Pagination
+          total={total}
+          page={page}
+          perPage={PER_PAGE}
+          build={buildPage}
+          labels={{ prev: c.common.prev, next: c.common.next, range: c.common.range }}
+        />
       </SectionCard>
     </>
   );

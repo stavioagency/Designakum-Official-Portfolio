@@ -50,6 +50,12 @@ export default async function InvitationsPage({
   const locale = await currentLocale();
   const c = dict(locale).console;
   const t = c.invitations;
+  const dialogChrome = {
+    cancel: c.common.cancel,
+    pending: c.common.saving,
+    confirmParts: [c.common.confirmBefore, c.common.confirmAfter] as [string, string],
+  };
+
 
   const stateOf = (invitation: (typeof invitations)[number]) => {
     if (invitation.revoked === 1) return { label: t.stateRevoked, tone: "bad" as const };
@@ -131,7 +137,12 @@ export default async function InvitationsPage({
                   <span className="flex items-center gap-2">
                     <CopyInvitationLink code={invitation.code} origin={origin} copy={t} />
                     {invitation.revoked === 0 && (
-                      <RevokeInvitation id={invitation.id} code={invitation.code} copy={t} />
+                      <RevokeInvitation
+                        id={invitation.id}
+                        code={invitation.code}
+                        copy={t}
+                        dialog={dialogChrome}
+                      />
                     )}
                   </span>
                 </li>

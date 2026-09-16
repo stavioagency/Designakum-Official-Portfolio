@@ -15,6 +15,12 @@ import type { ReportStatus } from "@/lib/types";
 import type { Dictionary } from "@/lib/i18n";
 import { fill } from "@/lib/i18n";
 
+export interface DialogChrome {
+  cancel: string;
+  pending: string;
+  confirmParts: [string, string];
+}
+
 type Copy = Dictionary["console"]["report"];
 
 export function AssignReport({
@@ -144,11 +150,13 @@ export function BanAccountForm({
   email,
   reportId,
   copy,
+  dialog,
 }: {
   userId: string;
   email: string;
   reportId?: string;
   copy: Copy;
+  dialog: DialogChrome;
 }) {
   const [state, action] = useActionState(banAccountAction, null);
 
@@ -167,6 +175,9 @@ export function BanAccountForm({
       </Field>
       <div className="flex flex-wrap items-center gap-3">
         <ConfirmSubmit
+            cancelLabel={dialog.cancel}
+            pendingLabel={dialog.pending}
+            confirmParts={dialog.confirmParts}
           label={copy.suspendLabel}
           icon={<Ban className="h-4 w-4" />}
           title={copy.suspendTitle}

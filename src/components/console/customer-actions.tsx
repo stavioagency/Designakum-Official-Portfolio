@@ -17,15 +17,30 @@ import {
 import { Field, Status, Submit } from "@/components/editor/ui";
 import { ConfirmSubmit } from "./forms";
 import { Ban, Check, Gift, Trash } from "@/components/icons";
+import { fill, type Dictionary } from "@/lib/i18n";
+
+export interface DialogChrome {
+  cancel: string;
+  pending: string;
+  confirmParts: [string, string];
+}
+
+type Copy = Dictionary["console"]["customer"];
 
 export function AccountStatusControl({
   userId,
   email,
   suspended,
+  copy,
+  dialog,
+  pending,
 }: {
   userId: string;
   email: string;
   suspended: boolean;
+  copy: Copy;
+  dialog: DialogChrome;
+  pending: string;
 }) {
   const [state, action] = useActionState(setAccountStatusAction, null);
 
@@ -35,24 +50,27 @@ export function AccountStatusControl({
       <input type="hidden" name="status" value={suspended ? "active" : "suspended"} />
 
       {!suspended && (
-        <Field label="سبب الإيقاف" hint="يُحفظ في سجل التدقيق.">
-          <input name="reason" className="field" placeholder="مخالفة قواعد النشر…" />
+        <Field label={copy.suspendReason} hint={copy.suspendReasonHint}>
+          <input name="reason" className="field" placeholder={copy.suspendReasonPlaceholder} />
         </Field>
       )}
 
       <div className="flex flex-wrap items-center gap-3">
         {suspended ? (
-          <Submit className="btn btn-primary" pendingLabel="لحظة…">
+          <Submit className="btn btn-primary" pendingLabel={pending}>
             <Check className="h-4 w-4" />
-            إعادة تفعيل الحساب
+            {copy.reactivate}
           </Submit>
         ) : (
           <ConfirmSubmit
-            label="إيقاف الحساب"
+            cancelLabel={dialog.cancel}
+            pendingLabel={dialog.pending}
+            confirmParts={dialog.confirmParts}
+            label={copy.suspendAccount}
             icon={<Ban className="h-4 w-4" />}
-            title="إيقاف هذا الحساب؟"
-            body={`سيفقد ${email} إمكانية الدخول فورًا وتُنهى جلساته النشطة. يبقى المحتوى والبيانات كما هي، ويمكنك إعادة التفعيل لاحقًا.`}
-            confirmLabel="إيقاف الحساب"
+            title={copy.suspendAccountTitle}
+            body={fill(copy.suspendAccountBody, { email })}
+            confirmLabel={copy.suspendAccount}
           />
         )}
         <Status state={state} />
@@ -66,11 +84,17 @@ export function PortfolioSuspensionControl({
   slug,
   suspended,
   reason,
+  copy,
+  dialog,
+  pending,
 }: {
   portfolioId: string;
   slug: string;
   suspended: boolean;
   reason?: string;
+  copy: Copy;
+  dialog: DialogChrome;
+  pending: string;
 }) {
   const [suspendState, suspend] = useActionState(suspendPortfolioAction, null);
   const [restoreState, restore] = useActionState(restorePortfolioAction, null);
@@ -81,12 +105,12 @@ export function PortfolioSuspensionControl({
         <input type="hidden" name="portfolioId" value={portfolioId} />
         {reason && (
           <p className="panel px-3.5 py-2.5 text-[12.5px] leading-relaxed text-mist-400">
-            سبب الإيقاف: {reason}
+            {fill(copy.suspendedReason, { reason })}
           </p>
         )}
         <div className="flex flex-wrap items-center gap-3">
-          <Submit className="btn btn-ghost" pendingLabel="لحظة…">
-            إعادة نشر المعرض
+          <Submit className="btn btn-ghost" pendingLabel={pending}>
+            {copy.republish}
           </Submit>
           <Status state={restoreState} />
         </div>
@@ -98,19 +122,28 @@ export function PortfolioSuspensionControl({
     <form action={suspend} className="space-y-3">
       <input type="hidden" name="portfolioId" value={portfolioId} />
       <div className="grid gap-3 sm:grid-cols-[1fr_130px]">
-        <Field label="سبب الإيقاف">
-          <input name="reason" className="field" placeholder="محتوى مخالف…" required minLength={5} />
+        <Field label={copy.portfolioReason}>
+          <input
+            name="reason"
+            className="field"
+            placeholder={copy.portfolioReasonPlaceholder}
+            required
+            minLength={5}
+          />
         </Field>
-        <Field label="المدة" hint="0 = دائم">
+        <Field label={copy.duration} hint={copy.durationHint}>
           <input name="days" type="number" min={0} max={365} defaultValue={0} className="field" />
         </Field>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <ConfirmSubmit
-          label="إيقاف المعرض"
-          title="إيقاف هذا المعرض عن العامة؟"
-          body={`سيصبح /p/${slug} غير متاح للزوار. يحتفظ العميل بكل أعماله وصوره وإعداداته، ويمكنك إعادة النشر في أي وقت.`}
-          confirmLabel="إيقاف المعرض"
+            cancelLabel={dialog.cancel}
+            pendingLabel={dialog.pending}
+            confirmParts={dialog.confirmParts}
+          label={copy.suspendPortfolio}
+          title={copy.suspendPortfolioTitle}
+          body={fill(copy.suspendPortfolioBody, { slug })}
+          confirmLabel={copy.suspendPortfolio}
         />
         <Status state={suspendState} />
       </div>
@@ -122,10 +155,16 @@ export function SubscriptionControls({
   userId,
   hasSubscription,
   isActive,
+  copy,
+  dialog,
+  plans,
 }: {
   userId: string;
   hasSubscription: boolean;
   isActive: boolean;
+  copy: Copy;
+  dialog: DialogChrome;
+  plans: { monthly: string; yearly: string };
 }) {
   const [grantState, grant] = useActionState(grantSubscriptionAction, null);
   const [extendState, extend] = useActionState(extendSubscriptionAction, null);
@@ -137,29 +176,29 @@ export function SubscriptionControls({
       <form action={grant} className="space-y-3">
         <input type="hidden" name="userId" value={userId} />
         <div className="grid gap-3 sm:grid-cols-3">
-          <Field label="الباقة">
+          <Field label={copy.plan}>
             <select name="plan" defaultValue="monthly" className="field">
-              <option value="monthly">شهرية</option>
-              <option value="yearly">سنوية</option>
+              <option value="monthly">{plans.monthly}</option>
+              <option value="yearly">{plans.yearly}</option>
             </select>
           </Field>
-          <Field label="المدة" hint="بالأشهر للباقة الشهرية، بالسنوات للسنوية.">
+          <Field label={copy.grantDuration} hint={copy.grantDurationHint}>
             <input name="months" type="number" min={1} max={60} defaultValue={1} className="field" />
           </Field>
-          <Field label="النوع">
+          <Field label={copy.kind}>
             <select name="comped" defaultValue="1" className="field">
-              <option value="1">مجاني ممنوح</option>
-              <option value="0">مدفوع خارج المنصة</option>
+              <option value="1">{copy.kindComped}</option>
+              <option value="0">{copy.kindOffPlatform}</option>
             </select>
           </Field>
         </div>
-        <Field label="ملاحظة" hint="تظهر في سجل التدقيق مع اسمك.">
-          <input name="note" className="field" placeholder="فاتورة محوّلة بنكيًا / اتفاق شراكة…" />
+        <Field label={copy.note} hint={copy.noteHint}>
+          <input name="note" className="field" placeholder={copy.notePlaceholder} />
         </Field>
         <div className="flex flex-wrap items-center gap-3">
           <Submit className="btn btn-primary">
             <Gift className="h-4 w-4" />
-            تفعيل الاشتراك
+            {copy.grant}
           </Submit>
           <Status state={grantState} />
         </div>
@@ -170,11 +209,11 @@ export function SubscriptionControls({
           <form action={extend} className="flex flex-wrap items-end gap-3">
             <input type="hidden" name="userId" value={userId} />
             <div className="w-28">
-              <Field label="تمديد بالأشهر">
+              <Field label={copy.extendMonths}>
                 <input name="months" type="number" min={1} max={60} defaultValue={1} className="field" />
               </Field>
             </div>
-            <Submit className="btn btn-ghost">تمديد</Submit>
+            <Submit className="btn btn-ghost">{copy.extend}</Submit>
             <Status state={extendState} />
           </form>
 
@@ -183,18 +222,21 @@ export function SubscriptionControls({
               <input type="hidden" name="userId" value={userId} />
               <input type="hidden" name="immediately" value="1" />
               <ConfirmSubmit
-                label="إنهاء الاشتراك الآن"
+            cancelLabel={dialog.cancel}
+            pendingLabel={dialog.pending}
+            confirmParts={dialog.confirmParts}
+                label={copy.endNow}
                 className="btn btn-danger !px-3.5 !py-2 !text-[13px]"
-                title="إنهاء الاشتراك فورًا؟"
-                body="سيعود الحساب إلى حدود الخطة المجانية مباشرة، وتظهر شارة ديزاينكم في صفحته."
-                confirmLabel="إنهاء الاشتراك"
+                title={copy.endNowTitle}
+                body={copy.endNowBody}
+                confirmLabel={copy.endNowConfirm}
               />
               <Status state={endState} />
             </form>
           ) : (
             <form action={reactivate} className="flex flex-wrap items-center gap-3">
               <input type="hidden" name="userId" value={userId} />
-              <Submit className="btn btn-ghost">إعادة تفعيل آخر اشتراك</Submit>
+              <Submit className="btn btn-ghost">{copy.restoreLast}</Submit>
               <Status state={reactivateState} />
             </form>
           )}
@@ -204,43 +246,56 @@ export function SubscriptionControls({
   );
 }
 
-export function PasswordResetControl({ userId }: { userId: string }) {
+export function PasswordResetControl({ userId, copy }: { userId: string; copy: Copy }) {
   const [state, action] = useActionState(resetCustomerPasswordAction, null);
 
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="userId" value={userId} />
-      <Field label="كلمة مرور جديدة" hint="ستُنهى كل جلسات العميل النشطة فورًا.">
+      <Field label={copy.newPassword} hint={copy.newPasswordHint}>
         <input name="password" className="field" dir="ltr" minLength={8} required autoComplete="new-password" />
       </Field>
       <div className="flex flex-wrap items-center gap-3">
-        <Submit className="btn btn-ghost">تعيين كلمة المرور</Submit>
+        <Submit className="btn btn-ghost">{copy.setPassword}</Submit>
         <Status state={state} />
       </div>
     </form>
   );
 }
 
-export function DeleteCustomerControl({ userId, email }: { userId: string; email: string }) {
+export function DeleteCustomerControl({
+  userId,
+  email,
+  copy,
+  dialog,
+}: {
+  userId: string;
+  email: string;
+  copy: Copy;
+  dialog: DialogChrome;
+}) {
   const [state, action] = useActionState(deleteCustomerAction, null);
 
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="userId" value={userId} />
       <input type="hidden" name="confirm" value={email} />
-      <Field label="سبب الحذف">
-        <input name="reason" className="field" placeholder="طلب العميل حذف بياناته…" />
+      <Field label={copy.deleteReason}>
+        <input name="reason" className="field" placeholder={copy.deleteReasonPlaceholder} />
       </Field>
       <p className="text-[12px] leading-relaxed text-mist-500">
-        يحذف الحساب والمعرض وكل الأعمال والصور والتذاكر والبلاغات المرتبطة به. لا يمكن التراجع.
+        {copy.deleteWarning}
       </p>
       <div className="flex flex-wrap items-center gap-3">
         <ConfirmSubmit
-          label="حذف الحساب نهائيًا"
+            cancelLabel={dialog.cancel}
+            pendingLabel={dialog.pending}
+            confirmParts={dialog.confirmParts}
+          label={copy.deleteAccount}
           icon={<Trash className="h-4 w-4" />}
-          title="حذف هذا الحساب نهائيًا؟"
-          body={`سيُمحى ${email} وكل ما يتعلق به من المنصة. هذا الإجراء لا يمكن التراجع عنه.`}
-          confirmLabel="حذف نهائي"
+          title={copy.deleteTitle}
+          body={fill(copy.deleteBody, { email })}
+          confirmLabel={copy.deleteConfirm}
           requireText={email}
         />
         <Status state={state} />

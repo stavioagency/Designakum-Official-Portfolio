@@ -4,6 +4,9 @@ import { useActionState, useRef } from "react";
 import { deleteBrandAssetAction, uploadBrandAssetAction } from "@/app/actions/brand";
 import { Status, Submit } from "@/components/editor/ui";
 import { Check, Image as ImageIcon, Trash } from "@/components/icons";
+import { fill, type Dictionary } from "@/lib/i18n";
+
+type Copy = Dictionary["console"]["brandAssets"];
 
 export interface AssetSlot {
   name: string;
@@ -13,7 +16,7 @@ export interface AssetSlot {
   onLight?: boolean;
 }
 
-function Slot({ slot }: { slot: AssetSlot }) {
+function Slot({ slot, copy }: { slot: AssetSlot; copy: Copy }) {
   const [uploadState, upload] = useActionState(uploadBrandAssetAction, null);
   const [deleteState, remove] = useActionState(deleteBrandAssetAction, null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -35,7 +38,7 @@ function Slot({ slot }: { slot: AssetSlot }) {
           }`}
         >
           {slot.url && <Check className="h-3 w-3" />}
-          {slot.url ? "موجود" : "ناقص"}
+          {slot.url ? copy.present : copy.missing}
         </span>
       </div>
 
@@ -66,9 +69,9 @@ function Slot({ slot }: { slot: AssetSlot }) {
             className="btn btn-ghost !px-3 !py-1.5 !text-[12.5px]"
           >
             <ImageIcon className="h-4 w-4" />
-            {slot.url ? "استبدال" : "رفع الملف"}
+            {slot.url ? copy.replace : copy.upload}
           </label>
-          <Submit className="sr-only">رفع</Submit>
+          <Submit className="sr-only">{copy.uploadShort}</Submit>
         </form>
 
         {slot.url && (
@@ -89,17 +92,16 @@ function Slot({ slot }: { slot: AssetSlot }) {
   );
 }
 
-export function BrandAssets({ slots }: { slots: AssetSlot[] }) {
+export function BrandAssets({ slots, copy }: { slots: AssetSlot[]; copy: Copy }) {
   const missing = slots.filter((s) => !s.url).length;
 
   return (
     <section className="card p-5 sm:p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">ملفات الهوية البصرية</h2>
+          <h2 className="text-lg font-semibold">{copy.title}</h2>
           <p className="mt-1 text-[13px] leading-relaxed text-mist-400">
-            ارفع شعار ديزاينكم هنا ليظهر في كل أنحاء المنصة. ما لم يُرفع بعد يظهر مكانه نص مؤقت.
-            الملفات تُحفظ في <code dir="ltr" className="text-mist-300">public/brand/</code>.
+            {copy.description} <code dir="ltr" className="text-mist-300">public/brand/</code>.
           </p>
         </div>
         <span
@@ -107,13 +109,13 @@ export function BrandAssets({ slots }: { slots: AssetSlot[] }) {
             missing === 0 ? "bg-emerald-400/12 text-emerald-300" : "bg-amber-400/12 text-amber-300"
           }`}
         >
-          {missing === 0 ? "مكتملة" : `${missing} ناقص`}
+          {missing === 0 ? copy.complete : fill(copy.missingCount, { n: missing })}
         </span>
       </header>
 
       <ul className="mt-5 grid gap-3 sm:grid-cols-2">
         {slots.map((slot) => (
-          <Slot key={slot.name} slot={slot} />
+          <Slot key={slot.name} slot={slot} copy={copy} />
         ))}
       </ul>
     </section>

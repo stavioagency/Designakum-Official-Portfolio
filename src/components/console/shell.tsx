@@ -4,6 +4,7 @@ import { LogoLockup } from "@/components/brand/logo";
 import { ExternalLink, Logout, Shield } from "@/components/icons";
 import { can, roleLabel } from "@/lib/permissions";
 import { ConsoleNav, type NavItem } from "./nav";
+import { LocaleSwitch } from "@/components/locale-switch";
 import type { Dictionary } from "@/lib/i18n";
 import type { Locale, User } from "@/lib/types";
 
@@ -43,6 +44,9 @@ export function ConsoleShell({
       <aside className="sticky top-0 z-40 border-b border-white/8 bg-ink-950/80 backdrop-blur-xl lg:h-dvh lg:border-b-0 lg:border-s lg:border-white/8">
         <div className="flex h-16 items-center justify-between gap-3 px-4 lg:h-auto lg:px-5 lg:py-6">
           <LogoLockup href="/console" size={36} />
+          <div className="flex items-center gap-2 lg:hidden">
+            <LocaleSwitch locale={locale} />
+          </div>
           <form action={logoutAction} className="lg:hidden">
             <button type="submit" aria-label={nav.logout} className="icon-btn !h-9 !w-9">
               <Logout className="h-[17px] w-[17px]" />
@@ -62,6 +66,12 @@ export function ConsoleShell({
             <ExternalLink className="h-[17px] w-[17px]" />
             {nav.clientDashboard}
           </Link>
+
+          {/* Staff need the switch too — a support agent answering an English
+              customer should be able to read the console in the same language. */}
+          <div className="mt-2 px-1">
+            <LocaleSwitch locale={locale} />
+          </div>
         </div>
 
         <div className="hidden lg:absolute lg:inset-x-0 lg:bottom-0 lg:block lg:p-3">
