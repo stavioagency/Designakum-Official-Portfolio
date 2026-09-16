@@ -16,7 +16,8 @@
     "bootstrap": "node scripts/bootstrap.mjs"
   },
   "dependencies": {
-    "next": "15.5.4",
+    "eslint-config-next": "^15.5.25",
+    "next": "^15.5.25",
     "pg": "^8.23.0",
     "react": "19.1.1",
     "react-dom": "19.1.1"
