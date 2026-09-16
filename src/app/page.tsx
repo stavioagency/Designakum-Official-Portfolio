@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { currentUser } from "@/lib/auth";
-import { listPortfolios } from "@/lib/portfolios";
+import { listPortfolios, loadBundle } from "@/lib/portfolios";
 import { currentLocale } from "@/lib/locale";
 import { dict } from "@/lib/i18n";
 import { pricingCopy } from "@/lib/pricing-copy";
@@ -12,9 +12,10 @@ import { BRAND } from "@/lib/brand";
 import { LogoLockup, Wordmark } from "@/components/brand/logo";
 import { LocaleSwitch } from "@/components/locale-switch";
 import { Pricing } from "@/components/pricing";
+import { PreviewFrame } from "@/components/preview-frame";
+import { PortfolioView } from "@/components/portfolio-view";
 import { Briefcase, Globe, Eye, Image as ImageIcon, Pencil, Shield, Sparkle } from "@/components/icons";
 
-const STEP_ICONS = [Sparkle, ImageIcon, Globe];
 
 export const dynamic = "force-dynamic";
 
@@ -31,11 +32,17 @@ export default async function LandingPage() {
   const d = dict(locale);
   const copy = await pricingCopy(locale);
 
+  // One published portfolio, loaded in full, to show the product rather than
+  // describe it. Gated on the same setting the old showcase used.
+  //
+  // Preferring one written in the reader's own language matters more here than
+  // anywhere else on the page: this is the example of what they are buying, and
+  // an Arabic visitor shown an English page learns the wrong thing about it.
   const showcase = settings["features.public_showcase"]
-    ? (await listPortfolios())
-        .filter((p) => p.published === 1 && p.suspended === 0)
-        .slice(0, 6)
+    ? (await listPortfolios()).filter((p) => p.published === 1 && p.suspended === 0)
     : [];
+  const featured = showcase.find((p) => p.locale === locale) ?? showcase[0];
+  const preview = featured ? await loadBundle(featured) : null;
 
   return (
     <div className="relative z-10">
@@ -75,52 +82,36 @@ export default async function LandingPage() {
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link href="/signup" className="btn btn-primary">{d.landing.ctaPrimary}</Link>
-            {showcase[0] && (
-              <Link href={`/p/${showcase[0].slug}`} className="btn btn-ghost">
+            {featured && (
+              <Link href={`/p/${featured.slug}`} className="btn btn-ghost">
                 {d.landing.ctaSecondary}
               </Link>
             )}
           </div>
         </section>
 
-        {/* Three steps, told with numerals and icons rather than a paragraph. The
-            hairline runs behind the badges on wide screens so the row reads as a
-            single path instead of three unrelated cards. */}
-        <section className="relative mt-20">
-          <h2 className="text-center text-2xl font-bold sm:text-3xl">{d.landing.stepsTitle}</h2>
-          <ol className="relative mt-9 grid gap-6 sm:grid-cols-3">
-            <span
-              aria-hidden
-              className="absolute inset-x-[16%] top-8 hidden h-px sm:block"
-              style={{ background: "linear-gradient(90deg, transparent, var(--hairline) 15%, var(--hairline) 85%, transparent)" }}
-            />
-            {d.steps.map((step, i) => {
-              const Icon = STEP_ICONS[i] ?? Sparkle;
-              return (
-                <li key={step.title} className="rise relative text-center" style={{ animationDelay: `${i * 90}ms` }}>
-                  <span
-                    className="relative mx-auto grid h-16 w-16 place-items-center rounded-full border"
-                    style={{
-                      borderColor: "var(--hairline)",
-                      background: "var(--color-ink-850)",
-                      color: "var(--accent-ring)",
-                    }}
-                  >
-                    <Icon className="h-6 w-6" />
-                    <span className="accent-grad tnum absolute -bottom-1 grid h-6 w-6 place-items-center rounded-full text-[12px] font-bold text-white">
-                      {i + 1}
-                    </span>
-                  </span>
-                  <h3 className="mt-5 text-[15.5px] font-semibold">{step.title}</h3>
-                  <p className="mt-1 text-[13px] text-mist-400">{step.body}</p>
-                </li>
-              );
-            })}
-          </ol>
-        </section>
+        {/* A real published portfolio, in a real device frame.
+            `live` is left false so a visit to the landing page is never counted
+            as a visit to the designer's page — this is a shop window, not
+            traffic they earned. */}
+        {preview && (
+          <section className="mt-20">
+            <h2 className="text-center text-2xl font-bold sm:text-3xl">
+              {d.landing.previewTitle}
+            </h2>
+            <p className="mx-auto mt-2 max-w-md text-center text-[13.5px] text-mist-400">
+              {d.landing.previewSub}
+            </p>
+            <div className="mt-8" data-theme={preview.portfolio.theme}>
+              <PreviewFrame labels={{ mobile: d.landing.mobile, desktop: d.landing.desktop }}>
+                <PortfolioView bundle={preview} />
+              </PreviewFrame>
+            </div>
+          </section>
+        )}
 
         <section className="mt-20">
-          <h2 className="text-center text-2xl font-bold sm:text-3xl">{d.landing.featuresTitle}</h2>
+          <h2 className="text-center text-2xl font-bold sm:text-3xl">{d.landing.offerTitle}</h2>
           <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {d.features.map((feature, i) => {
               const Icon = FEATURE_ICONS[i] ?? Sparkle;
@@ -150,36 +141,6 @@ export default async function LandingPage() {
         <div className="mt-24">
           <Pricing copy={copy} currentPlan={user ? (await entitlementsFor(user)).plan : undefined} />
         </div>
-
-        {showcase.length > 0 && (
-          <section className="mt-24">
-            <h2 className="text-center text-2xl font-bold">{d.landing.showcaseTitle}</h2>
-            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {showcase.map((p) => (
-                <Link
-                  key={p.id}
-                  href={`/p/${p.slug}`}
-                  data-theme={p.theme}
-                  className="card lift flex items-center gap-4 p-4"
-                >
-                  <span className="accent-grad grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl font-bold">
-                    {p.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      p.name.trim().charAt(0)
-                    )}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[15px] font-semibold">{p.name}</span>
-                    <span className="block truncate text-[12.5px] text-mist-500">{p.title}</span>
-                  </span>
-                  <span dir="ltr" className="shrink-0 text-[11.5px] text-mist-500">/p/{p.slug}</span>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
 
         <section className="card mt-24 overflow-hidden p-8 text-center sm:p-12">
           <h2 className="text-2xl font-bold sm:text-3xl">{d.landing.finalTitle}</h2>

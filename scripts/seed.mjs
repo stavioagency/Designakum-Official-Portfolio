@@ -151,21 +151,21 @@ for (const statement of [
 const ownerId = id("usr");
 await run(
   `INSERT INTO users (id, email, password_hash, display_name, role, status, plan, onboarded_at, created_at, updated_at)
-   VALUES (?, 'admin@designakum.sa', ?, 'مالك المنصة', 'owner', 'active', 'yearly', ?, ?, ?)`,
+   VALUES (?, 'admin@designakum.sa', ?, 'Designakum', 'owner', 'active', 'yearly', ?, ?, ?)`,
   ownerId, hash("Admin#2026"), now(), now(), now(),
 );
 
 const ownerTwoId = id("usr");
 await run(
   `INSERT INTO users (id, email, password_hash, display_name, role, status, plan, onboarded_at, created_at, updated_at)
-   VALUES (?, 'owner2@designakum.sa', ?, 'الشريك المؤسس', 'owner', 'active', 'yearly', ?, ?, ?)`,
+   VALUES (?, 'owner2@designakum.sa', ?, 'Co-founder', 'owner', 'active', 'yearly', ?, ?, ?)`,
   ownerTwoId, hash("Owner2#2026"), now(), now(), now(),
 );
 
 const supportId = id("usr");
 await run(
   `INSERT INTO users (id, email, password_hash, display_name, role, status, plan, onboarded_at, created_at, updated_at)
-   VALUES (?, 'support@designakum.sa', ?, 'موظف الدعم', 'support', 'active', 'free', ?, ?, ?)`,
+   VALUES (?, 'support@designakum.sa', ?, 'Support', 'support', 'active', 'free', ?, ?, ?)`,
   supportId, hash("Support#2026x"), now(), now(), now(),
 );
 

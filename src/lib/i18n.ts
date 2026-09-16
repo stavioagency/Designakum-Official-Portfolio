@@ -72,18 +72,14 @@ const ar = {
     sub: "هويتك، أعمالك، وطرق التواصل معك — في صفحة واحدة.",
     ctaPrimary: "أنشئ معرضك",
     ctaSecondary: "شاهد نموذجًا",
-    stepsTitle: "ثلاث خطوات",
-    featuresTitle: "كل ما تحتاجه",
-    showcaseTitle: "معارض منشورة",
+    previewTitle: "هكذا تبدو صفحتك",
+    previewSub: "معرض حقيقي منشور على المنصة — جرّبه على الجوال وعلى الشاشة.",
+    mobile: "جوال",
+    desktop: "شاشة",
+    offerTitle: "ما نقدّمه",
     finalTitle: "جاهز لتطلق صفحتك؟",
     finalCta: "ابدأ الآن",
   },
-
-  steps: [
-    { title: "أنشئ حسابك", body: "دقيقة واحدة" },
-    { title: "ارفع أعمالك", body: "صور، مشاريع، أرقام" },
-    { title: "انشر", body: "رابطك جاهز للمشاركة" },
-  ],
 
   features: [
     { title: "محرر بسيط", body: "بدون كود ولا قوالب" },
@@ -1305,18 +1301,14 @@ const en: typeof ar = {
     sub: "Your identity, your work, every way to reach you — one page.",
     ctaPrimary: "Create your portfolio",
     ctaSecondary: "See an example",
-    stepsTitle: "Three steps",
-    featuresTitle: "Everything you need",
-    showcaseTitle: "Published on Designakum",
+    previewTitle: "This is what your page looks like",
+    previewSub: "A real portfolio published on Designakum \u2014 try it on a phone and on a screen.",
+    mobile: "Phone",
+    desktop: "Screen",
+    offerTitle: "What we offer",
     finalTitle: "Ready to publish?",
     finalCta: "Get started",
   },
-
-  steps: [
-    { title: "Create your account", body: "About a minute" },
-    { title: "Add your work", body: "Images, projects, numbers" },
-    { title: "Publish", body: "Your link is ready to share" },
-  ],
 
   features: [
     { title: "A simple editor", body: "No code, no templates" },
