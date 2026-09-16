@@ -116,10 +116,30 @@ export async function loginAction(_prev: FormState, fd: FormData): Promise<FormS
   const email = str(fd, "email").toLowerCase();
   const password = String(fd.get("password") ?? "");
 
-  // Throttle password guessing per caller and per account.
+  /**
+   * Three limits, because one key cannot describe all three attacks.
+   *
+   * The pair catches someone working on a single account from a single place.
+   * It does not catch spraying — one common password tried against a thousand
+   * different emails — because every new email starts a fresh counter, so the
+   * caller alone is counted too. And it does not catch a distributed attempt on
+   * one account, where every attacker looks new, so the account is counted as
+   * well.
+   *
+   * The per-account limit is the loosest of the three on purpose: it is the one
+   * a stranger could use to lock a real customer out, and these windows expire
+   * rather than latching.
+   */
   const fingerprint = await callerFingerprint();
-  const attempts = await rateLimit(`login:${fingerprint}:${email}`, 8, 15 * 60 * 1000);
-  if (!attempts.ok) return { error: "too_many_attempts" };
+
+  const pair = await rateLimit(`login:${fingerprint}:${email}`, 8, 15 * 60 * 1000);
+  if (!pair.ok) return { error: "too_many_attempts" };
+
+  const caller = await rateLimit(`login-caller:${fingerprint}`, 20, 15 * 60 * 1000);
+  if (!caller.ok) return { error: "too_many_attempts" };
+
+  const account = await rateLimit(`login-account:${email}`, 30, 60 * 60 * 1000);
+  if (!account.ok) return { error: "too_many_attempts" };
 
   const user = await findUserByEmail(email);
   if (!user || !verifyPassword(password, user.password_hash)) {

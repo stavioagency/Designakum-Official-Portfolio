@@ -1,5 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { BASE, BROWSER_UA, contains, db, sessionFor, visit } from "./helpers.mjs";
 
 describe("response hardening", () => {
@@ -220,5 +221,40 @@ describe("public surfaces", () => {
       body: JSON.stringify({ portfolioId: "nope", kind: "view" }),
     });
     assert.ok(bad.status === 400 || bad.status === 404, `expected a rejection, got ${bad.status}`);
+  });
+});
+
+/**
+ * Password guessing.
+ *
+ * Driving this over HTTP is not possible: signing in is a server action, not a
+ * form POST, so a plain request reaches nothing. What can be checked, and what
+ * actually regresses, is that the throttle still counts the three things it has
+ * to count — the pair, the caller alone, and the account alone.
+ *
+ * The pair alone misses a spray, where one password is tried against a thousand
+ * emails and each new email starts a fresh counter. The caller alone misses a
+ * distributed attempt on one account, where every attacker looks new.
+ */
+describe("guessing a password", () => {
+  test("the throttle counts the caller and the account, not only the pair", async () => {
+    const source = await readFile(new URL("../src/app/actions/auth.ts", import.meta.url), "utf8");
+    const login = source.slice(source.indexOf("export async function loginAction"));
+    const body = login.slice(0, login.indexOf("\nexport "));
+
+    const keys = [...body.matchAll(/rateLimit\(`([^`]+)`/g)].map((m) => m[1]);
+
+    assert.ok(
+      keys.some((k) => k.includes("${fingerprint}") && k.includes("${email}")),
+      "one limit should count a caller working on a single account",
+    );
+    assert.ok(
+      keys.some((k) => k.includes("${fingerprint}") && !k.includes("${email}")),
+      "one should count the caller alone, or spraying across emails is free",
+    );
+    assert.ok(
+      keys.some((k) => k.includes("${email}") && !k.includes("${fingerprint}")),
+      "one should count the account alone, or a distributed attempt is free",
+    );
   });
 });
