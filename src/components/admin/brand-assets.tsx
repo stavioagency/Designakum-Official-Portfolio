@@ -1,9 +1,4 @@
-"use client";
-
-import { useActionState, useRef } from "react";
-import { deleteBrandAssetAction, uploadBrandAssetAction } from "@/app/actions/brand";
-import { Status, Submit } from "@/components/editor/ui";
-import { Check, Image as ImageIcon, Trash } from "@/components/icons";
+import { Check, Image as ImageIcon } from "@/components/icons";
 import { fill, type Dictionary } from "@/lib/i18n";
 
 type Copy = Dictionary["console"]["brandAssets"];
@@ -16,11 +11,20 @@ export interface AssetSlot {
   onLight?: boolean;
 }
 
+/**
+ * Which brand artwork is installed, and which slots are still empty.
+ *
+ * This used to offer upload and delete buttons. They wrote to the server's local
+ * disk, which every deployment target this app runs on wipes between requests —
+ * so the upload reported success and the file was gone before the next page
+ * load. A control that lies is worse than no control, and artwork that changes
+ * once a year does not need a runtime uploader; it lives in the repository,
+ * where it is reviewed and versioned like everything else.
+ *
+ * The checklist is the part that was always worth having, so it stays, and it
+ * no longer needs to be a client component.
+ */
 function Slot({ slot, copy }: { slot: AssetSlot; copy: Copy }) {
-  const [uploadState, upload] = useActionState(uploadBrandAssetAction, null);
-  const [deleteState, remove] = useActionState(deleteBrandAssetAction, null);
-  const formRef = useRef<HTMLFormElement>(null);
-
   return (
     <li className="panel p-3.5">
       <div className="flex items-start justify-between gap-3">
@@ -42,7 +46,7 @@ function Slot({ slot, copy }: { slot: AssetSlot; copy: Copy }) {
         </span>
       </div>
 
-      {slot.url && (
+      {slot.url ? (
         <div
           className="mt-3 h-20 overflow-hidden rounded-xl p-3"
           style={{ background: slot.onLight ? "#f4f5f8" : "rgba(255,255,255,0.05)" }}
@@ -51,43 +55,11 @@ function Slot({ slot, copy }: { slot: AssetSlot; copy: Copy }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={slot.url} alt={slot.name} className="h-full w-full object-contain" />
         </div>
+      ) : (
+        <div className="mt-3 grid h-20 place-items-center rounded-xl border border-dashed border-white/10 text-mist-600">
+          <ImageIcon className="h-5 w-5" />
+        </div>
       )}
-
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <form ref={formRef} action={upload} className="contents">
-          <input type="hidden" name="name" value={slot.name} />
-          <input
-            id={`brand-${slot.name}`}
-            type="file"
-            name="file"
-            accept="image/svg+xml,image/png,image/webp,image/jpeg,image/avif"
-            className="sr-only"
-            onChange={() => formRef.current?.requestSubmit()}
-          />
-          <label
-            htmlFor={`brand-${slot.name}`}
-            className="btn btn-ghost !px-3 !py-1.5 !text-[12.5px]"
-          >
-            <ImageIcon className="h-4 w-4" />
-            {slot.url ? copy.replace : copy.upload}
-          </label>
-          <Submit className="sr-only">{copy.uploadShort}</Submit>
-        </form>
-
-        {slot.url && (
-          <form action={remove}>
-            <input type="hidden" name="name" value={slot.name} />
-            <Submit className="btn btn-danger !px-3 !py-1.5 !text-[12.5px]" pendingLabel="…">
-              <Trash className="h-4 w-4" />
-            </Submit>
-          </form>
-        )}
-      </div>
-
-      <div className="mt-2 empty:hidden">
-        <Status state={uploadState} />
-        <Status state={deleteState} />
-      </div>
     </li>
   );
 }
