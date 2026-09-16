@@ -4,6 +4,7 @@ import { LogoLockup } from "@/components/brand/logo";
 import { ExternalLink, Logout, Shield } from "@/components/icons";
 import { can, roleLabel } from "@/lib/permissions";
 import { ConsoleNav, type NavItem } from "./nav";
+import { MobileDrawer } from "./mobile-drawer";
 import { LocaleSwitch } from "@/components/locale-switch";
 import type { Dictionary } from "@/lib/i18n";
 import type { Locale, User } from "@/lib/types";
@@ -42,19 +43,32 @@ export function ConsoleShell({
   return (
     <div className="relative z-10 min-h-dvh lg:grid lg:grid-cols-[260px_minmax(0,1fr)]">
       <aside className="sticky top-0 z-40 border-b border-white/8 bg-ink-950/80 backdrop-blur-xl lg:h-dvh lg:border-b-0 lg:border-s lg:border-white/8">
-        <div className="flex h-16 items-center justify-between gap-3 px-4 lg:h-auto lg:px-5 lg:py-6">
+        <div className="flex h-16 items-center justify-between gap-2 px-4 lg:h-auto lg:px-5 lg:py-6">
           <LogoLockup href="/console" size={36} />
+
           <div className="flex items-center gap-2 lg:hidden">
             <LocaleSwitch locale={locale} />
+            <form action={logoutAction}>
+              <button type="submit" aria-label={nav.logout} className="icon-btn !h-10 !w-10">
+                <Logout className="h-[17px] w-[17px]" />
+              </button>
+            </form>
+            {/* Ten sections wrapped into three rows and ate the top third of
+                every screen before any content appeared. */}
+            <MobileDrawer label={nav.menu} closeLabel={nav.closeMenu}>
+              <ConsoleNav items={items} vertical />
+              <Link
+                href="/dashboard"
+                className="mt-2 flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-[13px] text-mist-400 transition hover:bg-white/[0.05] hover:text-white"
+              >
+                <ExternalLink className="h-[17px] w-[17px]" />
+                {nav.clientDashboard}
+              </Link>
+            </MobileDrawer>
           </div>
-          <form action={logoutAction} className="lg:hidden">
-            <button type="submit" aria-label={nav.logout} className="icon-btn !h-9 !w-9">
-              <Logout className="h-[17px] w-[17px]" />
-            </button>
-          </form>
         </div>
 
-        <div className="px-3 pb-3 lg:px-3">
+        <div className="hidden px-3 pb-3 lg:block lg:px-3">
           <ConsoleNav items={items} />
         </div>
 

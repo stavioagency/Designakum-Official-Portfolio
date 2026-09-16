@@ -37,11 +37,24 @@ export interface NavItem {
   badge?: number;
 }
 
-export function ConsoleNav({ items }: { items: NavItem[] }) {
+export function ConsoleNav({
+  items,
+  vertical = false,
+}: {
+  items: NavItem[];
+  /** A list rather than a wrapping row — what the drawer needs at 308px wide. */
+  vertical?: boolean;
+}) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex flex-wrap gap-1.5 lg:flex-col lg:flex-nowrap lg:gap-1">
+    <nav
+      className={
+        vertical
+          ? "flex flex-col gap-1"
+          : "flex flex-wrap gap-1.5 lg:flex-col lg:flex-nowrap lg:gap-1"
+      }
+    >
       {items.map((item) => {
         const Icon = ICONS[item.icon];
         // The dashboard root would otherwise match every nested console route.
