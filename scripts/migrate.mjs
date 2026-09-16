@@ -29,9 +29,15 @@ const BASE = path.join(here, "schema.pg.sql");
 const connectionString =
   process.env.DATABASE_URL ??
   (() => {
-    const file = path.join(process.cwd(), ".env.local");
-    if (!fs.existsSync(file)) return undefined;
-    return fs.readFileSync(file, "utf8").match(/^DATABASE_URL=(.+)$/m)?.[1]?.trim();
+    // Next reads .env.development.local in development only, which keeps it out
+    // of the Worker bundle; .env.local stays supported for older checkouts.
+    for (const name of [".env.development.local", ".env.local"]) {
+      const file = path.join(process.cwd(), name);
+      if (!fs.existsSync(file)) continue;
+      const found = fs.readFileSync(file, "utf8").match(/^DATABASE_URL=(.+)$/m)?.[1]?.trim();
+      if (found) return found;
+    }
+    return undefined;
   })();
 
 if (!connectionString) {

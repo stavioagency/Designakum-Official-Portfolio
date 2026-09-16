@@ -15,7 +15,10 @@
     "migrate:down": "node scripts/migrate.mjs --down",
     "bootstrap": "node scripts/bootstrap.mjs",
     "brand:manifest": "node scripts/brand-manifest.mjs",
-    "prebuild": "node scripts/brand-manifest.mjs"
+    "prebuild": "node scripts/brand-manifest.mjs",
+    "cf:build": "sh scripts/cf-build.sh",
+    "cf:preview": "opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "eslint-config-next": "^15.5.25",
@@ -26,12 +29,14 @@
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.15.13",
+    "@opennextjs/cloudflare": "^1.20.6",
     "@tailwindcss/postcss": "^4.1.13",
     "@types/node": "^22.10.2",
     "@types/pg": "^8.23.1",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
     "tailwindcss": "^4.1.13",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "wrangler": "^4.132.0"
   }
 }

@@ -11,3 +11,10 @@ next-env.d.ts
 data/.dev-session-secret
 tsconfig.tsbuildinfo
 .DS_Store
+
+# Cloudflare Workers build output
+.open-next/
+.wrangler/
+
+# Tooling credentials, never read by the app
+.env.tools

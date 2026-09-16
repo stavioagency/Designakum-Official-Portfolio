@@ -9,8 +9,16 @@ const connectionString =
   process.env.DATABASE_URL ??
   (() => {
     // Mirror what the app reads, so the tests always talk to the same database.
-    const env = fs.readFileSync(path.join(process.cwd(), ".env.local"), "utf8");
-    return env.match(/^DATABASE_URL=(.+)$/m)?.[1]?.trim();
+    // `.env.development.local` is where local config lives: Next loads it in
+    // development but not during a production build, which keeps it out of the
+    // Cloudflare Worker bundle. `.env.local` stays supported for old checkouts.
+    for (const name of [".env.development.local", ".env.local"]) {
+      const file = path.join(process.cwd(), name);
+      if (!fs.existsSync(file)) continue;
+      const found = fs.readFileSync(file, "utf8").match(/^DATABASE_URL=(.+)$/m)?.[1]?.trim();
+      if (found) return found;
+    }
+    return undefined;
   })();
 
 const pool = new pg.Pool({
