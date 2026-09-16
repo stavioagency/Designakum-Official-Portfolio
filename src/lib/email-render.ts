@@ -114,6 +114,12 @@ export interface RenderOptions {
   origin: string;
   preheader?: string;
   supportEmail?: string;
+  /**
+   * Where the wordmark is fetched from. A real send passes a `cid:` reference to
+   * the attached copy, which Outlook will draw without asking. The https URL is
+   * the default so a preview rendered outside the mailer still shows a logo.
+   */
+  logoSrc?: string;
 }
 
 export function toHtml(blocks: Block[], options: RenderOptions): string {
@@ -123,6 +129,7 @@ export function toHtml(blocks: Block[], options: RenderOptions): string {
   const align = rtl ? "right" : "left";
   const font = rtl ? FONT_AR : FONT_EN;
   const copy = COPY[rtl ? "ar" : "en"];
+  const logoSrc = options.logoSrc ?? `${origin}/brand/wordmark-light.png`;
 
   const base = `margin:0;font-family:${font};text-align:${align};`;
 
@@ -200,7 +207,7 @@ ${preheader}
 
 <tr><td align="center" style="padding:6px 0 24px;">
 <a href="${esc(origin)}" style="text-decoration:none;">
-<img src="${esc(origin)}/brand/wordmark-light.png" width="150" height="38" alt="Designakum" style="display:block;border:0;width:150px;height:38px;font-family:${font};font-size:17px;font-weight:700;color:${C.bright};text-decoration:none;">
+<img src="${esc(logoSrc)}" width="150" height="38" alt="Designakum" style="display:block;border:0;width:150px;height:38px;font-family:${font};font-size:17px;font-weight:700;color:${C.bright};text-decoration:none;">
 </a>
 </td></tr>
 

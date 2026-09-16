@@ -13,7 +13,10 @@ export const SETTING_DEFAULTS = {
   "brand.name_en": "Designakum",
   "brand.tagline_ar": "منصة معارض الأعمال",
   "brand.tagline_en": "The portfolio platform",
-  "brand.support_email": "support@designakum.sa",
+  // designakum.com, not .sa: the .sa domain has never existed — no nameservers,
+  // no MX — so this default put a guaranteed bounce on the support page and in
+  // the reply_to of every email the platform sent.
+  "brand.support_email": "support@designakum.com",
 
   "pricing.monthly_halalas": 1200,
   "pricing.yearly_halalas": 12000,

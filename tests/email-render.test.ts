@@ -51,6 +51,19 @@ describe("what goes into the markup", () => {
     assert.match(render(), /src="https:\/\/designakum\.com\/brand\/wordmark-light\.png"/);
   });
 
+  test("the logo is attached, not fetched, when the mailer says so", () => {
+    const html = toHtml(every, {
+      locale: "ar",
+      origin: "https://designakum.com",
+      logoSrc: "cid:designakum-wordmark",
+    });
+    assert.match(html, /src="cid:designakum-wordmark"/);
+    assert.ok(
+      !html.includes("brand/wordmark-light.png"),
+      "still pointing at the remote copy Outlook refuses to load",
+    );
+  });
+
   test("Arabic renders right to left and English does not", () => {
     assert.match(render("ar"), /<html lang="ar" dir="rtl">/);
     assert.match(render("en"), /<html lang="en" dir="ltr">/);

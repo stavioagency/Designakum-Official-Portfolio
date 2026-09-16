@@ -4,6 +4,7 @@ import { newId } from "./ids";
 import { readSettings } from "./settings";
 import { siteUrl } from "./site";
 import { toHtml, type Block } from "./email-render";
+import { EMAIL_LOGO } from "./email-logo";
 import type { Locale } from "./types";
 import { reportError } from "./observability";
 
@@ -76,6 +77,7 @@ export async function sendMail(mail: Mail): Promise<{ delivered: boolean; error?
           origin: await siteUrl(),
           preheader: mail.preheader,
           supportEmail: settings["brand.support_email"] || undefined,
+          logoSrc: `cid:${EMAIL_LOGO.cid}`,
         })
       : undefined;
 
@@ -92,6 +94,18 @@ export async function sendMail(mail: Mail): Promise<{ delivered: boolean; error?
         subject: mail.subject,
         text: mail.body,
         html,
+        // Only when there is an HTML part to show it in. Attached to a text-only
+        // message it would arrive as a stray file with no way to display it.
+        attachments: html
+          ? [
+              {
+                filename: EMAIL_LOGO.filename,
+                content: EMAIL_LOGO.base64,
+                content_type: EMAIL_LOGO.contentType,
+                content_id: EMAIL_LOGO.cid,
+              },
+            ]
+          : undefined,
       }),
     });
 

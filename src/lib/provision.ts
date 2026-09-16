@@ -1,4 +1,8 @@
 import "server-only";
+import { emailTemplate } from "./emails";
+import { sendMail } from "./mailer";
+import { siteUrl } from "./site";
+import { reportError } from "./observability";
 import { createUser } from "./auth";
 import { createPortfolio, uniqueSlug } from "./portfolios";
 import { seedStarterContent, starterTitle } from "./starter";
@@ -50,5 +54,35 @@ export async function provisionClient(input: {
     await updateProfile(portfolio.id, user, { avatar_url: input.avatarUrl });
   }
 
+  await sendWelcome(user, portfolio.slug, locale);
+
   return { user, slug: portfolio.slug };
+}
+
+/**
+ * The one email a new account gets. It carries the page's URL, because the URL
+ * is the thing people actually signed up for and the thing they will want to
+ * find again a week later.
+ *
+ * It lives here, beside the account it belongs to, rather than in the sign-up
+ * action. It used to sit in the password route, which meant Google sign-ups —
+ * added later, provisioning through this same function — silently sent nothing.
+ * Every way of creating an account comes through here, so this is the only place
+ * it cannot be forgotten from.
+ *
+ * Never blocks the sign-up: a mail provider being down is not a reason to refuse
+ * someone an account, so a failure is recorded in mail_outbox and dropped here.
+ */
+async function sendWelcome(user: User, slug: string, locale: Locale) {
+  try {
+    const origin = await siteUrl();
+    const composed = emailTemplate.welcome(locale, {
+      name: user.display_name || "",
+      portfolioUrl: `${origin}/p/${slug}`,
+      dashboardUrl: `${origin}/dashboard`,
+    });
+    await sendMail({ to: user.email, kind: "welcome", ...composed });
+  } catch (error) {
+    reportError(error, { area: "welcome-email", userId: user.id });
+  }
 }

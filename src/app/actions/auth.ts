@@ -31,7 +31,7 @@ import { emailTemplate } from "@/lib/emails";
 import { requestOrigin } from "@/lib/origin";
 import { get } from "@/lib/db";
 import { reportError } from "@/lib/observability";
-import type { Locale, User } from "@/lib/types";
+import type { User } from "@/lib/types";
 
 /** `error` is a key into the `authErrors` dictionary, so it can be shown in either language. */
 export type FormState = { error?: string } | null;
@@ -68,7 +68,7 @@ export async function signupAction(_prev: FormState, fd: FormData): Promise<Form
   // Whatever they picked at the gate is the account's language from here on:
   // starter copy, dashboard, and every email we ever send them.
   const locale = await currentLocale();
-  const { user, slug } = await provisionClient({
+  const { user } = await provisionClient({
     email,
     password,
     name,
@@ -78,33 +78,10 @@ export async function signupAction(_prev: FormState, fd: FormData): Promise<Form
   if (invitation && "invitation" in invitation) await redeemInvitation(invitation.invitation, user);
 
   await createSession(user.id);
-  await sendWelcome(user, slug, locale);
 
   // The link is chosen on /welcome, not on this form — see src/lib/onboarding.ts
   // for why both sign-up routes converge there.
   redirect("/welcome");
-}
-
-/**
- * The one email a new account gets. It carries the page's URL, because the URL
- * is the thing people actually signed up for and the thing they will want to
- * find again a week later.
- *
- * Never blocks the sign-up: a mail provider being down is not a reason to refuse
- * someone an account, so a failure is recorded in mail_outbox and dropped here.
- */
-async function sendWelcome(user: User, slug: string, locale: Locale) {
-  try {
-    const origin = await requestOrigin();
-    const composed = emailTemplate.welcome(locale, {
-      name: user.display_name || "",
-      portfolioUrl: `${origin}/p/${slug}`,
-      dashboardUrl: `${origin}/dashboard`,
-    });
-    await sendMail({ to: user.email, kind: "welcome", ...composed });
-  } catch (error) {
-    reportError(error, { area: "welcome-email", userId: user.id });
-  }
 }
 
 export async function loginAction(_prev: FormState, fd: FormData): Promise<FormState> {
