@@ -6,7 +6,23 @@ import { Field } from "./ui";
 import { Modal } from "@/components/ui/modal";
 
 const OUTPUT_WIDTH = 1400;
-const OUTPUT_TYPE = "image/webp";
+
+/**
+ * What the cropper encodes to.
+ *
+ * `toBlob` does not fail on a type it cannot encode — it quietly falls back to
+ * PNG and hands back a blob that is four to twenty times larger, while the File
+ * we build around it still claims to be a WebP. A browser without a WebP encoder
+ * was therefore uploading 700 KB photographs and nothing anywhere said so.
+ *
+ * So the result is checked rather than trusted, and JPEG is the fallback: every
+ * canvas can encode it, and for a photograph it is a fraction of the PNG.
+ */
+const PREFERRED = { type: "image/webp", quality: 0.92 } as const;
+const FALLBACK = { type: "image/jpeg", quality: 0.86 } as const;
+
+const encode = (canvas: HTMLCanvasElement, as: { type: string; quality: number }) =>
+  new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, as.type, as.quality));
 
 type Point = { x: number; y: number };
 
@@ -237,11 +253,26 @@ function Cropper({
       drawn.height * factor,
     );
 
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, OUTPUT_TYPE, 0.92),
-    );
+    let blob = await encode(canvas, PREFERRED);
+
+    if (!blob || blob.type !== PREFERRED.type) {
+      // No WebP encoder here. Re-draw on an opaque plate first, because JPEG has
+      // no alpha and anything transparent would otherwise come out black.
+      const plate = document.createElement("canvas");
+      plate.width = outWidth;
+      plate.height = outHeight;
+      const plateContext = plate.getContext("2d")!;
+      plateContext.fillStyle = "#ffffff";
+      plateContext.fillRect(0, 0, outWidth, outHeight);
+      plateContext.drawImage(canvas, 0, 0);
+      blob = (await encode(plate, FALLBACK)) ?? blob;
+    }
+
     setBusy(false);
-    if (blob) onDone(new File([blob], "image.webp", { type: OUTPUT_TYPE }));
+    if (!blob) return;
+
+    const extension = blob.type === "image/webp" ? "webp" : blob.type === "image/jpeg" ? "jpg" : "png";
+    onDone(new File([blob], `image.${extension}`, { type: blob.type }));
   }
 
   return (

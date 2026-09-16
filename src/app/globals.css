@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "IBM Plex Sans Arabic", "Tajawal", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: var(--font-arabic), var(--font-latin), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --color-ink-950: #07080e;
   --color-ink-900: #0b0d16;
@@ -58,7 +58,7 @@ html[lang="en"] .brand-name-ar { display: none; }
 html[lang="en"] .brand-name-en { display: inline; }
 
 /* Latin copy reads better with Inter leading the stack; Arabic keeps its own face. */
-html[lang="en"] body { font-family: "Inter", "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif; }
+html[lang="en"] body { font-family: var(--font-latin), var(--font-arabic), ui-sans-serif, system-ui, sans-serif; }
 
 body {
   min-height: 100dvh;

@@ -26,8 +26,9 @@ function policy(nonce: string): string {
       : `script-src 'self' 'nonce-${nonce}' 'unsafe-inline' 'unsafe-eval'`,
     // Styles stay inline-allowed: Tailwind and Next both emit inline style
     // attributes, and a style injection cannot execute script.
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com data:",
+    "style-src 'self' 'unsafe-inline'",
+    // Fonts are self-hosted now, so nothing off this origin is allowed at all.
+    "font-src 'self' data:",
     // Portfolio images come from this origin; data:/blob: cover the cropper preview.
     "img-src 'self' data: blob:",
     "connect-src 'self'",

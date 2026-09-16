@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { IBM_Plex_Sans_Arabic, Inter } from "next/font/google";
 import { BRAND, brandAsset } from "@/lib/brand";
 import { DIR } from "@/lib/i18n";
 import { headers } from "next/headers";
@@ -9,6 +10,28 @@ import { requestOrigin } from "@/lib/origin";
 import { CookieNotice } from "@/components/cookie-notice";
 import { LanguageGate } from "@/components/language-gate";
 import "./globals.css";
+
+/**
+ * Self-hosted rather than fetched from Google at render time.
+ *
+ * The old <link> cost two preconnects and a render-blocking stylesheet on a
+ * third-party origin before a single glyph arrived, and it pulled three families
+ * at thirteen weights when the site uses four. Tajawal was never anything but a
+ * fallback name in the stack, and nothing anywhere asks for a 300 or an 800.
+ */
+const arabic = IBM_Plex_Sans_Arabic({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-arabic",
+  display: "swap",
+});
+
+const latin = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-latin",
+  display: "swap",
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await currentLocale();
@@ -62,16 +85,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       : null;
 
   return (
-    <html lang={locale} dir={DIR[locale]}>
-      <head>
-        {icon && <link rel="icon" href={icon} />}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang={locale} dir={DIR[locale]} className={`${arabic.variable} ${latin.variable}`}>
+      <head>{icon && <link rel="icon" href={icon} />}</head>
       <body className="ambient">
         {gate ? (
           // The gate replaces the page rather than floating over it. An overlay

@@ -55,7 +55,7 @@ const ar = {
   },
 
   landing: {
-    badge: "منصة عربية لصفحات الأعمال",
+    badge: "منصة عربية لمعارض الأعمال",
     headline1: "معرض أعمالك الشخصي،",
     headline2: "برابط واحد أنيق",
     sub: "هويتك، أعمالك، وطرق التواصل معك — في صفحة واحدة.",
@@ -75,10 +75,10 @@ const ar = {
   ],
 
   features: [
-    { title: "محرر بسيط", body: "بدون كود ولا مصمم" },
+    { title: "محرر بسيط", body: "بدون كود ولا قوالب" },
     { title: "صورك أنت", body: "ارفع، اقصص، رتّب" },
     { title: "معرض كامل", body: "شرائح، مشاريع، إحصائيات" },
-    { title: "حسابات معزولة", body: "بياناتك لك وحدك" },
+    { title: "خصوصية كاملة", body: "لا أحد يرى لوحتك سواك" },
     { title: "معاينة حية", body: "على شاشة جوال حقيقية" },
     { title: "عربي وإنجليزي", body: "يمين ويسار بنفس الجودة" },
   ],
@@ -1304,10 +1304,10 @@ const en: typeof ar = {
   ],
 
   features: [
-    { title: "A simple editor", body: "No code, no designer" },
+    { title: "A simple editor", body: "No code, no templates" },
     { title: "Your own images", body: "Upload, crop, reorder" },
     { title: "A full portfolio", body: "Slides, projects, stats" },
-    { title: "Accounts isolated", body: "Your data is yours alone" },
+    { title: "Private by default", body: "Nobody sees your panel but you" },
     { title: "Live preview", body: "On a real phone frame" },
     { title: "Arabic and English", body: "Both treated as first class" },
   ],
