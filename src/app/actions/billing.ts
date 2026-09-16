@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { messages } from "@/lib/locale";
+import { fill } from "@/lib/i18n";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { billingProvider, cancelSubscription, logBillingEvent } from "@/lib/billing";
@@ -14,8 +16,8 @@ function paidPlan(value: string): Exclude<Plan, "free"> | null {
   return value === "monthly" || value === "yearly" ? value : null;
 }
 
-function fail(error: unknown): ActionState {
-  return { error: error instanceof Error ? error.message : "تعذّر تنفيذ العملية" };
+async function fail(error: unknown): Promise<ActionState> {
+  return { error: error instanceof Error ? error.message : (await messages()).failed };
 }
 
 /**
@@ -29,14 +31,14 @@ export async function startCheckoutAction(_prev: ActionState, fd: FormData): Pro
   try {
     const user = await requireUser();
     const plan = paidPlan(str(fd, "plan"));
-    if (!plan) return { error: "باقة غير معروفة" };
+    if (!plan) return { error: (await messages()).unknownPlan };
 
     const provider = billingProvider();
     if (!provider) {
       await logBillingEvent(user.id, "checkout.unavailable", plan);
       return {
         error:
-          "الدفع الإلكتروني غير مفعّل على هذه النسخة بعد. تواصل مع إدارة المنصة لتفعيل اشتراكك.",
+          (await messages()).billingUnavailable,
       };
     }
 
@@ -55,7 +57,7 @@ export async function startCheckoutAction(_prev: ActionState, fd: FormData): Pro
     await logBillingEvent(user.id, "checkout.started", `${plan} · ${provider.id}`);
     destination = checkout.url;
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 
   redirect(destination);
@@ -67,12 +69,9 @@ export async function cancelSubscriptionAction(_prev: ActionState, fd: FormData)
     const immediately = str(fd, "immediately") === "1";
     await cancelSubscription(user.id, immediately);
     revalidatePath("/dashboard/billing");
-    return {
-      ok: immediately
-        ? "تم إلغاء الاشتراك"
-        : "سيتوقف التجديد في نهاية الفترة الحالية",
-    };
+    const m = await messages();
+    return { ok: immediately ? m.subscriptionCanceled : m.renewalStopped };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }

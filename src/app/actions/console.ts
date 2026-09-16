@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { messages } from "@/lib/locale";
+import { fill } from "@/lib/i18n";
 import { audit } from "@/lib/audit";
 import { createUser, findUserByEmail, hashPassword, revokeSessionsFor } from "@/lib/auth";
 import {
@@ -23,11 +25,11 @@ export type ActionState = { ok?: string; error?: string } | null;
 
 const str = (fd: FormData, key: string) => String(fd.get(key) ?? "").trim();
 
-function fail(error: unknown): ActionState {
+async function fail(error: unknown): Promise<ActionState> {
   // A refused permission is an expected outcome, not an incident.
   if (error instanceof PermissionError) return { error: error.message };
   reportError(error, { area: "action" });
-  return { error: error instanceof Error ? error.message : "تعذّر تنفيذ العملية" };
+  return { error: error instanceof Error ? error.message : (await messages()).failed };
 }
 
 function paidPlan(value: string): Exclude<Plan, "free"> | null {
@@ -49,12 +51,12 @@ export async function setAccountStatusAction(_prev: ActionState, fd: FormData): 
     const status = str(fd, "status") === "suspended" ? "suspended" : "active";
     const reason = str(fd, "reason");
 
-    if (userId === actor.id) return { error: "لا يمكنك تغيير حالة حسابك الخاص" };
+    if (userId === actor.id) return { error: (await messages()).cannotChangeOwnStatus };
 
     const target = await getCustomer(userId);
-    if (!target) return { error: "الحساب غير موجود" };
+    if (!target) return { error: (await messages()).accountMissing };
     if (target.role !== "client" && actor.role !== "owner") {
-      return { error: "لا يمكنك تعديل حساب موظف" };
+      return { error: (await messages()).cannotEditStaff };
     }
 
     await run("UPDATE users SET status = ?, updated_at = ? WHERE id = ?", status, now(), userId);
@@ -72,9 +74,10 @@ export async function setAccountStatusAction(_prev: ActionState, fd: FormData): 
     });
 
     refreshCustomer(userId);
-    return { ok: status === "suspended" ? "تم إيقاف الحساب" : "تم تفعيل الحساب" };
+    const m = await messages();
+    return { ok: status === "suspended" ? m.accountSuspended : m.accountActivated };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -82,12 +85,12 @@ export async function deleteCustomerAction(_prev: ActionState, fd: FormData): Pr
   try {
     const actor = await requirePermission("customers.delete");
     const userId = str(fd, "userId");
-    if (userId === actor.id) return { error: "لا يمكنك حذف حسابك الخاص" };
+    if (userId === actor.id) return { error: (await messages()).cannotDeleteSelf };
 
     const target = await getCustomer(userId);
-    if (!target) return { error: "الحساب غير موجود" };
+    if (!target) return { error: (await messages()).accountMissing };
     if (str(fd, "confirm") !== target.email) {
-      return { error: "اكتب بريد العميل بالضبط لتأكيد الحذف" };
+      return { error: (await messages()).typeEmailToConfirm };
     }
 
     const portfolio = await portfolioOf(userId);
@@ -106,9 +109,9 @@ export async function deleteCustomerAction(_prev: ActionState, fd: FormData): Pr
 
     revalidatePath("/console/customers");
     revalidatePath("/console");
-    return { ok: `تم حذف حساب ${target.email} نهائيًا` };
+    return { ok: fill((await messages()).accountDeleted, { email: target.email }) };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -122,9 +125,9 @@ export async function grantSubscriptionAction(_prev: ActionState, fd: FormData):
     const months = Math.min(60, Math.max(1, Number(str(fd, "months")) || 1));
     const comped = str(fd, "comped") === "1";
 
-    if (!plan) return { error: "باقة غير معروفة" };
+    if (!plan) return { error: (await messages()).unknownPlan };
     const target = await getCustomer(userId);
-    if (!target) return { error: "الحساب غير موجود" };
+    if (!target) return { error: (await messages()).accountMissing };
 
     const before = await latestSubscription(userId);
     await recordSubscription({
@@ -149,9 +152,16 @@ export async function grantSubscriptionAction(_prev: ActionState, fd: FormData):
     });
 
     refreshCustomer(userId);
-    return { ok: `تم تفعيل الباقة ${plan === "monthly" ? "الشهرية" : "السنوية"} لمدة ${months} ${plan === "yearly" ? "سنة" : "شهرًا"}` };
+    const m = await messages();
+    return {
+      ok: fill(m.planGranted, {
+        plan: plan === "monthly" ? m.planMonthlyName : m.planYearlyName,
+        months,
+        unit: plan === "yearly" ? m.unitYears : m.unitMonths,
+      }),
+    };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -162,7 +172,7 @@ export async function extendSubscriptionAction(_prev: ActionState, fd: FormData)
     const months = Math.min(60, Math.max(1, Number(str(fd, "months")) || 1));
 
     const subscription = await latestSubscription(userId);
-    if (!subscription) return { error: "لا يوجد اشتراك لتمديده" };
+    if (!subscription) return { error: (await messages()).noSubscriptionToExtend };
 
     const target = await getCustomer(userId);
     const from = Math.max(subscription.current_period_end ?? now(), now());
@@ -184,13 +194,13 @@ export async function extendSubscriptionAction(_prev: ActionState, fd: FormData)
       targetLabel: target?.email ?? userId,
       before: { current_period_end: subscription.current_period_end },
       after: { current_period_end: extended },
-      detail: `+${months} شهر`,
+      detail: fill((await messages()).extendDetail, { months }),
     });
 
     refreshCustomer(userId);
-    return { ok: `تم التمديد ${months} شهرًا` };
+    return { ok: fill((await messages()).extended, { months }) };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -201,7 +211,7 @@ export async function endSubscriptionAction(_prev: ActionState, fd: FormData): P
     const immediately = str(fd, "immediately") === "1";
 
     const before = await latestSubscription(userId);
-    if (!before) return { error: "لا يوجد اشتراك" };
+    if (!before) return { error: (await messages()).noSubscription };
 
     await cancelSubscription(userId, immediately);
     const target = await getCustomer(userId);
@@ -218,9 +228,10 @@ export async function endSubscriptionAction(_prev: ActionState, fd: FormData): P
     });
 
     refreshCustomer(userId);
-    return { ok: immediately ? "تم إنهاء الاشتراك" : "سيتوقف التجديد في نهاية الفترة" };
+    const m = await messages();
+    return { ok: immediately ? m.subscriptionEnded : m.renewalStopsAtPeriodEnd };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -230,8 +241,8 @@ export async function reactivateSubscriptionAction(_prev: ActionState, fd: FormD
     const userId = str(fd, "userId");
 
     const subscription = await latestSubscription(userId);
-    if (!subscription) return { error: "لا يوجد اشتراك" };
-    if (await activeSubscription(userId)) return { error: "الاشتراك نشط بالفعل" };
+    if (!subscription) return { error: (await messages()).noSubscription };
+    if (await activeSubscription(userId)) return { error: (await messages()).alreadyActive };
 
     const end = Math.max(subscription.current_period_end ?? 0, await periodEnd(subscription.plan));
     await setSubscriptionStatus(subscription.id, "active");
@@ -255,9 +266,9 @@ export async function reactivateSubscriptionAction(_prev: ActionState, fd: FormD
     });
 
     refreshCustomer(userId);
-    return { ok: "تمت إعادة تفعيل الاشتراك" };
+    return { ok: (await messages()).subscriptionRestored };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -271,11 +282,11 @@ export async function createStaffAction(_prev: ActionState, fd: FormData): Promi
     const name = str(fd, "name");
     const role = str(fd, "role") as Role;
 
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: "البريد الإلكتروني غير صالح" };
-    if (password.length < 12) return { error: "كلمة مرور الموظفين يجب أن تكون 12 حرفًا على الأقل" };
-    if (!name) return { error: "الاسم مطلوب" };
-    if (role !== "owner" && role !== "support") return { error: "دور غير معروف" };
-    if (await findUserByEmail(email)) return { error: "هذا البريد مسجّل مسبقًا" };
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: (await messages()).badEmail };
+    if (password.length < 12) return { error: (await messages()).staffPasswordShort };
+    if (!name) return { error: (await messages()).nameRequired };
+    if (role !== "owner" && role !== "support") return { error: (await messages()).unknownRole };
+    if (await findUserByEmail(email)) return { error: (await messages()).emailTaken };
 
     const created = await createUser({ email, password, displayName: name, role });
 
@@ -289,9 +300,15 @@ export async function createStaffAction(_prev: ActionState, fd: FormData): Promi
     });
 
     revalidatePath("/console/settings");
-    return { ok: `تم إنشاء حساب ${role === "owner" ? "مالك" : "دعم"} لـ ${email}` };
+    const m = await messages();
+    return {
+      ok: fill(m.staffCreated, {
+        role: role === "owner" ? m.roleOwnerShort : m.roleSupportShort,
+        email,
+      }),
+    };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -301,16 +318,16 @@ export async function setStaffRoleAction(_prev: ActionState, fd: FormData): Prom
     const userId = str(fd, "userId");
     const role = str(fd, "role") as Role;
 
-    if (userId === actor.id) return { error: "لا يمكنك تغيير دورك الخاص" };
-    if (!["owner", "support", "client"].includes(role)) return { error: "دور غير معروف" };
+    if (userId === actor.id) return { error: (await messages()).cannotChangeOwnRole };
+    if (!["owner", "support", "client"].includes(role)) return { error: (await messages()).unknownRole };
 
     const target = await getCustomer(userId);
-    if (!target) return { error: "الحساب غير موجود" };
+    if (!target) return { error: (await messages()).accountMissing };
 
     // The platform must never end up with nobody who can administer it.
     if (target.role === "owner" && role !== "owner") {
       const owners = await ownerCount();
-      if (owners <= 1) return { error: "لا يمكن إزالة آخر مالك للمنصة" };
+      if (owners <= 1) return { error: (await messages()).lastOwner };
     }
 
     await run("UPDATE users SET role = ?, updated_at = ? WHERE id = ?", role, now(), userId);
@@ -327,9 +344,9 @@ export async function setStaffRoleAction(_prev: ActionState, fd: FormData): Prom
     });
 
     revalidatePath("/console/settings");
-    return { ok: "تم تحديث الدور" };
+    return { ok: (await messages()).roleUpdated };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -338,12 +355,12 @@ export async function resetCustomerPasswordAction(_prev: ActionState, fd: FormDa
     const actor = await requirePermission("customers.suspend");
     const userId = str(fd, "userId");
     const password = String(fd.get("password") ?? "");
-    if (password.length < 8) return { error: "كلمة المرور يجب أن تكون 8 أحرف على الأقل" };
+    if (password.length < 8) return { error: (await messages()).passwordShort };
 
     const target = await getCustomer(userId);
-    if (!target) return { error: "الحساب غير موجود" };
+    if (!target) return { error: (await messages()).accountMissing };
     if (target.role !== "client" && actor.role !== "owner") {
-      return { error: "لا يمكنك تعديل حساب موظف" };
+      return { error: (await messages()).cannotEditStaff };
     }
 
     await run(
@@ -360,13 +377,13 @@ export async function resetCustomerPasswordAction(_prev: ActionState, fd: FormDa
       targetType: "user",
       targetId: userId,
       targetLabel: target.email,
-      detail: "كل الجلسات النشطة أُنهيت",
+      detail: (await messages()).allSessionsEnded,
     });
 
     refreshCustomer(userId);
-    return { ok: "تم تعيين كلمة مرور جديدة وإنهاء جلسات العميل" };
+    return { ok: (await messages()).customerPasswordSet };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 

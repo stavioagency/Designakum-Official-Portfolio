@@ -298,3 +298,50 @@ describe("the console speaks both languages", () => {
     assert.ok(page.body.includes("English"), "and it should offer English by name");
   });
 });
+
+describe("what actions say back", () => {
+  /**
+   * Server actions used to answer in Arabic regardless. Nothing in a rendered
+   * page shows it — the message only appears after someone saves something —
+   * so this checks the dictionary itself, which is where the sentences now live.
+   */
+  test("every action message exists in both languages", async () => {
+    const { dict } = await import("../src/lib/i18n.ts");
+    const ar = dict("ar").messages;
+    const en = dict("en").messages;
+
+    assert.deepEqual(Object.keys(ar), Object.keys(en), "the two message sets must match");
+    assert.ok(Object.keys(ar).length > 50, "there should be a real number of them");
+
+    for (const [key, value] of Object.entries(en)) {
+      assert.ok(
+        !/[؀-ۿ]/.test(value),
+        `the English message "${key}" still contains Arabic: ${value}`,
+      );
+    }
+    for (const [key, value] of Object.entries(ar)) {
+      assert.ok(value.trim().length > 0, `the Arabic message "${key}" is empty`);
+    }
+  });
+
+  test("no action returns a hardcoded sentence any more", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const dir = path.join(import.meta.dirname, "..", "src", "app", "actions");
+
+    for (const file of fs.readdirSync(dir)) {
+      if (!file.endsWith(".ts")) continue;
+      const source = fs.readFileSync(path.join(dir, file), "utf8");
+      const arabic = source
+        .split("\n")
+        .map((line, index) => [index + 1, line])
+        .filter(([, line]) => /[؀-ۿ]/.test(line));
+
+      assert.deepEqual(
+        arabic,
+        [],
+        `${file} still hardcodes Arabic:\n${arabic.map(([n, l]) => `  ${n}: ${l.trim()}`).join("\n")}`,
+      );
+    }
+  });
+});

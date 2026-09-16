@@ -50,3 +50,15 @@ const GATED = ["/", "/pricing", "/signup", "/login", "/forgot"];
 export function gateApplies(pathname: string): boolean {
   return GATED.includes(pathname) || pathname.startsWith("/legal");
 }
+
+/**
+ * Action messages in the caller's language.
+ *
+ * A server action always runs inside the request that triggered it, so unlike a
+ * webhook it can simply read the cookie — no need to hand keys back to the
+ * component and translate there.
+ */
+export async function messages() {
+  const { dict } = await import("./i18n");
+  return dict(await currentLocale()).messages;
+}

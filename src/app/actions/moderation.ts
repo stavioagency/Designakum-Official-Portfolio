@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { messages } from "@/lib/locale";
+import { dict, fill } from "@/lib/i18n";
 import { audit } from "@/lib/audit";
 import { currentUser, revokeSessionsFor } from "@/lib/auth";
 import { getCustomer } from "@/lib/customers";
@@ -26,11 +28,11 @@ import { reportError } from "@/lib/observability";
 
 const str = (fd: FormData, key: string) => String(fd.get(key) ?? "").trim();
 
-function fail(error: unknown): ActionState {
+async function fail(error: unknown): Promise<ActionState> {
   // A refused permission is an expected outcome, not an incident.
   if (error instanceof PermissionError) return { error: error.message };
   reportError(error, { area: "action" });
-  return { error: error instanceof Error ? error.message : "تعذّر تنفيذ العملية" };
+  return { error: error instanceof Error ? error.message : (await messages()).failed };
 }
 
 function refresh(reportId?: string) {
@@ -99,7 +101,7 @@ export async function submitReportAction(_prev: ActionState, fd: FormData): Prom
     refresh();
     return { ok: "sent" };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -112,7 +114,7 @@ export async function assignReportAction(_prev: ActionState, fd: FormData): Prom
     const assigneeId = str(fd, "assigneeId") || null;
 
     const report = await getReport(reportId);
-    if (!report) return { error: "البلاغ غير موجود" };
+    if (!report) return { error: (await messages()).reportMissing };
 
     await assignReport(reportId, assigneeId);
     await audit({
@@ -126,9 +128,10 @@ export async function assignReportAction(_prev: ActionState, fd: FormData): Prom
     });
 
     refresh(reportId);
-    return { ok: assigneeId ? "تم إسناد البلاغ" : "تم إلغاء الإسناد" };
+    const m = await messages();
+    return { ok: assigneeId ? m.reportAssigned : m.reportUnassigned };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -137,7 +140,7 @@ export async function addReportNoteAction(_prev: ActionState, fd: FormData): Pro
     const actor = await requirePermission("moderation.review");
     const reportId = str(fd, "reportId");
     const body = str(fd, "body");
-    if (body.length < 2) return { error: "الملاحظة فارغة" };
+    if (body.length < 2) return { error: (await messages()).emptyNote };
 
     await addReportNote(reportId, actor, body);
     await audit({
@@ -149,9 +152,9 @@ export async function addReportNoteAction(_prev: ActionState, fd: FormData): Pro
     });
 
     refresh(reportId);
-    return { ok: "تمت إضافة الملاحظة" };
+    return { ok: (await messages()).noteAdded };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -161,11 +164,11 @@ export async function setReportStatusAction(_prev: ActionState, fd: FormData): P
     const reportId = str(fd, "reportId");
     const status = str(fd, "status") as ReportStatus;
     if (!["pending", "reviewing", "resolved", "dismissed"].includes(status)) {
-      return { error: "حالة غير معروفة" };
+      return { error: (await messages()).unknownStatus };
     }
 
     const report = await getReport(reportId);
-    if (!report) return { error: "البلاغ غير موجود" };
+    if (!report) return { error: (await messages()).reportMissing };
 
     await setReportStatus(reportId, status, str(fd, "resolution"));
     await audit({
@@ -180,9 +183,9 @@ export async function setReportStatusAction(_prev: ActionState, fd: FormData): P
     });
 
     refresh(reportId);
-    return { ok: "تم تحديث حالة البلاغ" };
+    return { ok: (await messages()).reportStatusUpdated };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -194,18 +197,23 @@ export async function warnOwnerAction(_prev: ActionState, fd: FormData): Promise
     const actor = await requirePermission("moderation.enforce");
     const reportId = str(fd, "reportId");
     const message = str(fd, "message");
-    if (message.length < 10) return { error: "اكتب نص التحذير" };
+    if (message.length < 10) return { error: (await messages()).writeWarning };
 
     const report = await getReport(reportId);
-    if (!report) return { error: "البلاغ غير موجود" };
+    if (!report) return { error: (await messages()).reportMissing };
 
     const owner = await getCustomer(report.owner_id);
-    if (!owner) return { error: "صاحب المعرض غير موجود" };
+    if (!owner) return { error: (await messages()).portfolioOwnerMissing };
+
+    // The ticket is read by the customer, not by the staff member filing it, so
+    // its subject is written in the customer's language.
+    const warnCopy = dict(owner.locale === "en" ? "en" : "ar").messages;
 
     const { createTicket } = await import("@/lib/support");
     const ticket = await createTicket({
       user: owner,
-      subject: str(fd, "removal") === "1" ? "طلب تعديل محتوى مخالف" : "تنبيه بخصوص محتوى معرضك",
+      subject:
+        str(fd, "removal") === "1" ? warnCopy.removalRequestSubject : warnCopy.warningSubject,
       category: "content",
       priority: "high",
       body: message,
@@ -221,12 +229,12 @@ export async function warnOwnerAction(_prev: ActionState, fd: FormData): Promise
       detail: message.slice(0, 200),
     });
 
-    await addReportNote(reportId, actor, `أُرسل تحذير للعميل (تذكرة ${ticket.id}).`);
+    await addReportNote(reportId, actor, fill((await messages()).warningSentDetail, { id: ticket.id }));
     refresh(reportId);
     revalidatePath("/console/support");
-    return { ok: "تم إرسال التحذير للعميل كتذكرة دعم" };
+    return { ok: (await messages()).warningSent };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -237,10 +245,10 @@ export async function suspendPortfolioAction(_prev: ActionState, fd: FormData): 
     const reason = str(fd, "reason");
     const days = Number(str(fd, "days")) || 0;
 
-    if (reason.length < 5) return { error: "اكتب سبب الإيقاف" };
+    if (reason.length < 5) return { error: (await messages()).writeSuspendReason };
 
     const portfolio = await getPortfolioById(portfolioId);
-    if (!portfolio) return { error: "المعرض غير موجود" };
+    if (!portfolio) return { error: (await messages()).portfolioMissing };
 
     const until = days > 0 ? now() + days * 86_400_000 : null;
     await suspendPortfolio(portfolioId, reason, until);
@@ -259,9 +267,12 @@ export async function suspendPortfolioAction(_prev: ActionState, fd: FormData): 
     refresh(str(fd, "reportId") || undefined);
     revalidatePath(`/p/${portfolio.slug}`);
     revalidatePath(`/console/customers/${portfolio.user_id}`);
-    return { ok: until ? `تم إيقاف المعرض ${days} يومًا` : "تم إيقاف المعرض" };
+    const m = await messages();
+    return {
+      ok: until ? fill(m.portfolioSuspendedDays, { days }) : m.portfolioSuspended,
+    };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -271,7 +282,7 @@ export async function restorePortfolioAction(_prev: ActionState, fd: FormData): 
     const portfolioId = str(fd, "portfolioId");
 
     const portfolio = await getPortfolioById(portfolioId);
-    if (!portfolio) return { error: "المعرض غير موجود" };
+    if (!portfolio) return { error: (await messages()).portfolioMissing };
 
     await restorePortfolio(portfolioId);
     await audit({
@@ -287,9 +298,9 @@ export async function restorePortfolioAction(_prev: ActionState, fd: FormData): 
     refresh(str(fd, "reportId") || undefined);
     revalidatePath(`/p/${portfolio.slug}`);
     revalidatePath(`/console/customers/${portfolio.user_id}`);
-    return { ok: "تمت إعادة نشر المعرض" };
+    return { ok: (await messages()).portfolioRestored };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -298,11 +309,11 @@ export async function banAccountAction(_prev: ActionState, fd: FormData): Promis
     const actor = await requirePermission("moderation.enforce");
     const userId = str(fd, "userId");
     const reason = str(fd, "reason");
-    if (reason.length < 5) return { error: "اكتب سبب الإيقاف الدائم" };
+    if (reason.length < 5) return { error: (await messages()).writePermanentReason };
 
     const target: User | undefined = await getCustomer(userId);
-    if (!target) return { error: "الحساب غير موجود" };
-    if (target.role !== "client") return { error: "لا يمكن إيقاف حساب موظف من هنا" };
+    if (!target) return { error: (await messages()).accountMissing };
+    if (target.role !== "client") return { error: (await messages()).cannotBanStaff };
 
     await run("UPDATE users SET status = 'suspended', updated_at = ? WHERE id = ?", now(), userId);
     await revokeSessionsFor(userId);
@@ -329,8 +340,8 @@ export async function banAccountAction(_prev: ActionState, fd: FormData): Promis
 
     refresh(str(fd, "reportId") || undefined);
     revalidatePath(`/console/customers/${userId}`);
-    return { ok: "تم إيقاف الحساب والمعرض نهائيًا" };
+    return { ok: (await messages()).accountBanned };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }

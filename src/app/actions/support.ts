@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { messages } from "@/lib/locale";
+import { fill } from "@/lib/i18n";
 import { audit } from "@/lib/audit";
 import { requireUser } from "@/lib/auth";
 import { getCustomer } from "@/lib/customers";
@@ -21,11 +23,11 @@ import { reportError } from "@/lib/observability";
 
 const str = (fd: FormData, key: string) => String(fd.get(key) ?? "").trim();
 
-function fail(error: unknown): ActionState {
+async function fail(error: unknown): Promise<ActionState> {
   // A refused permission is an expected outcome, not an incident.
   if (error instanceof PermissionError) return { error: error.message };
   reportError(error, { area: "action" });
-  return { error: error instanceof Error ? error.message : "تعذّر تنفيذ العملية" };
+  return { error: error instanceof Error ? error.message : (await messages()).failed };
 }
 
 function refresh(ticketId?: string) {
@@ -42,19 +44,19 @@ function refresh(ticketId?: string) {
 
 export async function createTicketAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   try {
-    if (!(await readSettings())["features.support"]) return { error: "الدعم الفني متوقف حاليًا" };
+    if (!(await readSettings())["features.support"]) return { error: (await messages()).supportClosed };
 
     const user = await requireUser();
     const fingerprint = await callerFingerprint();
     const limit = await rateLimit(`ticket:${user.id}:${fingerprint}`, 5, 60 * 60 * 1000);
     if (!limit.ok) {
-      return { error: "أرسلت عدة تذاكر خلال وقت قصير. انتظر قليلاً قبل إرسال تذكرة جديدة." };
+      return { error: (await messages()).tooManyTickets };
     }
 
     const subject = str(fd, "subject");
     const body = str(fd, "body");
-    if (subject.length < 4) return { error: "اكتب عنوانًا واضحًا للمشكلة" };
-    if (body.length < 10) return { error: "اشرح المشكلة بتفصيل أكبر" };
+    if (subject.length < 4) return { error: (await messages()).ticketSubjectShort };
+    if (body.length < 10) return { error: (await messages()).ticketBodyShort };
 
     const ticket = await createTicket({
       user,
@@ -65,9 +67,9 @@ export async function createTicketAction(_prev: ActionState, fd: FormData): Prom
     });
 
     refresh(ticket.id);
-    return { ok: "تم إرسال تذكرتك، وسنرد عليك قريبًا" };
+    return { ok: (await messages()).ticketSent };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -76,11 +78,11 @@ export async function replyAsCustomerAction(_prev: ActionState, fd: FormData): P
     const user = await requireUser();
     const ticketId = str(fd, "ticketId");
     const body = str(fd, "body");
-    if (body.length < 2) return { error: "الرسالة فارغة" };
+    if (body.length < 2) return { error: (await messages()).emptyMessage };
 
     const ticket = await getTicket(ticketId);
     // Tenant isolation: a customer may only ever write to their own ticket.
-    if (!ticket || ticket.user_id !== user.id) return { error: "التذكرة غير موجودة" };
+    if (!ticket || ticket.user_id !== user.id) return { error: (await messages()).ticketMissing };
 
     await addTicketMessage(ticketId, user, body.slice(0, 5000), false, "customer");
     if (ticket.status === "waiting_customer" || ticket.status === "resolved") {
@@ -88,9 +90,9 @@ export async function replyAsCustomerAction(_prev: ActionState, fd: FormData): P
     }
 
     refresh(ticketId);
-    return { ok: "تم إرسال ردك" };
+    return { ok: (await messages()).replySent };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -99,13 +101,13 @@ export async function closeOwnTicketAction(_prev: ActionState, fd: FormData): Pr
     const user = await requireUser();
     const ticketId = str(fd, "ticketId");
     const ticket = await getTicket(ticketId);
-    if (!ticket || ticket.user_id !== user.id) return { error: "التذكرة غير موجودة" };
+    if (!ticket || ticket.user_id !== user.id) return { error: (await messages()).ticketMissing };
 
     await setTicketField(ticketId, "status", "resolved");
     refresh(ticketId);
-    return { ok: "تم إغلاق التذكرة" };
+    return { ok: (await messages()).ticketClosed };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -117,10 +119,10 @@ export async function replyAsStaffAction(_prev: ActionState, fd: FormData): Prom
     const ticketId = str(fd, "ticketId");
     const body = str(fd, "body");
     const internal = str(fd, "internal") === "1";
-    if (body.length < 2) return { error: "الرسالة فارغة" };
+    if (body.length < 2) return { error: (await messages()).emptyMessage };
 
     const ticket = await getTicket(ticketId);
-    if (!ticket) return { error: "التذكرة غير موجودة" };
+    if (!ticket) return { error: (await messages()).ticketMissing };
 
     await addTicketMessage(ticketId, actor, body.slice(0, 5000), internal, "staff");
     if (!internal && ticket.status === "open") {
@@ -137,9 +139,10 @@ export async function replyAsStaffAction(_prev: ActionState, fd: FormData): Prom
     });
 
     refresh(ticketId);
-    return { ok: internal ? "تمت إضافة الملاحظة الداخلية" : "تم إرسال الرد" };
+    const m = await messages();
+    return { ok: internal ? m.internalNoteAdded : m.staffReplySent };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -148,22 +151,22 @@ export async function updateTicketAction(_prev: ActionState, fd: FormData): Prom
     const actor = await requirePermission("support.manage");
     const ticketId = str(fd, "ticketId");
     const ticket = await getTicket(ticketId);
-    if (!ticket) return { error: "التذكرة غير موجودة" };
+    if (!ticket) return { error: (await messages()).ticketMissing };
 
     const status = str(fd, "status");
     const priority = str(fd, "priority");
     const assigneeId = fd.get("assigneeId") === null ? null : str(fd, "assigneeId");
 
     if (status) {
-      if (!TICKET_STATUSES.includes(status as TicketStatus)) return { error: "حالة غير معروفة" };
+      if (!TICKET_STATUSES.includes(status as TicketStatus)) return { error: (await messages()).unknownStatus };
       await setTicketField(ticketId, "status", status);
     }
     if (priority) {
-      if (!TICKET_PRIORITIES.includes(priority as TicketPriority)) return { error: "أولوية غير معروفة" };
+      if (!TICKET_PRIORITIES.includes(priority as TicketPriority)) return { error: (await messages()).unknownPriority };
       await setTicketField(ticketId, "priority", priority);
     }
     if (fd.get("assigneeId") !== null) {
-      if (assigneeId && !await getCustomer(assigneeId)) return { error: "الموظف غير موجود" };
+      if (assigneeId && !await getCustomer(assigneeId)) return { error: (await messages()).staffMissing };
       await setTicketField(ticketId, "assignee_id", assigneeId || null);
     }
 
@@ -182,8 +185,8 @@ export async function updateTicketAction(_prev: ActionState, fd: FormData): Prom
     });
 
     refresh(ticketId);
-    return { ok: "تم تحديث التذكرة" };
+    return { ok: (await messages()).ticketUpdated };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }

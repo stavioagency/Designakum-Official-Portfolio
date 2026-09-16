@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { messages } from "@/lib/locale";
+import { fill } from "@/lib/i18n";
 import { audit } from "@/lib/audit";
 import { requireUser } from "@/lib/auth";
 import { activeSubscription } from "@/lib/billing";
@@ -19,11 +21,11 @@ import { reportError } from "@/lib/observability";
 
 const str = (fd: FormData, key: string) => String(fd.get(key) ?? "").trim();
 
-function fail(error: unknown): ActionState {
+async function fail(error: unknown): Promise<ActionState> {
   // A refused permission is an expected outcome, not an incident.
   if (error instanceof PermissionError) return { error: error.message };
   reportError(error, { area: "action" });
-  return { error: error instanceof Error ? error.message : "تعذّر تنفيذ العملية" };
+  return { error: error instanceof Error ? error.message : (await messages()).failed };
 }
 
 export async function createInvitationAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
@@ -31,18 +33,18 @@ export async function createInvitationAction(_prev: ActionState, fd: FormData): 
     const actor = await requirePermission("invitations.manage");
 
     const plan = str(fd, "plan") as Exclude<Plan, "free">;
-    if (plan !== "monthly" && plan !== "yearly") return { error: "باقة غير معروفة" };
+    if (plan !== "monthly" && plan !== "yearly") return { error: (await messages()).unknownPlan };
 
     const months = Math.min(60, Math.max(1, Number(str(fd, "months")) || 1));
     const maxUses = Math.min(1000, Math.max(1, Number(str(fd, "maxUses")) || 1));
     const email = str(fd, "email").toLowerCase();
     if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      return { error: "البريد الإلكتروني غير صالح" };
+      return { error: (await messages()).badEmail };
     }
 
     const expiresRaw = str(fd, "expiresAt");
     const expiresAt = expiresRaw ? new Date(`${expiresRaw}T23:59:59`).getTime() : null;
-    if (expiresAt !== null && Number.isNaN(expiresAt)) return { error: "تاريخ الانتهاء غير صالح" };
+    if (expiresAt !== null && Number.isNaN(expiresAt)) return { error: (await messages()).badExpiry };
 
     const invitation = await createInvitation({
       plan,
@@ -65,9 +67,9 @@ export async function createInvitationAction(_prev: ActionState, fd: FormData): 
     });
 
     revalidatePath("/console/invitations");
-    return { ok: `تم إنشاء الدعوة ${invitation.code}` };
+    return { ok: fill((await messages()).invitationCreated, { code: invitation.code }) };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -87,9 +89,9 @@ export async function revokeInvitationAction(_prev: ActionState, fd: FormData): 
     });
 
     revalidatePath("/console/invitations");
-    return { ok: "تم إلغاء الدعوة" };
+    return { ok: (await messages()).invitationRevoked };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -104,13 +106,13 @@ export async function redeemInvitationAction(_prev: ActionState, fd: FormData): 
 
     const fingerprint = await callerFingerprint();
     const limit = await rateLimit(`redeem:${fingerprint}`, 10, 60 * 60 * 1000);
-    if (!limit.ok) return { error: "محاولات كثيرة. حاول لاحقًا." };
+    if (!limit.ok) return { error: (await messages()).tooManyAttempts };
 
     const code = str(fd, "code");
-    if (!code) return { error: "أدخل رمز الدعوة" };
+    if (!code) return { error: (await messages()).enterInviteCode };
 
     if (await activeSubscription(user.id)) {
-      return { error: "لديك اشتراك نشط بالفعل" };
+      return { error: (await messages()).alreadySubscribed };
     }
 
     const result = await checkInvitation(code, user.email);
@@ -129,10 +131,14 @@ export async function redeemInvitationAction(_prev: ActionState, fd: FormData): 
 
     revalidatePath("/dashboard/billing");
     revalidatePath("/console/invitations");
+    const m = await messages();
     return {
-      ok: `تم تفعيل اشتراكك لمدة ${result.invitation.months} ${result.invitation.plan === "yearly" ? "سنة" : "شهرًا"}`,
+      ok: fill(m.invitationRedeemed, {
+        months: result.invitation.months,
+        unit: result.invitation.plan === "yearly" ? m.unitYears : m.unitMonths,
+      }),
     };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }

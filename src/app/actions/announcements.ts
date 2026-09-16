@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { messages } from "@/lib/locale";
+import { fill } from "@/lib/i18n";
 import { audit } from "@/lib/audit";
 import { requireUser } from "@/lib/auth";
 import {
@@ -17,11 +19,11 @@ import { reportError } from "@/lib/observability";
 
 const str = (fd: FormData, key: string) => String(fd.get(key) ?? "").trim();
 
-function fail(error: unknown): ActionState {
+async function fail(error: unknown): Promise<ActionState> {
   // A refused permission is an expected outcome, not an incident.
   if (error instanceof PermissionError) return { error: error.message };
   reportError(error, { area: "action" });
-  return { error: error instanceof Error ? error.message : "تعذّر تنفيذ العملية" };
+  return { error: error instanceof Error ? error.message : (await messages()).failed };
 }
 
 const parseDate = (value: string, endOfDay = false) =>
@@ -36,11 +38,11 @@ export async function createAnnouncementAction(_prev: ActionState, fd: FormData)
   try {
     const actor = await requirePermission("announcements.manage");
     const title = str(fd, "title");
-    if (title.length < 3) return { error: "اكتب عنوان الإعلان" };
+    if (title.length < 3) return { error: (await messages()).writeAnnouncementTitle };
 
     const severity = str(fd, "severity") as AnnouncementSeverity;
     if (!["info", "success", "warning", "critical"].includes(severity)) {
-      return { error: "نوع غير معروف" };
+      return { error: (await messages()).unknownKind };
     }
 
     const announcement = await createAnnouncement({
@@ -64,9 +66,9 @@ export async function createAnnouncementAction(_prev: ActionState, fd: FormData)
     });
 
     refresh();
-    return { ok: "تم نشر الإعلان" };
+    return { ok: (await messages()).announcementPublished };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -75,7 +77,7 @@ export async function toggleAnnouncementAction(_prev: ActionState, fd: FormData)
     const actor = await requirePermission("announcements.manage");
     const id = str(fd, "announcementId");
     const announcement = await getAnnouncement(id);
-    if (!announcement) return { error: "الإعلان غير موجود" };
+    if (!announcement) return { error: (await messages()).announcementMissing };
 
     const active = announcement.active === 1 ? 0 : 1;
     await updateAnnouncement(id, { active });
@@ -91,9 +93,10 @@ export async function toggleAnnouncementAction(_prev: ActionState, fd: FormData)
     });
 
     refresh();
-    return { ok: active ? "تم تفعيل الإعلان" : "تم إيقاف الإعلان" };
+    const m = await messages();
+    return { ok: active ? m.announcementResumed : m.announcementPaused };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -102,7 +105,7 @@ export async function deleteAnnouncementAction(_prev: ActionState, fd: FormData)
     const actor = await requirePermission("announcements.manage");
     const id = str(fd, "announcementId");
     const announcement = await getAnnouncement(id);
-    if (!announcement) return { error: "الإعلان غير موجود" };
+    if (!announcement) return { error: (await messages()).announcementMissing };
 
     await deleteAnnouncement(id);
     await audit({
@@ -115,9 +118,9 @@ export async function deleteAnnouncementAction(_prev: ActionState, fd: FormData)
     });
 
     refresh();
-    return { ok: "تم حذف الإعلان" };
+    return { ok: (await messages()).announcementDeleted };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 

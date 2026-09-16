@@ -1,6 +1,8 @@
 "use server";
 
 import fs from "node:fs/promises";
+import { messages } from "@/lib/locale";
+import { fill } from "@/lib/i18n";
 import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { requireOwner } from "@/lib/auth";
@@ -30,9 +32,9 @@ const KNOWN = new Set<string>([
   "icon",
 ]);
 
-function fail(error: unknown): ActionState {
+async function fail(error: unknown): Promise<ActionState> {
   reportError(error, { area: "brand-assets" });
-  return { error: error instanceof Error ? error.message : "تعذّر رفع الملف" };
+  return { error: error instanceof Error ? error.message : (await messages()).uploadFailed };
 }
 
 export async function uploadBrandAssetAction(
@@ -43,14 +45,14 @@ export async function uploadBrandAssetAction(
     await requireOwner();
 
     const name = String(fd.get("name") ?? "");
-    if (!KNOWN.has(name)) return { error: "اسم ملف غير معروف" };
+    if (!KNOWN.has(name)) return { error: (await messages()).unknownFileName };
 
     const file = fd.get("file");
-    if (!(file instanceof File) || file.size === 0) return { error: "لم يتم اختيار ملف" };
-    if (file.size > MAX_BYTES) return { error: "حجم الملف يتجاوز 4 ميجابايت" };
+    if (!(file instanceof File) || file.size === 0) return { error: (await messages()).noFileChosen };
+    if (file.size > MAX_BYTES) return { error: (await messages()).fileTooLarge };
 
     const extension = EXTENSION_BY_TYPE[file.type];
-    if (!extension) return { error: "الصيغة غير مدعومة — استخدم SVG أو PNG أو WEBP" };
+    if (!extension) return { error: (await messages()).unsupportedFormat };
 
     await fs.mkdir(BRAND_DIR, { recursive: true });
 
@@ -66,9 +68,9 @@ export async function uploadBrandAssetAction(
     );
 
     revalidatePath("/", "layout");
-    return { ok: `تم رفع ${name}${extension}` };
+    return { ok: fill((await messages()).fileUploaded, { file: `${name}${extension}` }) };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 
@@ -80,16 +82,16 @@ export async function deleteBrandAssetAction(
     await requireOwner();
 
     const name = String(fd.get("name") ?? "");
-    if (!KNOWN.has(name)) return { error: "اسم ملف غير معروف" };
+    if (!KNOWN.has(name)) return { error: (await messages()).unknownFileName };
 
     for (const ext of Object.values(EXTENSION_BY_TYPE)) {
       await fs.rm(path.join(BRAND_DIR, name + ext), { force: true });
     }
 
     revalidatePath("/", "layout");
-    return { ok: `تم حذف ${name}` };
+    return { ok: fill((await messages()).fileDeleted, { file: name }) };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
 

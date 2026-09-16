@@ -1,6 +1,8 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { messages } from "@/lib/locale";
+import { fill } from "@/lib/i18n";
 import { redirect } from "next/navigation";
 import {
   createSession,
@@ -194,11 +196,11 @@ export async function changePasswordAction(
     const hasPassword = user.password_hash !== "";
 
     if (hasPassword && !verifyPassword(current, user.password_hash)) {
-      return { error: "كلمة المرور الحالية غير صحيحة" };
+      return { error: (await messages()).wrongCurrentPassword };
     }
-    if (next.length < 8) return { error: "كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل" };
-    if (next !== confirm) return { error: "كلمتا المرور غير متطابقتين" };
-    if (hasPassword && next === current) return { error: "اختر كلمة مرور مختلفة عن الحالية" };
+    if (next.length < 8) return { error: (await messages()).weakPassword };
+    if (next !== confirm) return { error: (await messages()).passwordMismatch };
+    if (hasPassword && next === current) return { error: (await messages()).samePassword };
 
     await run(
       "UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?",
@@ -217,16 +219,13 @@ export async function changePasswordAction(
       targetType: "user",
       targetId: user.id,
       targetLabel: user.email,
-      detail: "بواسطة صاحب الحساب — أُنهيت بقية الجلسات",
+      detail: (await messages()).sessionsEndedByOwner,
     });
 
-    return {
-      ok: hasPassword
-        ? "تم تغيير كلمة المرور وإنهاء الجلسات الأخرى"
-        : "تم تعيين كلمة المرور، ويمكنك الآن الدخول بالبريد وكلمة المرور",
-    };
+    const m = await messages();
+    return { ok: hasPassword ? m.passwordChanged : m.passwordSet };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "تعذّر تغيير كلمة المرور" };
+    return { error: error instanceof Error ? error.message : (await messages()).passwordChangeFailed };
   }
 }
 
@@ -318,7 +317,7 @@ export async function resetPasswordAction(
     targetType: "user",
     targetId: user.id,
     targetLabel: user.email,
-    detail: "عبر رابط استعادة — أُنهيت كل الجلسات",
+    detail: (await messages()).sessionsEndedByReset,
   });
 
   await createSession(user.id);

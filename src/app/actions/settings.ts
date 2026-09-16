@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { messages } from "@/lib/locale";
+import { fill } from "@/lib/i18n";
 import { audit } from "@/lib/audit";
 import { PermissionError, requirePermission } from "@/lib/permissions";
 import {
@@ -13,10 +15,10 @@ import {
 import type { ActionState } from "./console";
 import { reportError } from "@/lib/observability";
 
-function fail(error: unknown): ActionState {
+async function fail(error: unknown): Promise<ActionState> {
   if (error instanceof PermissionError) return { error: error.message };
   reportError(error, { area: "settings" });
-  return { error: error instanceof Error ? error.message : "تعذّر حفظ الإعدادات" };
+  return { error: error instanceof Error ? error.message : (await messages()).settingsSaveFailed };
 }
 
 const KEYS = Object.keys(SETTING_DEFAULTS) as SettingKey[];
@@ -34,7 +36,7 @@ export async function saveSettingsAction(_prev: ActionState, fd: FormData): Prom
       .map((k) => k.trim())
       .filter((k): k is SettingKey => KEYS.includes(k as SettingKey));
 
-    if (!group.length) return { error: "لا توجد إعدادات لحفظها" };
+    if (!group.length) return { error: (await messages()).noSettings };
 
     const before = await readSettings();
     const changed: Record<string, unknown> = {};
@@ -51,7 +53,7 @@ export async function saveSettingsAction(_prev: ActionState, fd: FormData): Prom
       }
     }
 
-    if (!Object.keys(changed).length) return { ok: "لا تغييرات" };
+    if (!Object.keys(changed).length) return { ok: (await messages()).noChanges };
 
     await audit({
       actor,
@@ -64,8 +66,8 @@ export async function saveSettingsAction(_prev: ActionState, fd: FormData): Prom
 
     // Prices, limits and feature flags are read on nearly every page.
     revalidatePath("/", "layout");
-    return { ok: "تم حفظ الإعدادات" };
+    return { ok: (await messages()).settingsSaved };
   } catch (error) {
-    return fail(error);
+    return await fail(error);
   }
 }
