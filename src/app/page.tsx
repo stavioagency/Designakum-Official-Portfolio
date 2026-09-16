@@ -10,9 +10,12 @@ import { readSettings } from "@/lib/settings";
 import { MaintenanceNotice } from "@/components/maintenance-notice";
 import { BRAND } from "@/lib/brand";
 import { LogoLockup, Wordmark } from "@/components/brand/logo";
+import { PatternBand } from "@/components/brand/ornament";
 import { LocaleSwitch } from "@/components/locale-switch";
 import { Pricing } from "@/components/pricing";
 import { Briefcase, Globe, Eye, Image as ImageIcon, Pencil, Shield, Sparkle } from "@/components/icons";
+
+const STEP_ICONS = [Sparkle, ImageIcon, Globe];
 
 export const dynamic = "force-dynamic";
 
@@ -81,6 +84,42 @@ export default async function LandingPage() {
           </div>
         </section>
 
+        {/* Three steps, told with numerals and icons rather than a paragraph. The
+            hairline runs behind the badges on wide screens so the row reads as a
+            single path instead of three unrelated cards. */}
+        <section className="relative mt-20">
+          <h2 className="text-center text-2xl font-bold sm:text-3xl">{d.landing.stepsTitle}</h2>
+          <ol className="relative mt-9 grid gap-6 sm:grid-cols-3">
+            <span
+              aria-hidden
+              className="absolute inset-x-[16%] top-8 hidden h-px sm:block"
+              style={{ background: "linear-gradient(90deg, transparent, var(--hairline) 15%, var(--hairline) 85%, transparent)" }}
+            />
+            {d.steps.map((step, i) => {
+              const Icon = STEP_ICONS[i] ?? Sparkle;
+              return (
+                <li key={step.title} className="rise relative text-center" style={{ animationDelay: `${i * 90}ms` }}>
+                  <span
+                    className="relative mx-auto grid h-16 w-16 place-items-center rounded-full border"
+                    style={{
+                      borderColor: "var(--hairline)",
+                      background: "var(--color-ink-850)",
+                      color: "var(--accent-ring)",
+                    }}
+                  >
+                    <Icon className="h-6 w-6" />
+                    <span className="accent-grad tnum absolute -bottom-1 grid h-6 w-6 place-items-center rounded-full text-[12px] font-bold text-white">
+                      {i + 1}
+                    </span>
+                  </span>
+                  <h3 className="mt-5 text-[15.5px] font-semibold">{step.title}</h3>
+                  <p className="mt-1 text-[13px] text-mist-400">{step.body}</p>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+
         <section className="mt-20">
           <h2 className="text-center text-2xl font-bold sm:text-3xl">{d.landing.featuresTitle}</h2>
           <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -102,21 +141,22 @@ export default async function LandingPage() {
                     <Icon className="h-[22px] w-[22px]" />
                   </span>
                   <h3 className="mt-4 text-[16px] font-semibold">{feature.title}</h3>
-                  <p className="mt-2 text-[13.5px] leading-[1.9] text-mist-400">{feature.body}</p>
+                  <p className="mt-1.5 text-[13px] text-mist-400">{feature.body}</p>
                 </article>
               );
             })}
           </div>
         </section>
 
-        <div className="mt-24">
+        <PatternBand className="mt-20" />
+
+        <div className="mt-20">
           <Pricing copy={copy} currentPlan={user ? (await entitlementsFor(user)).plan : undefined} />
         </div>
 
         {showcase.length > 0 && (
           <section className="mt-24">
             <h2 className="text-center text-2xl font-bold">{d.landing.showcaseTitle}</h2>
-            <p className="mt-2 text-center text-[13.5px] text-mist-400">{d.landing.showcaseSub}</p>
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {showcase.map((p) => (
                 <Link
@@ -146,21 +186,20 @@ export default async function LandingPage() {
 
         <section className="card mt-24 overflow-hidden p-8 text-center sm:p-12">
           <h2 className="text-2xl font-bold sm:text-3xl">{d.landing.finalTitle}</h2>
-          <p className="mx-auto mt-3 max-w-md text-[14.5px] leading-[1.9] text-mist-400">
-            {d.landing.finalSub}
-          </p>
           <Link href="/signup" className="btn btn-primary mt-7">{d.landing.finalCta}</Link>
         </section>
       </main>
 
-      <footer className="border-t border-white/8 py-9">
+      <PatternBand className="mt-20" opacity={0.12} />
+
+      <footer className="mt-9 border-t border-white/8 py-9">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-3 px-5 text-center">
           <Wordmark height={22} className="opacity-70" />
           <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12.5px] text-mist-500">
             <Link href="/pricing" className="transition hover:text-mist-300">{d.nav.pricing}</Link>
-            <Link href="/legal/terms" className="transition hover:text-mist-300">شروط الاستخدام</Link>
-            <Link href="/legal/privacy" className="transition hover:text-mist-300">سياسة الخصوصية</Link>
-            <Link href="/legal/rules" className="transition hover:text-mist-300">قواعد النشر</Link>
+            <Link href="/legal/terms" className="transition hover:text-mist-300">{d.footer.terms}</Link>
+            <Link href="/legal/privacy" className="transition hover:text-mist-300">{d.footer.privacy}</Link>
+            <Link href="/legal/rules" className="transition hover:text-mist-300">{d.footer.rules}</Link>
           </nav>
           <p className="text-[12.5px] text-mist-500">
             © {BRAND.nameEn} {new Date().getFullYear()} — {d.brandTagline}

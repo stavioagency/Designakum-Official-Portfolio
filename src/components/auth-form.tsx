@@ -83,10 +83,6 @@ export function AuthForm({
               <input id="name" name="name" className="field" placeholder={d.namePlaceholder} required />
             </div>
             <div>
-              <label className="label" htmlFor="title">{d.title}</label>
-              <input id="title" name="title" className="field" placeholder={d.titlePlaceholder} />
-            </div>
-            <div>
               <label className="label" htmlFor="invite">{d.invite}</label>
               <input
                 id="invite"
@@ -97,16 +93,9 @@ export function AuthForm({
                 required={inviteRequired}
                 placeholder="ABCDE-FGHIJ"
               />
-              <p className="mt-1.5 text-[11.5px] text-mist-500">{d.inviteHint}</p>
-            </div>
-
-            <div>
-              <label className="label" htmlFor="slug">{d.slug}</label>
-              <div className="flex items-center gap-2">
-                <span className="shrink-0 text-sm text-mist-500" dir="ltr">/p/</span>
-                <input id="slug" name="slug" className="field" placeholder="faisal" dir="ltr" />
-              </div>
-              <p className="mt-1.5 text-[11.5px] text-mist-500">{d.slugHint}</p>
+              {!inviteRequired && (
+                <p className="mt-1.5 text-[11.5px] text-mist-500">{d.inviteHint}</p>
+              )}
             </div>
           </>
         )}

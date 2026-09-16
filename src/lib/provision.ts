@@ -22,6 +22,8 @@ export async function provisionClient(input: {
   avatarUrl?: string;
   /** The language chosen at the gate. Decides the starter copy and their mail. */
   locale?: Locale;
+  /** Set by the sign-up routes: the customer picks their link on /welcome. */
+  chooseOwnLink?: boolean;
 }): Promise<{ user: User; slug: string }> {
   const locale = input.locale ?? DEFAULT_LOCALE;
   const user = await createUser({
@@ -31,6 +33,7 @@ export async function provisionClient(input: {
     googleId: input.googleId,
     avatarUrl: input.avatarUrl,
     locale,
+    chooseOwnLink: input.chooseOwnLink,
   });
 
   const portfolio = await createPortfolio({

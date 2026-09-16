@@ -5,19 +5,38 @@ import { headers } from "next/headers";
 import { currentLocale, gateApplies, hasChosenLocale, suggestedLocale } from "@/lib/locale";
 import { dict } from "@/lib/i18n";
 import { callerIsBot } from "@/lib/bots";
+import { requestOrigin } from "@/lib/origin";
 import { CookieNotice } from "@/components/cookie-notice";
 import { LanguageGate } from "@/components/language-gate";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const d = dict(await currentLocale());
+  const locale = await currentLocale();
+  const d = dict(locale);
+  const origin = await requestOrigin();
+  const title = `${BRAND.nameEn} — ${d.brandTagline}`;
+  // Absolute, because a social crawler resolves this without a page to sit on.
+  const card = brandAsset("og");
+
   return {
-    title: {
-      default: `${BRAND.nameEn} — ${d.brandTagline}`,
-      template: `%s · ${BRAND.nameEn}`,
-    },
+    metadataBase: new URL(origin),
+    title: { default: title, template: `%s · ${BRAND.nameEn}` },
     description: d.meta.description,
     applicationName: BRAND.nameEn,
+    openGraph: {
+      title,
+      description: d.meta.description,
+      siteName: BRAND.nameEn,
+      locale: locale === "ar" ? "ar_SA" : "en_US",
+      type: "website",
+      images: card ? [{ url: card, width: 1200, height: 630, alt: BRAND.nameEn }] : undefined,
+    },
+    twitter: {
+      card: card ? "summary_large_image" : "summary",
+      title,
+      description: d.meta.description,
+      images: card ? [card] : undefined,
+    },
   };
 }
 

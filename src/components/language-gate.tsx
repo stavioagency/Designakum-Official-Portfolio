@@ -1,5 +1,6 @@
 import { setLocaleAction } from "@/app/actions/auth";
-import { LogoLockup } from "@/components/brand/logo";
+import { Mark } from "@/components/brand/logo";
+import { PatternBand, WelcomeCalligraphy } from "@/components/brand/ornament";
 import type { Locale } from "@/lib/types";
 
 /**
@@ -23,19 +24,24 @@ export function LanguageGate({
 }) {
   return (
     <main className="grid min-h-dvh place-items-center px-5 py-10">
-      <div className="card w-full max-w-lg p-7 text-center sm:p-9">
+      <div className="card w-full max-w-lg overflow-hidden p-7 text-center sm:p-9">
+        {/* The calligraphy says "welcome" better than either sentence did, and it
+            says it before the visitor has told us which language to use. */}
         <div className="flex justify-center">
-          <LogoLockup />
+          <Mark size={44} />
         </div>
 
-        <p className="mt-6 text-[13px] leading-relaxed text-mist-400" dir="rtl" lang="ar">
-          اختر لغتك المفضّلة — سنستخدمها في كل شيء بعد ذلك.
-        </p>
-        <p className="mt-1 text-[13px] leading-relaxed text-mist-400" dir="ltr" lang="en">
-          Choose your language — we&apos;ll use it for everything from here.
+        <WelcomeCalligraphy className="mt-7" />
+
+        <PatternBand className="mt-7" />
+
+        <p className="mt-7 text-[12.5px] text-mist-400">
+          <span dir="rtl" lang="ar">اختر لغتك</span>
+          <span className="mx-2 text-mist-600">·</span>
+          <span dir="ltr" lang="en">Choose your language</span>
         </p>
 
-        <div className="mt-7 grid gap-3 sm:grid-cols-2">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <LanguageChoice
             locale="ar"
             label="العربية"
@@ -52,14 +58,6 @@ export function LanguageGate({
           />
         </div>
 
-        <p className="mt-6 text-[11.5px] leading-relaxed text-mist-600">
-          <span dir="rtl" lang="ar">
-            يمكنك تغييرها في أي وقت.
-          </span>{" "}
-          <span dir="ltr" lang="en">
-            You can change it any time.
-          </span>
-        </p>
       </div>
     </main>
   );

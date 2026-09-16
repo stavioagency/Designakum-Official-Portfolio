@@ -6,6 +6,7 @@ import { THEMES, type Portfolio, type ThemeKey } from "@/lib/types";
 import type { Dictionary } from "@/lib/i18n";
 import { Field, Status, Submit } from "./ui";
 import { ImageField } from "./image-field";
+import { Check } from "@/components/icons";
 import { useState } from "react";
 
 export function ProfileSection({
@@ -101,25 +102,26 @@ export function ProfileSection({
 
         <Field label={t.accent}>
           <div className="flex flex-wrap gap-2.5">
+            {/* The colour is the label. Seven names spelled out said nothing the
+                swatch does not, and only one of the two spellings was ever the
+                reader's language — the name now lives in the accessible label. */}
             {(Object.keys(THEMES) as ThemeKey[]).map((key) => {
-              const t = THEMES[key];
+              const swatch = THEMES[key];
               const active = theme === key;
               return (
                 <button
                   type="button"
                   key={key}
                   onClick={() => setTheme(key)}
-                  className={`flex items-center gap-2 rounded-2xl border px-3 py-2 text-[12.5px] font-medium transition ${
-                    active
-                      ? "border-white/35 bg-white/10 text-white"
-                      : "border-white/10 bg-white/[0.03] text-mist-400 hover:bg-white/[0.07]"
+                  aria-pressed={active}
+                  aria-label={copy.profile.themes[key]}
+                  title={copy.profile.themes[key]}
+                  className={`grid h-10 w-10 place-items-center rounded-full border-2 transition ${
+                    active ? "border-white/70 scale-105" : "border-white/10 hover:border-white/30"
                   }`}
+                  style={{ backgroundImage: `linear-gradient(135deg, ${swatch.from}, ${swatch.to})` }}
                 >
-                  <span
-                    className="h-4 w-4 rounded-full"
-                    style={{ backgroundImage: `linear-gradient(135deg, ${t.from}, ${t.to})` }}
-                  />
-                  {t.name}
+                  {active && <Check className="h-4 w-4 text-white drop-shadow" />}
                 </button>
               );
             })}

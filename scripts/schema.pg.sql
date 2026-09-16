@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
   avatar_url         TEXT NOT NULL DEFAULT '',
   auth_provider      TEXT NOT NULL DEFAULT 'password',  -- password | google
   locale             TEXT NOT NULL DEFAULT 'ar',
+  onboarded_at       BIGINT,                            -- NULL until they have chosen their own link
   created_at         BIGINT NOT NULL,
   updated_at         BIGINT NOT NULL
 );

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Riyal } from "./riyal";
 import { Check, Sparkle } from "./icons";
-import type { Dictionary } from "@/lib/i18n";
+import { fill, type Dictionary } from "@/lib/i18n";
 import type { Locale, Plan } from "@/lib/types";
 
 export interface PricingCopy {
@@ -157,10 +157,10 @@ export function Pricing({
             <span>{d.savePrefix}</span>
             <span className="tnum">{copy.saved}</span>
             <Riyal src={riyalSrc} locale={locale} size="0.95em" />
-            <span>{d.savePercent(copy.savedPercent)}</span>
+            <span>{fill(d.savePercent, { percent: copy.savedPercent })}</span>
           </p>
           <p className="mt-1.5 text-[12.5px] leading-relaxed text-mist-400">
-            {d.yearlyNote(copy.monthlyPrice, copy.twelveMonths)}
+            {fill(d.yearlyNote, { total: copy.twelveMonths })}
           </p>
           <p className="mt-2 flex items-center gap-1.5 text-[12.5px] text-mist-500">
             ≈ <span className="tnum font-semibold text-mist-300">{copy.yearlyPerMonth}</span>

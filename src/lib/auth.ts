@@ -187,13 +187,22 @@ export async function createUser(input: {
   avatarUrl?: string;
   provider?: "password" | "google";
   locale?: Locale;
+  /**
+   * Whether this account still has to choose its own portfolio link.
+   *
+   * Defaults to already-onboarded, so a seed, a test, or any future
+   * admin-created account is usable immediately. Only the two self-sign-up
+   * routes ask for it, and they say so explicitly — the alternative default
+   * silently traps every creation path that is not sign-up.
+   */
+  chooseOwnLink?: boolean;
 }): Promise<User>{
   const ts = now();
   const id = newId("usr");
   await run(
     `INSERT INTO users (id, email, password_hash, display_name, role, status, plan,
-       google_id, avatar_url, auth_provider, locale, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, 'active', 'free', ?, ?, ?, ?, ?, ?)`,
+       google_id, avatar_url, auth_provider, locale, onboarded_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, 'active', 'free', ?, ?, ?, ?, ?, ?, ?)`,
     id,
     input.email.trim().toLowerCase(),
     // A Google account has no password; the empty hash can never verify.
@@ -204,6 +213,7 @@ export async function createUser(input: {
     input.avatarUrl ?? "",
     input.provider ?? (input.googleId ? "google" : "password"),
     input.locale ?? DEFAULT_LOCALE,
+    input.chooseOwnLink ? null : ts,
     ts,
     ts,
   );

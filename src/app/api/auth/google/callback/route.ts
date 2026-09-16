@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createSession, findUserByEmail, findUserByGoogleId, linkGoogleAccount } from "@/lib/auth";
 import { consumeState, exchangeGoogleCode, googleConfigured } from "@/lib/google";
 import { provisionClient } from "@/lib/provision";
+import { needsOnboarding } from "@/lib/onboarding";
 import { cookies } from "next/headers";
 import { isLocale } from "@/lib/i18n";
 import { LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, currentLocale } from "@/lib/locale";
@@ -49,6 +50,8 @@ export async function GET(request: Request) {
         avatarUrl: profile.picture,
         // Google sign-in starts at the gate like everything else.
         locale: await currentLocale(),
+        // Google gives us no portfolio link, so the customer picks one next.
+        chooseOwnLink: true,
       })).user;
     }
   }
@@ -66,6 +69,12 @@ export async function GET(request: Request) {
     });
   }
 
-  const destination = user.role === "client" ? stored.returnTo : "/console";
+  // A brand-new Google account has a generated link it has never seen. Send it to
+  // the step that lets the customer claim one, wherever they were headed.
+  const destination = needsOnboarding(user)
+    ? "/welcome"
+    : user.role === "client"
+      ? stored.returnTo
+      : "/console";
   return NextResponse.redirect(`${origin}${destination}`);
 }

@@ -41,8 +41,6 @@ export async function signupAction(_prev: FormState, fd: FormData): Promise<Form
   const email = str(fd, "email").toLowerCase();
   const password = String(fd.get("password") ?? "");
   const name = str(fd, "name");
-  const title = str(fd, "title");
-  const desiredSlug = str(fd, "slug") || name;
 
   // Creating an account writes a user, a portfolio and starter content, so it is
   // throttled per caller the same way sign-in attempts are.
@@ -64,7 +62,6 @@ export async function signupAction(_prev: FormState, fd: FormData): Promise<Form
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: "invalid_email" };
   if (password.length < 8) return { error: "weak_password" };
   if (name.length < 2) return { error: "short_name" };
-  if (!slugify(desiredSlug)) return { error: "bad_slug" };
   if (await findUserByEmail(email)) return { error: "email_taken" };
 
   // Whatever they picked at the gate is the account's language from here on:
@@ -74,16 +71,17 @@ export async function signupAction(_prev: FormState, fd: FormData): Promise<Form
     email,
     password,
     name,
-    title,
-    slug: desiredSlug,
     locale,
+    chooseOwnLink: true,
   });
   if (invitation && "invitation" in invitation) await redeemInvitation(invitation.invitation, user);
 
   await createSession(user.id);
   await sendWelcome(user, slug, locale);
 
-  redirect("/dashboard");
+  // The link is chosen on /welcome, not on this form — see src/lib/onboarding.ts
+  // for why both sign-up routes converge there.
+  redirect("/welcome");
 }
 
 /**

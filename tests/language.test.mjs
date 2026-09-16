@@ -2,7 +2,7 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { BASE, BROWSER_UA, contains, db, sessionFor, visit } from "./helpers.mjs";
 
-const GATE_AR = "اختر لغتك المفضّلة";
+const GATE_AR = "اختر لغتك";
 const GATE_EN = "Choose your language";
 
 describe("the language gate", () => {

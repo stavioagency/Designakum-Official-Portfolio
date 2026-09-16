@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
+import { needsOnboarding } from "@/lib/onboarding";
 import { getPortfolioForUser } from "@/lib/portfolios";
 import { TopNav } from "@/components/top-nav";
 import { currentLocale } from "@/lib/locale";
@@ -24,6 +25,7 @@ export default async function DashboardLayout({
 
   const user = await currentUser();
   if (!user) redirect("/login");
+  if (needsOnboarding(user)) redirect("/welcome");
 
   const locale = await currentLocale();
   const nav = dict(locale).dashboard.nav;

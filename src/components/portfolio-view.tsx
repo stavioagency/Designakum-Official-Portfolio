@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { HeroSlider } from "./hero-slider";
+import { Wordmark } from "./brand/logo";
 import { ShareButton } from "./share-button";
 import { TrackEvents } from "./track-events";
 import { ReportDialog } from "./report-dialog";
@@ -292,6 +294,18 @@ export function PortfolioView({
               locale={viewerLocale ?? portfolio.locale}
             />
           )}
+
+          {/* Every published portfolio is a shop window for the platform, so it
+              signs its own work — quietly, under the customer's own copyright
+              line rather than over it. */}
+          <Link
+            href="/"
+            aria-label={d.poweredBy}
+            className="mt-1 inline-flex items-center gap-2 text-[11.5px] text-mist-600 transition hover:text-mist-400"
+          >
+            {d.madeWith}
+            <Wordmark height={13} className="opacity-70" />
+          </Link>
         </footer>
       </main>
     </div>

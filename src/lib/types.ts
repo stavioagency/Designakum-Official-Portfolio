@@ -26,6 +26,8 @@ export interface User {
   two_factor_secret: string;
   two_factor_enabled: number;
   last_seen_at: number | null;
+  /** NULL until the customer has chosen their own portfolio link. */
+  onboarded_at: number | null;
   created_at: number;
   updated_at: number;
 }

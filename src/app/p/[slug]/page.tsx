@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { get } from "@/lib/db";
 import { canPublish } from "@/lib/billing";
+import { brandAsset } from "@/lib/brand";
 import { getPortfolioBySlug, loadBundle, recordView } from "@/lib/portfolios";
 import { callerIsBot } from "@/lib/bots";
 import { liftExpiredSuspension } from "@/lib/moderation";
@@ -48,7 +49,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: `${portfolio.name} — ${portfolio.title}`,
       description,
       type: "profile",
-      images: portfolio.avatar_url ? [portfolio.avatar_url] : undefined,
+      // Their own face first; the platform card rather than nothing when a
+      // portfolio has not uploaded one yet.
+      images: portfolio.avatar_url
+        ? [portfolio.avatar_url]
+        : (brandAsset("og") ?? undefined),
     },
   };
 }
