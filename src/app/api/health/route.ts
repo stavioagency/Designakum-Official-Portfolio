@@ -18,9 +18,6 @@ const present = (name: string) => Boolean(process.env[name]?.trim());
 export async function GET() {
   const config = {
     AUTH_SECRET: present("AUTH_SECRET") && (process.env.AUTH_SECRET?.length ?? 0) >= 32,
-    // Not a variable on every platform: on Cloudflare the connection arrives as
-    // a Hyperdrive binding and DATABASE_URL is deliberately absent. Reporting
-    // the source rather than the variable is the question actually worth asking.
     DATABASE: databaseSource(),
     SITE_URL: present("SITE_URL"),
     STORAGE_DRIVER: process.env.STORAGE_DRIVER ?? "local",

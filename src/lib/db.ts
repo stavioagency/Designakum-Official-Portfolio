@@ -1,53 +1,22 @@
 import "server-only";
 import { Pool, type PoolClient } from "pg";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 declare global {
   // eslint-disable-next-line no-var
   var __designakumPool: Pool | undefined;
 }
 
-/**
- * Where the database is, according to whoever is running us.
- *
- * On Cloudflare the answer is a Hyperdrive binding rather than an environment
- * variable: it hands back a connection string pointing at a local proxy, and
- * Hyperdrive holds the warm connections to Supabase on the other side. That is
- * the whole reason to move — the pool no longer has to live inside a function
- * instance that may be discarded between requests.
- *
- * The lookup is guarded rather than imported at the top, because the module
- * only exists inside a Worker; on Node, in tests, and during `next build` it is
- * absent and DATABASE_URL is the answer.
- */
-function hyperdriveConnectionString(): string | undefined {
-  try {
-    const env = getCloudflareContext().env as {
-      HYPERDRIVE?: { connectionString?: string };
-    };
-    return env?.HYPERDRIVE?.connectionString;
-  } catch {
-    // Not running inside a Worker — `next dev`, `next build` and the tests all
-    // land here, and DATABASE_URL is the right answer for all three.
-    return undefined;
-  }
-}
-
 /** Where the connection came from, for the health endpoint. Never the value. */
-export function databaseSource(): "hyperdrive" | "env" | "missing" {
-  if (hyperdriveConnectionString()) return "hyperdrive";
+export function databaseSource(): "env" | "missing" {
   return process.env.DATABASE_URL?.trim() ? "env" : "missing";
 }
 
 function resolveConnectionString(): string {
-  const hyperdrive = hyperdriveConnectionString();
-  if (hyperdrive) return hyperdrive;
-
   const fromEnv = process.env.DATABASE_URL;
   if (!fromEnv) {
     throw new Error(
-      "No database connection. Set DATABASE_URL, or bind Hyperdrive on Cloudflare " +
-        "(Supabase → Project Settings → Database → Connection string).",
+      "No database connection. Set DATABASE_URL (Supabase → Project Settings → " +
+        "Database → Connection string).",
     );
   }
   return fromEnv;
@@ -55,18 +24,12 @@ function resolveConnectionString(): string {
 
 function createPool(): Pool {
   const connectionString = resolveConnectionString();
-  // Hyperdrive terminates locally inside the Worker, so there is no TLS to
-  // verify and no certificate chain to teach anything about.
-  const viaHyperdrive = Boolean(hyperdriveConnectionString());
 
   return new Pool({
     connectionString,
     // Supabase terminates TLS with its own certificate chain; verifying it from a
     // serverless runtime needs the CA bundle, which the pooler URL does not carry.
-    ssl:
-      !viaHyperdrive && connectionString.includes("supabase")
-        ? { rejectUnauthorized: false }
-        : undefined,
+    ssl: connectionString.includes("supabase") ? { rejectUnauthorized: false } : undefined,
     /**
      * Two connections per instance, released after ten seconds idle.
      *
@@ -81,10 +44,7 @@ function createPool(): Pool {
      * a hundred concurrent instances. Raise DATABASE_POOL_MAX only alongside a
      * pooler that has the headroom for it.
      */
-    // Hyperdrive is the pool now, so a Worker only needs a handful of local
-    // sockets to it; without it we are still budgeting against Supabase's
-    // 200-client ceiling across every warm instance.
-    max: Number(process.env.DATABASE_POOL_MAX ?? (viaHyperdrive ? 5 : 2)),
+    max: Number(process.env.DATABASE_POOL_MAX ?? 2),
     idleTimeoutMillis: 10_000,
     connectionTimeoutMillis: 10_000,
   });
@@ -103,34 +63,8 @@ function createPool(): Pool {
  */
 let pool: Pool | undefined;
 
-/**
- * A Worker must not hold a connection pool.
- *
- * `pg.Pool` keeps sockets open between queries and hands them out again later.
- * In a Worker there is no "later" it can rely on — the runtime tears down the
- * context when a request finishes, and a pool waiting on a socket that will
- * never speak again is a Worker that hangs. The runtime then cancels it with
- * "your Worker's code had hung and would never generate a response", which is
- * exactly what the first deployment did on roughly one request in three.
- *
- * Hyperdrive already is the pool. So on Cloudflare each query opens a client to
- * the local Hyperdrive proxy, uses it, and closes it — cheap, because the
- * expensive half (the warm connection to Supabase across the ocean) lives in
- * Hyperdrive and outlives every request.
- */
 async function withClient<T>(fn: (c: { query: Pool["query"] }) => Promise<T>): Promise<T> {
-  const connectionString = hyperdriveConnectionString();
-  if (!connectionString) return await fn(getPool());
-
-  const { Client } = await import("pg");
-  const client = new Client({ connectionString });
-  await client.connect();
-  try {
-    return await fn(client as unknown as { query: Pool["query"] });
-  } finally {
-    // Never let a close failure mask the caller's result or its error.
-    await client.end().catch(() => {});
-  }
+  return await fn(getPool());
 }
 
 function getPool(): Pool {
@@ -265,28 +199,6 @@ export async function run(sql: string, ...params: unknown[]): Promise<void> {
 
 /** Runs several statements atomically — used where a partial write would corrupt state. */
 export async function transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
-  const connectionString = hyperdriveConnectionString();
-
-  // On Cloudflare, a dedicated client for the transaction: BEGIN and COMMIT have
-  // to reach the same connection, and a pool that survives the request is what
-  // hangs the Worker. See withClient above.
-  if (connectionString) {
-    const { Client } = await import("pg");
-    const client = new Client({ connectionString });
-    await client.connect();
-    try {
-      await client.query("BEGIN");
-      const result = await fn(client as unknown as PoolClient);
-      await client.query("COMMIT");
-      return result;
-    } catch (error) {
-      await client.query("ROLLBACK").catch(() => {});
-      throw error;
-    } finally {
-      await client.end().catch(() => {});
-    }
-  }
-
   const client = await getPool().connect();
   try {
     await client.query("BEGIN");

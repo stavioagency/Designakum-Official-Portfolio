@@ -11,7 +11,7 @@ const connectionString =
     // Mirror what the app reads, so the tests always talk to the same database.
     // `.env.development.local` is where local config lives: Next loads it in
     // development but not during a production build, which keeps it out of the
-    // Cloudflare Worker bundle. `.env.local` stays supported for old checkouts.
+    // `.env.local` stays supported for old checkouts.
     for (const name of [".env.development.local", ".env.local"]) {
       const file = path.join(process.cwd(), name);
       if (!fs.existsSync(file)) continue;
