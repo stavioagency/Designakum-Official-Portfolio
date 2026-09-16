@@ -18,3 +18,19 @@ extension can be `.svg`, `.png`, `.webp`, `.jpg` or `.avif`.
 
 Until a file exists the UI falls back to type — nothing breaks, it simply looks
 plainer. `/admin` shows which files are still missing.
+
+## Where these came from
+
+The current files were built from the master artwork in `~/Downloads/ديزاينكم
+بدون خلفية` and `~/Downloads/ديزاينكم بخلفية`.
+
+Those masters are **not transparent** despite the folder name — they are RGB,
+flattened onto near-black — so they cannot be dropped in directly. Each asset
+here was un-mixed: given a flat background `B` and a flat artwork colour `F`,
+every pixel `C` solves `C = a*F + (1-a)*B` for the coverage `a`, which recovers a
+real alpha channel with the antialiasing intact. Then trimmed to the ink and
+resized.
+
+If the artwork is ever re-exported, export it with genuine transparency and this
+step disappears. Otherwise repeat it — a straight copy puts a black plate behind
+every logo on the site.
