@@ -45,6 +45,7 @@ export default async function DashboardLayout({
           { href: "/dashboard", label: nav.editor },
           { href: "/dashboard/preview", label: nav.preview },
           { href: "/dashboard/billing", label: nav.billing },
+          { href: "/dashboard/domain", label: nav.domain },
           { href: "/dashboard/support", label: nav.support },
           { href: `/p/${portfolio.slug}`, label: nav.publicPage, external: true },
           ...(user.role === "owner" || user.role === "support"
