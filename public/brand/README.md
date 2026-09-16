@@ -11,6 +11,8 @@ extension can be `.svg`, `.png`, `.webp`, `.jpg` or `.avif`.
 | `mark-light.*` | Icon only, white |
 | `mark-brand.*` | Icon only, blue |
 | `mark-dark.*` | Icon only, black |
+| `pattern-light.*` | Kufic ornament band in white — dividers |
+| `welcome-ar.*` | “Ahlan wa sahlan” calligraphy — welcome and language screens |
 | `riyal.*` | Official Saudi Riyal symbol, single colour — recoloured in CSS, so export it as a solid black or white glyph |
 | `favicon.png` / `icon.png` | 512×512 app icon (optional; falls back to `mark-*`) |
 

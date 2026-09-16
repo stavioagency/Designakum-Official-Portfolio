@@ -34,6 +34,9 @@ export type BrandAssetName =
   | "mark-light"
   | "mark-brand"
   | "mark-dark"
+  | "pattern-light"
+  | "welcome-ar"
+  | "og"
   | "riyal";
 
 export const BRAND_ASSETS: {
@@ -66,6 +69,21 @@ export const BRAND_ASSETS: {
     name: "mark-dark",
     description: "الأيقونة بالأسود — للخلفيات الفاتحة",
     descriptionEn: "Icon in black — for light backgrounds",
+  },
+  {
+    name: "pattern-light",
+    description: "الشريط الزخرفي الكوفي بالأبيض — فواصل وحواف",
+    descriptionEn: "The Kufic ornament band in white — dividers and edges",
+  },
+  {
+    name: "welcome-ar",
+    description: "خط «أهلاً وسهلاً بكم» — شاشة الترحيب واختيار اللغة",
+    descriptionEn: "The \u201cahlan wa sahlan\u201d calligraphy \u2014 welcome and language screens",
+  },
+  {
+    name: "og",
+    description: "بطاقة المشاركة الاجتماعية 1200×630 — تظهر عند مشاركة أي رابط",
+    descriptionEn: "The 1200\u00d7630 social card \u2014 shown whenever a link is shared",
   },
   {
     name: "riyal",
