@@ -87,7 +87,7 @@ describe("search engines", () => {
 describe("cookie notice", () => {
   test("the notice appears on a public page and links to the privacy policy", async () => {
     const page = await visit("/");
-    assert.ok(contains(page, "ملفَّي ارتباط أساسيين"), "the notice should be rendered");
+    assert.ok(contains(page, "ملفّا ارتباط أساسيان"), "the notice should be rendered");
     assert.ok(page.body.includes("/legal/privacy"), "it should link to the privacy policy");
   });
 

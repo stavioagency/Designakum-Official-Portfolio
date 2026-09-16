@@ -288,7 +288,7 @@ export function Tabs({
   build: (key: string) => string;
 }) {
   return (
-    <nav className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+    <nav className="-mx-1 flex flex-wrap gap-2 px-1 pb-1">
       {tabs.map((tab) => {
         const active = tab.key === current;
         return (

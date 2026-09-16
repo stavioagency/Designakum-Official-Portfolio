@@ -1232,7 +1232,7 @@ const ar = {
   notFound: { title: "لم نجد هذه الصفحة", body: "ربما تغيّر الرابط أو تم حذف المعرض.", cta: "الصفحة الرئيسية" },
 
   cookies: {
-    body: "نستخدم ملفَّي ارتباط أساسيين فقط: واحد لإبقائك مسجّلًا للدخول، وآخر لتذكّر لغة الواجهة. لا نستخدم ملفات تتبّع إعلانية ولا نشارك بياناتك مع معلنين.",
+    body: "ملفّا ارتباط أساسيان فقط: جلستك ولغتك. لا تتبّع إعلاني.",
     policy: "سياسة الخصوصية",
     dismiss: "فهمت",
   },
@@ -2461,7 +2461,7 @@ const en: typeof ar = {
   notFound: { title: "We couldn't find that page", body: "The link may have changed, or the portfolio was removed.", cta: "Go home" },
 
   cookies: {
-    body: "We use two essential cookies only: one keeps you signed in, the other remembers your language. No advertising trackers, and nothing shared with advertisers.",
+    body: "Two essential cookies only: your session and your language. No ad tracking.",
     policy: "Privacy policy",
     dismiss: "Got it",
   },

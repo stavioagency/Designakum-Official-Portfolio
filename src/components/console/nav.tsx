@@ -41,7 +41,7 @@ export function ConsoleNav({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
 
   return (
-    <nav className="no-scrollbar flex gap-1.5 overflow-x-auto lg:flex-col lg:gap-1 lg:overflow-visible">
+    <nav className="flex flex-wrap gap-1.5 lg:flex-col lg:flex-nowrap lg:gap-1">
       {items.map((item) => {
         const Icon = ICONS[item.icon];
         // The dashboard root would otherwise match every nested console route.

@@ -62,7 +62,10 @@ export function Editor({
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px] xl:items-start">
       <div className="min-w-0 space-y-5">
-        <nav className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {/* Wrapped, not scrolled. A hidden scrollbar on a phone means the tabs
+            past the right edge are not merely awkward to reach — nothing on
+            screen says they exist. */}
+        <nav className="-mx-1 flex flex-wrap gap-2 px-1 pb-1">
           {TAB_KEYS.map((key) => (
             <button
               key={key}
