@@ -3,6 +3,7 @@ import { get, now, run } from "./db";
 import { newId } from "./ids";
 import { deleteImage, putImage, readImage } from "./storage";
 import { imageInfo } from "./image-info";
+import { messages } from "./locale";
 import type { User } from "./types";
 
 // Comfortably under Vercel's 4.5 MB serverless request cap, and far above what
@@ -24,9 +25,12 @@ const MAX_SIDE = 12_000;
 const MAX_PIXELS = 40_000_000;
 
 export async function storeImage(file: File, user: User): Promise<string> {
-  if (!file || file.size === 0) throw new Error("لم يتم اختيار صورة");
-  if (file.size > MAX_BYTES) throw new Error("حجم الصورة يتجاوز 4 ميجابايت");
-  if (!ALLOWED.has(file.type)) throw new Error("صيغة الصورة غير مدعومة");
+  // The words come from the dictionary: this runs inside the customer's own
+  // request, and they should be told what went wrong in their language.
+  const m = await messages();
+  if (!file || file.size === 0) throw new Error(m.noImageChosen);
+  if (file.size > MAX_BYTES) throw new Error(m.imageTooLarge);
+  if (!ALLOWED.has(file.type)) throw new Error(m.imageFormat);
 
   const bytes = new Uint8Array(await file.arrayBuffer());
 
@@ -34,10 +38,10 @@ export async function storeImage(file: File, user: User): Promise<string> {
   // the parsed type means the asset route can never be talked into serving
   // something as an image that is not one.
   const info = imageInfo(bytes);
-  if (!info || !ALLOWED.has(info.mime)) throw new Error("الملف ليس صورة صالحة");
-  if (info.width < 1 || info.height < 1) throw new Error("الملف ليس صورة صالحة");
+  if (!info || !ALLOWED.has(info.mime)) throw new Error(m.notAnImage);
+  if (info.width < 1 || info.height < 1) throw new Error(m.notAnImage);
   if (info.width > MAX_SIDE || info.height > MAX_SIDE || info.width * info.height > MAX_PIXELS) {
-    throw new Error("أبعاد الصورة كبيرة جدًا");
+    throw new Error(m.imageTooBig);
   }
 
   const id = newId("ast");

@@ -5,7 +5,7 @@ import type { Portfolio, Report, ReportStatus, User } from "./types";
 
 export const REPORT_STATUSES: ReportStatus[] = ["pending", "reviewing", "resolved", "dismissed"];
 
-export const REPORT_STATUS_LABEL: Record<ReportStatus, string> = {
+const REPORT_STATUS_LABEL_AR: Record<ReportStatus, string> = {
   pending: "قيد الانتظار",
   reviewing: "تحت المراجعة",
   resolved: "تمت المعالجة",
@@ -21,7 +21,7 @@ const REPORT_STATUS_LABEL_EN: Record<ReportStatus, string> = {
 
 /** A report's state in the reader's language. */
 export const reportStatusLabel = (status: ReportStatus, locale: string) =>
-  (locale === "en" ? REPORT_STATUS_LABEL_EN : REPORT_STATUS_LABEL)[status] ?? status;
+  (locale === "en" ? REPORT_STATUS_LABEL_EN : REPORT_STATUS_LABEL_AR)[status] ?? status;
 
 /* --------------------------------------------------------------- reporting */
 

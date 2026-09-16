@@ -5,7 +5,7 @@ import type { Announcement, AnnouncementSeverity } from "./types";
 
 export const SEVERITIES: AnnouncementSeverity[] = ["info", "success", "warning", "critical"];
 
-export const SEVERITY_LABEL: Record<AnnouncementSeverity, string> = {
+const SEVERITY_LABEL_AR: Record<AnnouncementSeverity, string> = {
   info: "معلومة",
   success: "خبر جيد",
   warning: "تنبيه",
@@ -21,7 +21,7 @@ const SEVERITY_LABEL_EN: Record<AnnouncementSeverity, string> = {
 
 /** An announcement's kind in the reader's language. */
 export const severityLabel = (severity: AnnouncementSeverity, locale: string) =>
-  (locale === "en" ? SEVERITY_LABEL_EN : SEVERITY_LABEL)[severity] ?? severity;
+  (locale === "en" ? SEVERITY_LABEL_EN : SEVERITY_LABEL_AR)[severity] ?? severity;
 
 export async function createAnnouncement(input: {
   title: string;

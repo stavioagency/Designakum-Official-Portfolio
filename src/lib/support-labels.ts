@@ -46,21 +46,3 @@ export const ticketCategoryLabel = (category: string, locale: Locale) =>
 
 export const ticketCategories = (locale: Locale) =>
   Object.entries(TICKET_CATEGORY).map(([value, label]) => ({ value, label: pick(label, locale) }));
-
-/* Arabic-only views (the console, for now) keep the old flat maps. */
-export const TICKET_STATUS_LABEL: Record<TicketStatus, string> = Object.fromEntries(
-  Object.entries(TICKET_STATUS).map(([key, value]) => [key, value.ar]),
-) as Record<TicketStatus, string>;
-
-export const TICKET_PRIORITY_LABEL: Record<TicketPriority, string> = Object.fromEntries(
-  Object.entries(TICKET_PRIORITY).map(([key, value]) => [key, value.ar]),
-) as Record<TicketPriority, string>;
-
-export const TICKET_CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
-  Object.entries(TICKET_CATEGORY).map(([key, value]) => [key, value.ar]),
-);
-
-export const TICKET_CATEGORIES = Object.entries(TICKET_CATEGORY_LABEL).map(([value, label]) => ({
-  value,
-  label,
-}));

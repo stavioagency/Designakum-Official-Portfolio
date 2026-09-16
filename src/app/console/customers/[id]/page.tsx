@@ -7,8 +7,9 @@ import { activeSubscription, subscriptionHistory, billingEvents, canPublish } fr
 import { auditForTarget } from "@/lib/audit";
 import { getCustomer, portfolioOf } from "@/lib/customers";
 import { can, guardPage, roleLabel } from "@/lib/permissions";
-import { reportsForPortfolio, REPORT_STATUS_LABEL } from "@/lib/moderation";
-import { ticketsForUser, TICKET_STATUS_LABEL } from "@/lib/support";
+import { reportsForPortfolio, reportStatusLabel } from "@/lib/moderation";
+import { ticketsForUser } from "@/lib/support";
+import { ticketStatusLabel } from "@/lib/support-labels";
 import { eventSeries, eventTotal, seriesTotal } from "@/lib/analytics";
 import { brandAsset } from "@/lib/brand";
 import { Riyal } from "@/components/riyal";
@@ -198,7 +199,7 @@ export default async function CustomerProfilePage({
                               : "neutral"
                         }
                       >
-                        {REPORT_STATUS_LABEL[report.status]}
+                        {reportStatusLabel(report.status, locale)}
                       </Badge>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13.5px]">
@@ -230,7 +231,7 @@ export default async function CustomerProfilePage({
                       className="flex items-center gap-3 px-5 py-3 transition hover:bg-white/[0.03]"
                     >
                       <Badge tone={ticket.status === "resolved" ? "neutral" : "warn"}>
-                        {TICKET_STATUS_LABEL[ticket.status]}
+                        {ticketStatusLabel(ticket.status, locale)}
                       </Badge>
                       <span className="min-w-0 flex-1 truncate text-[13.5px]">{ticket.subject}</span>
                       <span className="shrink-0 text-[11px] text-mist-600">

@@ -62,7 +62,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
 
 export const STAFF_ROLES: Role[] = ["owner", "support"];
 
-export const ROLE_LABEL: Record<Role, string> = {
+const ROLE_LABEL_AR: Record<Role, string> = {
   owner: "مالك المنصة",
   support: "فريق الدعم",
   client: "عميل",
@@ -76,7 +76,7 @@ const ROLE_LABEL_EN: Record<Role, string> = {
 
 /** The role's name in the reader's language. */
 export const roleLabel = (role: Role, locale: string) =>
-  (locale === "en" ? ROLE_LABEL_EN : ROLE_LABEL)[role] ?? role;
+  (locale === "en" ? ROLE_LABEL_EN : ROLE_LABEL_AR)[role] ?? role;
 
 export function isStaff(user: User | null | undefined): boolean {
   return !!user && STAFF_ROLES.includes(user.role);

@@ -6,6 +6,7 @@ import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypt
 import { all, get, now, run } from "./db";
 import { newId, newToken } from "./ids";
 import { DEFAULT_LOCALE } from "./i18n";
+import { messages } from "./locale";
 import type { Locale, Role, User } from "./types";
 
 const COOKIE = "dk_session";
@@ -138,13 +139,13 @@ export async function currentUser(): Promise<User | null> {
 
 export async function requireUser(): Promise<User> {
   const user = await currentUser();
-  if (!user) throw new AuthError("يجب تسجيل الدخول للمتابعة");
+  if (!user) throw new AuthError((await messages()).signInRequired);
   return user;
 }
 
 export async function requireOwner(): Promise<User> {
   const user = await requireUser();
-  if (user.role !== "owner") throw new AuthError("هذه الصفحة متاحة لمالك المنصة فقط");
+  if (user.role !== "owner") throw new AuthError((await messages()).ownersOnly);
   return user;
 }
 

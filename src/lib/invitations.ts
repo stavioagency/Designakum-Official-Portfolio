@@ -2,6 +2,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { all, get, now, run } from "./db";
 import { newId } from "./ids";
+import { messages } from "./locale";
 import { periodEnd, recordSubscription } from "./billing";
 import type { Invitation, Plan, User } from "./types";
 
@@ -72,13 +73,17 @@ export async function checkInvitation(
   return { invitation };
 }
 
-export const INVITATION_PROBLEM_LABEL: Record<InvitationProblem, string> = {
-  not_found: "رمز الدعوة غير صحيح",
-  revoked: "تم إلغاء هذه الدعوة",
-  expired: "انتهت صلاحية هذه الدعوة",
-  used_up: "استُخدمت هذه الدعوة بالكامل",
-  wrong_email: "هذه الدعوة مخصصة لبريد إلكتروني آخر",
-};
+/** Why a code was refused, in the language of whoever tried it. */
+export async function invitationProblemLabel(problem: InvitationProblem): Promise<string> {
+  const m = await messages();
+  return {
+    not_found: m.inviteNotFound,
+    revoked: m.inviteRevoked,
+    expired: m.inviteExpired,
+    used_up: m.inviteUsedUp,
+    wrong_email: m.inviteWrongEmail,
+  }[problem];
+}
 
 /**
  * Turns a valid code into a real subscription row, recorded with the `invitation`

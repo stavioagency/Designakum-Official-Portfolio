@@ -6,13 +6,6 @@ import { planDefinitions } from "./billing";
 export type EventKind = "view" | "whatsapp" | "social" | "project";
 export const EVENT_KINDS: EventKind[] = ["view", "whatsapp", "social", "project"];
 
-export const EVENT_LABEL: Record<EventKind, string> = {
-  view: "مشاهدات",
-  whatsapp: "نقرات واتساب",
-  social: "نقرات التواصل",
-  project: "نقرات الأعمال",
-};
-
 /**
  * Analytics days are cut in the platform's own timezone, not UTC.
  *

@@ -13,10 +13,6 @@ export const TICKET_STATUSES: TicketStatus[] = [
 export const TICKET_PRIORITIES: TicketPriority[] = ["low", "normal", "high", "urgent"];
 
 export {
-  TICKET_STATUS_LABEL,
-  TICKET_PRIORITY_LABEL,
-  TICKET_CATEGORY_LABEL,
-  TICKET_CATEGORIES,
 } from "./support-labels";
 
 /* ------------------------------------------------------------------ create */

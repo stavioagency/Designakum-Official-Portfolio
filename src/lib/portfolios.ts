@@ -1,5 +1,6 @@
 import "server-only";
 import { DEFAULT_LOCALE, dict } from "./i18n";
+import { messages } from "./locale";
 import type { Locale } from "./types";
 import { all, get, now, run } from "./db";
 import { newId, slugify } from "./ids";
@@ -74,9 +75,9 @@ export async function loadBundle(portfolio: Portfolio): Promise<PortfolioBundle>
  */
 export async function assertCanEdit(portfolioId: string, user: User): Promise<Portfolio>{
   const portfolio = await getPortfolioById(portfolioId);
-  if (!portfolio) throw new TenantError("لم يتم العثور على المعرض");
+  if (!portfolio) throw new TenantError((await messages()).portfolioNotFound);
   if (user.role !== "owner" && portfolio.user_id !== user.id) {
-    throw new TenantError("لا تملك صلاحية تعديل هذا المعرض");
+    throw new TenantError((await messages()).notYourPortfolio);
   }
   return portfolio;
 }
@@ -163,9 +164,11 @@ export async function updateProfile(
 export async function updateSlug(portfolioId: string, user: User, desired: string) {
   const portfolio = await assertCanEdit(portfolioId, user);
   const slug = slugify(desired);
-  if (!slug) throw new TenantError("الرابط غير صالح");
+  if (!slug) throw new TenantError((await messages()).badSlug);
   const clash = await get<{ id: string }>("SELECT id FROM portfolios WHERE slug = ?", slug);
-  if (clash && clash.id !== portfolio.id) throw new TenantError("هذا الرابط محجوز، جرّب رابطًا آخر");
+  if (clash && clash.id !== portfolio.id) {
+    throw new TenantError((await messages()).slugTaken);
+  }
   await run("UPDATE portfolios SET slug = ?, updated_at = ? WHERE id = ?", slug, now(), portfolioId);
   return slug;
 }

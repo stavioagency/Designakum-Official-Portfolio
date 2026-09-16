@@ -9,7 +9,7 @@ import { activeSubscription } from "@/lib/billing";
 import {
   checkInvitation,
   createInvitation,
-  INVITATION_PROBLEM_LABEL,
+  invitationProblemLabel,
   redeemInvitation,
   revokeInvitation,
 } from "@/lib/invitations";
@@ -116,7 +116,7 @@ export async function redeemInvitationAction(_prev: ActionState, fd: FormData): 
     }
 
     const result = await checkInvitation(code, user.email);
-    if ("problem" in result) return { error: INVITATION_PROBLEM_LABEL[result.problem] };
+    if ("problem" in result) return { error: await invitationProblemLabel(result.problem) };
 
     await redeemInvitation(result.invitation, user);
 
