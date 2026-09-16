@@ -26,18 +26,22 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   // Deliberately not `immutable`: a suspension has to take effect for people who
   // already loaded the page, and an hour is an acceptable takedown lag.
   const cache = "public, max-age=3600, stale-while-revalidate=86400";
+  const bytes = new Uint8Array(opened.bytes);
 
-  if (opened.kind === "redirect") {
-    return new Response(null, {
-      status: 307,
-      headers: { Location: opened.url, "Cache-Control": cache },
-    });
+  // An asset's id is derived from its content and never reused, so a conditional
+  // request can be answered without touching storage at all. Withheld assets
+  // never reach here, so this cannot revalidate something taken down.
+  const etag = `"${id}"`;
+  if (_req.headers.get("if-none-match") === etag) {
+    return new Response(null, { status: 304, headers: { ETag: etag, "Cache-Control": cache } });
   }
 
-  return new Response(new Uint8Array(opened.bytes), {
+  return new Response(bytes, {
     headers: {
       "Content-Type": asset.mime,
+      "Content-Length": String(bytes.byteLength),
       "Cache-Control": cache,
+      ETag: etag,
       "X-Content-Type-Options": "nosniff",
       "Content-Security-Policy": "sandbox; default-src 'none'",
     },

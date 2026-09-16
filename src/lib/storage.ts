@@ -74,29 +74,42 @@ export async function putImage(
   return objectPath;
 }
 
-/** Bytes for the local driver; the Supabase driver hands back a signed URL instead. */
+/**
+ * The image bytes, from whichever driver holds them.
+ *
+ * This used to hand the browser a short-lived signed URL and redirect to it,
+ * which broke images twice over. The redirect left this origin, and `img-src`
+ * does not allow the storage host — a browser re-checks the policy against the
+ * URL it is redirected to, so every uploaded image was blocked outright. And the
+ * redirect was cached for an hour while the signature it carried expired after
+ * five minutes, so even an allowed image would have died mid-cache.
+ *
+ * Reading the bytes here fixes both and is cheaper besides: the browser makes
+ * one request instead of two, the CDN caches the image itself rather than a
+ * redirect that goes stale, no credential ever reaches the page, and the bucket
+ * stays private so a suspension still takes an image down.
+ */
 export async function readImage(
   objectPath: string,
-): Promise<{ kind: "bytes"; bytes: Uint8Array } | { kind: "redirect"; url: string }> {
+): Promise<{ kind: "bytes"; bytes: Uint8Array }> {
   if (storageDriver() === "local") {
     const bytes = await fs.readFile(path.join(LOCAL_DIR, objectPath));
     return { kind: "bytes", bytes: new Uint8Array(bytes) };
   }
 
   const { url, key } = supabaseConfig();
-  const response = await fetch(`${url}/storage/v1/object/sign/${BUCKET}/${objectPath}`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    // Short-lived: long enough to load the page, short enough that a takedown bites.
-    body: JSON.stringify({ expiresIn: 300 }),
+  // The authenticated download endpoint, not a signed URL: signing was a second
+  // round trip to Frankfurt for a token nobody outside this function ever saw.
+  const response = await fetch(`${url}/storage/v1/object/${BUCKET}/${objectPath}`, {
+    headers: { Authorization: `Bearer ${key}` },
+    cache: "no-store",
   });
 
   if (!response.ok) {
-    throw new Error(`Could not sign storage URL (${response.status})`);
+    throw new Error(`Could not read stored image (${response.status})`);
   }
 
-  const { signedURL } = (await response.json()) as { signedURL: string };
-  return { kind: "redirect", url: `${url}/storage/v1${signedURL}` };
+  return { kind: "bytes", bytes: new Uint8Array(await response.arrayBuffer()) };
 }
 
 export async function deleteImage(objectPath: string): Promise<void> {
