@@ -63,12 +63,18 @@ export async function platformStats(): Promise<PlatformStats>{
          (SELECT COUNT(*) FROM users WHERE role = 'client' AND last_seen_at >= ?)::int AS active_users,
          (SELECT COUNT(*) FROM users WHERE role = 'client' AND created_at >= ?)::int AS new_this_week,
          (SELECT COUNT(*) FROM users WHERE role = 'client' AND created_at >= ?)::int AS new_this_month,
-         (SELECT COUNT(DISTINCT user_id) FROM subscriptions
-           WHERE status = 'active' AND (current_period_end IS NULL OR current_period_end > ?))::int
+         -- Customers, not accounts. Without the role filter this counted staff
+         -- who had granted themselves a plan, and came out larger than
+         -- total_users beside it, which filters to clients.
+         (SELECT COUNT(DISTINCT s.user_id) FROM subscriptions s
+            JOIN users u ON u.id = s.user_id AND u.role = 'client'
+           WHERE s.status = 'active' AND (s.current_period_end IS NULL OR s.current_period_end > ?))::int
            AS active_subscriptions,
-         (SELECT COUNT(*) FROM users WHERE status = 'suspended')::int AS suspended_users,
+         (SELECT COUNT(*) FROM users WHERE role = 'client' AND status = 'suspended')::int AS suspended_users,
          (SELECT COUNT(*) FROM portfolios WHERE suspended = 1)::int AS suspended_portfolios,
-         (SELECT COUNT(*) FROM subscriptions WHERE status IN ('canceled','expired'))::int
+         (SELECT COUNT(*) FROM subscriptions s
+            JOIN users u ON u.id = s.user_id AND u.role = 'client'
+           WHERE s.status IN ('canceled','expired'))::int
            AS ended_subscriptions,
          (SELECT COUNT(*) FROM portfolios WHERE published = 1)::int AS published_portfolios,
          (SELECT COUNT(*) FROM portfolios)::int AS total_portfolios`,
@@ -96,6 +102,11 @@ export async function platformStats(): Promise<PlatformStats>{
     monthlySubscribers: revenue.monthlyCount,
     yearlySubscribers: revenue.yearlyCount,
     compedSubscribers: revenue.compedCount,
+    /**
+     * Both sides count customers now. The clamp stays as a floor rather than a
+     * fix: it was hiding the mismatch that made this negative — more
+     * subscribers than customers — by quietly reporting zero.
+     */
     freeUsers: Math.max(0, totalUsers - activeSubscriptions),
     suspendedUsers: counts?.suspended_users ?? 0,
     suspendedPortfolios: counts?.suspended_portfolios ?? 0,

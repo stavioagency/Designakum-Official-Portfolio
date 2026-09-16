@@ -127,8 +127,16 @@ export default async function ConsoleDashboard({
         {showRevenue ? (
           <StatCard
             label={t.mrr}
-            value={money(stats.mrr)}
-            hint={fill(t.mrrHint, { arr: money(stats.arr), churn: stats.churnPercent.toFixed(1) })}
+            value={
+              <span className="inline-flex items-baseline gap-1.5">
+                {money(stats.mrr)}
+                <Riyal src={riyalSrc} size="0.62em" />
+              </span>
+            }
+            hint={fill(t.mrrHint, {
+              arr: money(stats.arr),
+              churn: stats.churnPercent.toFixed(1),
+            })}
             icon={<Wallet className="h-4 w-4" />}
             tone="accent"
           />
@@ -163,8 +171,11 @@ export default async function ConsoleDashboard({
         />
         <StatCard
           label={t.openQueues}
-          value={`${nf.format(stats.pendingReports)} · ${nf.format(stats.openTickets)}`}
-          hint={t.openQueuesHint}
+          value={nf.format(stats.pendingReports + stats.openTickets)}
+          hint={fill(t.openQueuesHint, {
+            reports: nf.format(stats.pendingReports),
+            tickets: nf.format(stats.openTickets),
+          })}
           icon={<Bell className="h-4 w-4" />}
           tone={stats.pendingReports + stats.openTickets > 0 ? "warn" : "neutral"}
         />

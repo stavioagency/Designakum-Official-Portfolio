@@ -189,11 +189,16 @@ export interface RevenueSnapshot {
  * Only subscriptions that actually billed money count toward revenue: comped and
  * invited accounts are real subscriptions but contribute 0, and a yearly plan is
  * spread across twelve months for MRR.
+ *
+ * Customers only. Owners and support grant themselves plans to test with, and
+ * counting those made the console incoherent: it reported more subscribers than
+ * it had customers, because customers are clients and subscribers were everyone.
  */
 export async function revenueSnapshot(): Promise<RevenueSnapshot>{
   const rows = await all<{ plan: string; source: string; amount: number; n: number }>(
     `SELECT s.plan, s.source, s.amount, COUNT(*) AS n
        FROM subscriptions s
+       JOIN users u ON u.id = s.user_id AND u.role = 'client'
       WHERE s.status = 'active'
         AND (s.current_period_end IS NULL OR s.current_period_end > ?)
         AND s.id = (SELECT s2.id FROM subscriptions s2 WHERE s2.user_id = s.user_id
@@ -232,15 +237,17 @@ export async function churnRate(
   const since = Date.now() - days * 86_400_000;
   const lost =
     (await get<{ n: number }>(
-      `SELECT COUNT(*) AS n FROM subscriptions
-        WHERE status IN ('canceled','expired') AND updated_at >= ?`,
+      `SELECT COUNT(*) AS n FROM subscriptions s
+         JOIN users u ON u.id = s.user_id AND u.role = 'client'
+        WHERE s.status IN ('canceled','expired') AND s.updated_at >= ?`,
       since,
     ))?.n ?? 0;
 
   const activeNow =
     (await get<{ n: number }>(
-      `SELECT COUNT(DISTINCT user_id) AS n FROM subscriptions
-        WHERE status = 'active' AND (current_period_end IS NULL OR current_period_end > ?)`,
+      `SELECT COUNT(DISTINCT s.user_id) AS n FROM subscriptions s
+         JOIN users u ON u.id = s.user_id AND u.role = 'client'
+        WHERE s.status = 'active' AND (s.current_period_end IS NULL OR s.current_period_end > ?)`,
       now(),
     ))?.n ?? 0;
 

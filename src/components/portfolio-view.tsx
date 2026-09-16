@@ -92,14 +92,22 @@ export function PortfolioView({
           <div className="grid grid-cols-[minmax(0,1fr)] gap-6 @5xl:grid-cols-[minmax(0,340px)_minmax(0,1fr)] @5xl:items-start @5xl:gap-9">
             {/* ---------------------------------------------- identity */}
             <section className="rise min-w-0 @5xl:col-start-1 @5xl:row-start-1">
-              <div className="flex items-center gap-3">
+              {/*
+                The links wrap to their own line on a phone.
+                Laid out inline, this row asks for the avatar (78) plus up to
+                five 44px targets plus the share button — about 398px inside the
+                311px a 375px phone actually offers, so it overflowed at four
+                links, which real portfolios have. `basis-full` drops them to a
+                second line below that width; from @5xl they rejoin the row.
+              */}
+              <div className="flex flex-wrap items-center gap-3">
                 <Avatar
                   url={portfolio.avatar_url}
                   monogram={portfolio.monogram}
                   name={portfolio.name}
                   size={78}
                 />
-                <div className="flex flex-1 items-center justify-center gap-2 @5xl:justify-start">
+                <div className="order-last flex w-full flex-wrap items-center justify-center gap-2 @5xl:order-none @5xl:w-auto @5xl:flex-1 @5xl:justify-start">
                   {socials.slice(0, 5).map((social) => {
                     const meta = SOCIAL_META[social.platform] ?? SOCIAL_META.website;
                     const Icon = meta.Icon;
@@ -124,7 +132,9 @@ export function PortfolioView({
                     );
                   })}
                 </div>
-                <ShareButton title={portfolio.name} shareLabel={d.share} copiedLabel={d.copied} />
+                <span className="ms-auto @5xl:ms-0">
+                  <ShareButton title={portfolio.name} shareLabel={d.share} copiedLabel={d.copied} />
+                </span>
               </div>
 
               <div className="mt-6 text-center @5xl:text-start">

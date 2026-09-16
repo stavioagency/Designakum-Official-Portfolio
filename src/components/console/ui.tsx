@@ -111,7 +111,8 @@ export function StatCard({
   series,
 }: {
   label: string;
-  value: string;
+  /** A node, not a string: a money figure has to carry the riyal glyph with it. */
+  value: React.ReactNode;
   hint?: string;
   tone?: Tone;
   icon?: React.ReactNode;
