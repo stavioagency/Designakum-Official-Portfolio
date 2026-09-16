@@ -5,9 +5,6 @@ import { openTicketCount } from "./support";
 import { reportCounts } from "./moderation";
 
 const DAY = 86_400_000;
-const count = async (sql: string, ...params: unknown[]) =>
-  (await get<{ n: number }>(sql, ...params))?.n ?? 0;
-
 export interface PlatformStats {
   totalUsers: number;
   activeUsers: number;
@@ -31,73 +28,85 @@ export interface PlatformStats {
 }
 
 /**
- * Every figure on the console overview, gathered concurrently.
+ * Every count on the console overview, in one statement.
  *
- * These were awaited one after another, so the page cost fourteen sequential
- * round trips. None of them depends on another's result, and with the database
- * in one region and the app in another that ordering was the whole page load.
- * Issued together, the page waits for the slowest rather than the sum.
+ * These were fourteen separate queries. Concurrency helped, but the pool is
+ * deliberately small — it is a budget shared with every other warm instance —
+ * so they still went out a couple at a time, and each batch is a round trip to
+ * another continent.
+ *
+ * Postgres will compute fourteen scalar subqueries in a single pass over the
+ * same small tables far faster than the network can carry fourteen questions.
+ * One round trip, and the counts are consistent with each other because they
+ * see one snapshot rather than fourteen.
  */
 export async function platformStats(): Promise<PlatformStats>{
   const ts = now();
+  const month = ts - 30 * DAY;
+  const week = ts - 7 * DAY;
 
-  const [
-    revenue,
-    reports,
-    totalUsers,
-    activeSubscriptions,
-    activeUsers,
-    newThisWeek,
-    newThisMonth,
-    suspendedUsers,
-    suspendedPortfolios,
-    endedSubscriptions,
-    churn,
-    openTickets,
-    publishedPortfolios,
-    totalPortfolios,
-  ] = await Promise.all([
-    revenueSnapshot(),
-    reportCounts(),
-    count("SELECT COUNT(*) AS n FROM users WHERE role = 'client'"),
-    count(
-      `SELECT COUNT(DISTINCT user_id) AS n FROM subscriptions
-        WHERE status = 'active' AND (current_period_end IS NULL OR current_period_end > ?)`,
+  const [counts, revenue, reports, churn, openTickets] = await Promise.all([
+    get<{
+      total_users: number;
+      active_users: number;
+      new_this_week: number;
+      new_this_month: number;
+      active_subscriptions: number;
+      suspended_users: number;
+      suspended_portfolios: number;
+      ended_subscriptions: number;
+      published_portfolios: number;
+      total_portfolios: number;
+    }>(
+      `SELECT
+         (SELECT COUNT(*) FROM users WHERE role = 'client')::int AS total_users,
+         (SELECT COUNT(*) FROM users WHERE role = 'client' AND last_seen_at >= ?)::int AS active_users,
+         (SELECT COUNT(*) FROM users WHERE role = 'client' AND created_at >= ?)::int AS new_this_week,
+         (SELECT COUNT(*) FROM users WHERE role = 'client' AND created_at >= ?)::int AS new_this_month,
+         (SELECT COUNT(DISTINCT user_id) FROM subscriptions
+           WHERE status = 'active' AND (current_period_end IS NULL OR current_period_end > ?))::int
+           AS active_subscriptions,
+         (SELECT COUNT(*) FROM users WHERE status = 'suspended')::int AS suspended_users,
+         (SELECT COUNT(*) FROM portfolios WHERE suspended = 1)::int AS suspended_portfolios,
+         (SELECT COUNT(*) FROM subscriptions WHERE status IN ('canceled','expired'))::int
+           AS ended_subscriptions,
+         (SELECT COUNT(*) FROM portfolios WHERE published = 1)::int AS published_portfolios,
+         (SELECT COUNT(*) FROM portfolios)::int AS total_portfolios`,
+      month,
+      week,
+      month,
       ts,
     ),
-    // "Active" means seen in the last 30 days, which is what a session touch records.
-    count("SELECT COUNT(*) AS n FROM users WHERE role = 'client' AND last_seen_at >= ?", ts - 30 * DAY),
-    count("SELECT COUNT(*) AS n FROM users WHERE role = 'client' AND created_at >= ?", ts - 7 * DAY),
-    count("SELECT COUNT(*) AS n FROM users WHERE role = 'client' AND created_at >= ?", ts - 30 * DAY),
-    count("SELECT COUNT(*) AS n FROM users WHERE status = 'suspended'"),
-    count("SELECT COUNT(*) AS n FROM portfolios WHERE suspended = 1"),
-    count("SELECT COUNT(*) AS n FROM subscriptions WHERE status IN ('canceled','expired')"),
+    revenueSnapshot(),
+    reportCounts(),
     churnRate(30),
     openTicketCount(),
-    count("SELECT COUNT(*) AS n FROM portfolios WHERE published = 1"),
-    count("SELECT COUNT(*) AS n FROM portfolios"),
   ]);
+
+  const totalUsers = counts?.total_users ?? 0;
+  const activeSubscriptions = counts?.active_subscriptions ?? 0;
 
   return {
     totalUsers,
-    activeUsers,
-    newThisWeek,
-    newThisMonth,
+    // "Active" means seen in the last 30 days, which is what a session touch records.
+    activeUsers: counts?.active_users ?? 0,
+    newThisWeek: counts?.new_this_week ?? 0,
+    newThisMonth: counts?.new_this_month ?? 0,
     activeSubscriptions,
     monthlySubscribers: revenue.monthlyCount,
     yearlySubscribers: revenue.yearlyCount,
     compedSubscribers: revenue.compedCount,
     freeUsers: Math.max(0, totalUsers - activeSubscriptions),
-    suspendedUsers,
-    suspendedPortfolios,
-    endedSubscriptions,
+    suspendedUsers: counts?.suspended_users ?? 0,
+    suspendedPortfolios: counts?.suspended_portfolios ?? 0,
+    endedSubscriptions: counts?.ended_subscriptions ?? 0,
     mrr: revenue.mrr,
     arr: revenue.arr,
     churnPercent: churn.percent,
     openTickets,
     pendingReports: reports.pending + reports.reviewing,
-    publishedPortfolios,
-    totalPortfolios,
+    publishedPortfolios: counts?.published_portfolios ?? 0,
+    totalPortfolios: counts?.total_portfolios ?? 0,
   };
 }
 
