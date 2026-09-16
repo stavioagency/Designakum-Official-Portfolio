@@ -8,6 +8,21 @@ export const LOCALE_COOKIE = "dk_locale";
 /** A year: the choice is made once and should not be asked for again. */
 export const LOCALE_COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
 
+/**
+ * How the language cookie is written, in one place.
+ *
+ * Three call sites were spelling these options out separately and had already
+ * drifted — none of them marked it Secure. It carries no secret, but a cookie
+ * without that flag is still one a plain-HTTP request can set, and the session
+ * cookie beside it has always had it.
+ */
+export const localeCookieOptions = {
+  path: "/",
+  maxAge: LOCALE_COOKIE_MAX_AGE,
+  sameSite: "lax",
+  secure: process.env.NODE_ENV === "production",
+} as const;
+
 /** The visitor's chosen interface language, remembered in a cookie. */
 export async function currentLocale(): Promise<Locale> {
   const value = (await cookies()).get(LOCALE_COOKIE)?.value;

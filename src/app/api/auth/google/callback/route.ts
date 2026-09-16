@@ -5,7 +5,7 @@ import { provisionClient } from "@/lib/provision";
 import { needsOnboarding } from "@/lib/onboarding";
 import { cookies } from "next/headers";
 import { isLocale } from "@/lib/i18n";
-import { LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, currentLocale } from "@/lib/locale";
+import { LOCALE_COOKIE, currentLocale, localeCookieOptions } from "@/lib/locale";
 import { requestOrigin } from "@/lib/origin";
 
 const fail = (origin: string, reason: string) =>
@@ -62,11 +62,7 @@ export async function GET(request: Request) {
 
   // The account's language, not this browser's, once there is an account.
   if (isLocale(user.locale)) {
-    (await cookies()).set(LOCALE_COOKIE, user.locale, {
-      path: "/",
-      maxAge: LOCALE_COOKIE_MAX_AGE,
-      sameSite: "lax",
-    });
+    (await cookies()).set(LOCALE_COOKIE, user.locale, localeCookieOptions);
   }
 
   // A brand-new Google account has a generated link it has never seen. Send it to

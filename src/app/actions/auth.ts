@@ -19,7 +19,7 @@ import { audit } from "@/lib/audit";
 import { now, run } from "@/lib/db";
 import { provisionClient } from "@/lib/provision";
 import { slugify } from "@/lib/ids";
-import { LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, currentLocale } from "@/lib/locale";
+import { LOCALE_COOKIE, currentLocale, localeCookieOptions } from "@/lib/locale";
 import { isLocale } from "@/lib/i18n";
 import { readSettings } from "@/lib/settings";
 import { checkInvitation, redeemInvitation } from "@/lib/invitations";
@@ -146,11 +146,7 @@ export async function logoutAction() {
  */
 async function adoptAccountLocale(user: { locale?: string | null }) {
   if (!isLocale(user.locale)) return;
-  (await cookies()).set(LOCALE_COOKIE, user.locale, {
-    path: "/",
-    maxAge: LOCALE_COOKIE_MAX_AGE,
-    sameSite: "lax",
-  });
+  (await cookies()).set(LOCALE_COOKIE, user.locale, localeCookieOptions);
 }
 
 /** Switches the interface language and reloads whatever page the visitor is on. */
@@ -159,11 +155,7 @@ export async function setLocaleAction(fd: FormData) {
   const path = String(fd.get("path") ?? "/");
 
   if (isLocale(locale)) {
-    (await cookies()).set(LOCALE_COOKIE, locale, {
-      path: "/",
-      maxAge: LOCALE_COOKIE_MAX_AGE,
-      sameSite: "lax",
-    });
+    (await cookies()).set(LOCALE_COOKIE, locale, localeCookieOptions);
 
     // The cookie is this browser's; the account's copy is what email is written
     // in, so someone who switches language stops getting mail in the other one.
