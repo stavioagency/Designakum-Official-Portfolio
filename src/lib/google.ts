@@ -9,7 +9,12 @@ export const googleConfigured = () =>
   Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
 export function googleRedirectUri(origin: string) {
-  return process.env.GOOGLE_REDIRECT_URI ?? `${origin}/api/auth/google/callback`;
+  // `??` only falls back on null and undefined, so an environment variable that
+  // exists but is empty passed straight through — and Google was being sent
+  // `redirect_uri=` with nothing after it, which it rejects. An empty value
+  // means "not configured", the same as an absent one.
+  const configured = process.env.GOOGLE_REDIRECT_URI?.trim();
+  return configured || `${origin}/api/auth/google/callback`;
 }
 
 const base64url = (buffer: Buffer) => buffer.toString("base64url");
