@@ -28,7 +28,7 @@ export function ForgotPasswordForm({ copy }: { copy: Copy }) {
       <Field label={copy.email}>
         <input name="email" type="email" className="field" dir="ltr" required placeholder="you@studio.com" />
       </Field>
-      <Status state={translate(state, copy)} />
+      <Status state={translate(state, copy)} sticky />
       <Submit className="btn btn-primary w-full" pendingLabel={copy.sending}>
         {copy.send}
       </Submit>
@@ -71,7 +71,7 @@ export function ResetPasswordForm({
           autoComplete="new-password"
         />
       </Field>
-      <Status state={translate(state, copy)} />
+      <Status state={translate(state, copy)} sticky />
       <Submit className="btn btn-primary w-full" pendingLabel={copy.pending}>
         {copy.submit}
       </Submit>

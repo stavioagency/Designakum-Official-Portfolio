@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { messages } from "@/lib/locale";
 import { fill } from "@/lib/i18n";
 import { audit } from "@/lib/audit";
+import { currentLocale } from "@/lib/locale";
+import { sendMail } from "@/lib/mailer";
+import { emailTemplate } from "@/lib/emails";
+import { requestOrigin } from "@/lib/origin";
 import { requireUser } from "@/lib/auth";
 import { activeSubscription } from "@/lib/billing";
 import {
@@ -66,8 +70,38 @@ export async function createInvitationAction(_prev: ActionState, fd: FormData): 
       detail: invitation.note,
     });
 
+    // An invitation addressed to someone should reach them. Without this the
+    // code existed in the console and nowhere else, so every invite had to be
+    // copied and pasted by hand into some other channel.
+    let mailed = false;
+    if (email) {
+      try {
+        const origin = await requestOrigin();
+        const composed = emailTemplate.invitation(await currentLocale(), {
+          code: invitation.code,
+          months,
+          signupUrl: `${origin}/signup?invite=${encodeURIComponent(invitation.code)}`,
+        });
+        const result = await sendMail({
+          to: email,
+          subject: composed.subject,
+          kind: "invitation",
+          body: composed.body,
+        });
+        mailed = result.delivered;
+      } catch (error) {
+        // The invitation exists and its code is on screen either way.
+        reportError(error, { area: "invitation-email", code: invitation.code });
+      }
+    }
+
     revalidatePath("/console/invitations");
-    return { ok: fill((await messages()).invitationCreated, { code: invitation.code }) };
+    const m = await messages();
+    return {
+      ok: mailed
+        ? fill(m.invitationSent, { code: invitation.code, email })
+        : fill(m.invitationCreated, { code: invitation.code }),
+    };
   } catch (error) {
     return await fail(error);
   }

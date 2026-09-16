@@ -50,14 +50,29 @@ export function IconSubmit({
  * Shows an action's result. Confirmations fade out on their own; errors stay put
  * until the next attempt, since the reader needs time to act on them.
  */
-export function Status({ state }: { state: ActionState }) {
+export function Status({
+  state,
+  sticky = false,
+}: {
+  state: ActionState;
+  /**
+   * Keeps a success message on screen.
+   *
+   * A "Saved" toast has done its job in four seconds. A message that says "check
+   * your email" has not — it is an instruction the reader has to act on, and one
+   * that vanishes before they look back reads as nothing having happened at all.
+   * That is exactly how a working password reset got reported as a missing
+   * feature.
+   */
+  sticky?: boolean;
+}) {
   const [visible, setVisible] = useState(false);
   const stamp = useRef(0);
 
   useEffect(() => {
     if (!state) return;
     setVisible(true);
-    if (state.error) return;
+    if (state.error || sticky) return;
 
     stamp.current += 1;
     const mine = stamp.current;
@@ -65,7 +80,7 @@ export function Status({ state }: { state: ActionState }) {
       if (stamp.current === mine) setVisible(false);
     }, 4000);
     return () => clearTimeout(id);
-  }, [state]);
+  }, [state, sticky]);
 
   if (!state || !visible) return null;
 

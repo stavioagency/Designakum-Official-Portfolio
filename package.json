@@ -21,7 +21,7 @@
     "cf:deploy": "opennextjs-cloudflare deploy",
     "build:local": "NEXT_DIST_DIR=.next-build next build",
     "start:local": "NEXT_DIST_DIR=.next-build next start -p 3000",
-    "pretest": "node -e \"fetch('http://localhost:3000/',{cache:'no-store'}).then(r=>r.ok?0:Promise.reject()).catch(()=>{console.error('\\n  The dev server is not answering on :3000.\\n  Start it, or restart it if you just ran `npm run build` (that rebuilds .next underneath it).\\n');process.exit(1)})\""
+    "pretest": "node scripts/check-dev-server.mjs"
   },
   "dependencies": {
     "eslint-config-next": "^15.5.25",

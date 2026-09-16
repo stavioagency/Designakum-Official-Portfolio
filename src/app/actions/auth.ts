@@ -224,6 +224,25 @@ export async function changePasswordAction(
     await revokeSessionsFor(user.id);
     await createSession(user.id);
 
+    // Tell them it happened. This is the message that surfaces an account
+    // takeover, so a failure to send must not fail the change itself — the
+    // password is already rotated and the sessions already gone.
+    try {
+      const origin = await requestOrigin();
+      const composed = emailTemplate.passwordChanged(user.locale, {
+        name: user.display_name || "",
+        resetUrl: `${origin}/forgot`,
+      });
+      await sendMail({
+        to: user.email,
+        subject: composed.subject,
+        kind: "password_changed",
+        body: composed.body,
+      });
+    } catch (error) {
+      reportError(error, { area: "password-changed-email", userId: user.id });
+    }
+
     await audit({
       actor: user,
       action: hasPassword ? "account.password_changed" : "account.password_set",

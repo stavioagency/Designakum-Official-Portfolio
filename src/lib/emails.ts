@@ -56,6 +56,73 @@ const passwordReset: Template<{ name: string; link: string }> = {
   }),
 };
 
+/* ------------------------------------------------------ password changed */
+
+/**
+ * Sent after a password is changed, to the address it was changed on.
+ *
+ * Not a courtesy: this is the message that tells someone their account has been
+ * taken over. It goes out on every change, including the ones the owner made
+ * themselves, because a notice that only appears when something is wrong tells
+ * an attacker exactly what to suppress.
+ */
+const passwordChanged: Template<{ name: string; resetUrl: string }> = {
+  ar: ({ name, resetUrl }) => ({
+    subject: "تم تغيير كلمة مرور حسابك",
+    body: lines(
+      `مرحبًا ${name}`.trim(),
+      "",
+      "تم تغيير كلمة مرور حسابك في ديزاينكم للتو، وأُنهيت جميع الجلسات الأخرى.",
+      "",
+      "إن كنت أنت من غيّرها فلا حاجة لأي إجراء.",
+      "إن لم تكن أنت، أعد تعيين كلمة المرور فورًا من هنا:",
+      resetUrl,
+    ),
+  }),
+  en: ({ name, resetUrl }) => ({
+    subject: "Your password was changed",
+    body: lines(
+      `Hi ${name}`.trim(),
+      "",
+      "The password on your Designakum account was just changed, and every other",
+      "session was signed out.",
+      "",
+      "If that was you, there is nothing to do.",
+      "If it was not, reset your password immediately:",
+      resetUrl,
+    ),
+  }),
+};
+
+/* ------------------------------------------------------------- invitation */
+
+const invitation: Template<{ code: string; signupUrl: string; months: number }> = {
+  ar: ({ code, signupUrl, months }) => ({
+    subject: "دعوة إلى ديزاينكم",
+    body: lines(
+      "وصلتك دعوة لإنشاء صفحتك على ديزاينكم.",
+      "",
+      `رمز الدعوة: ${code}`,
+      `يمنحك اشتراكًا مجانيًا لمدة ${months} شهر.`,
+      "",
+      "أنشئ حسابك من هنا — الرمز مُدرج في الرابط:",
+      signupUrl,
+    ),
+  }),
+  en: ({ code, signupUrl, months }) => ({
+    subject: "You have been invited to Designakum",
+    body: lines(
+      "You have been invited to create your page on Designakum.",
+      "",
+      `Invitation code: ${code}`,
+      `It gives you ${months} month${months === 1 ? "" : "s"} of subscription, free.`,
+      "",
+      "Create your account here \u2014 the code is already in the link:",
+      signupUrl,
+    ),
+  }),
+};
+
 /* -------------------------------------------------------------------- welcome */
 
 const welcome: Template<{ name: string; portfolioUrl: string; dashboardUrl: string }> = {
@@ -189,6 +256,14 @@ const subscriptionEnded: Template<{ name: string; billingUrl: string }> = {
 export const emailTemplate = {
   passwordReset: (locale: Locale | null | undefined, input: { name: string; link: string }) =>
     pick(passwordReset, locale, input),
+  passwordChanged: (
+    locale: Locale | null | undefined,
+    input: { name: string; resetUrl: string },
+  ) => pick(passwordChanged, locale, input),
+  invitation: (
+    locale: Locale | null | undefined,
+    input: { code: string; signupUrl: string; months: number },
+  ) => pick(invitation, locale, input),
   welcome: (
     locale: Locale | null | undefined,
     input: { name: string; portfolioUrl: string; dashboardUrl: string },
