@@ -8,10 +8,16 @@ import { siteUrl } from "@/lib/site";
  * test `/p/[slug]` applies before serving it, because a URL that answers "قيد
  * التجهيز" is worse than one that is simply absent.
  *
- * Generated per request rather than cached: it reads the request's host when
- * SITE_URL is unset, and a portfolio going live should appear without waiting
- * for a revalidation window.
+ * Generated per request rather than cached: a portfolio going live should appear
+ * without waiting for a revalidation window.
+ *
+ * `force-dynamic` is load-bearing, not decoration. Without it, setting SITE_URL
+ * removes the only `headers()` call, Next decides the route can be prerendered,
+ * and this database query runs during `next build` — on a build machine that has
+ * no database. The build then fails for a reason that has nothing to do with the
+ * sitemap.
  */
+export const dynamic = "force-dynamic";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = await siteUrl();
 
