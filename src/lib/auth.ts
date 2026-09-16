@@ -44,7 +44,14 @@ function resolveSecret(): string {
   }
 }
 
-const SECRET = resolveSecret();
+/**
+ * Resolved on first use, not on import — for the same reason the database pool
+ * is. A module-scope call means a missing AUTH_SECRET stops the serverless
+ * function from loading at all, and the platform answers with a bare 500 that
+ * names nothing. Deferred, the readable message above reaches the log.
+ */
+let cachedSecret: string | undefined;
+const secret = () => (cachedSecret ??= resolveSecret());
 
 /* ------------------------------------------------------------------ passwords */
 
@@ -64,7 +71,7 @@ export function verifyPassword(password: string, stored: string): boolean {
 
 /* ------------------------------------------------------------------- sessions */
 
-const sign = (value: string) => createHmac("sha256", SECRET).update(value).digest("hex");
+const sign = (value: string) => createHmac("sha256", secret()).update(value).digest("hex");
 
 function seal(sessionId: string) {
   return `${sessionId}.${sign(sessionId)}`;

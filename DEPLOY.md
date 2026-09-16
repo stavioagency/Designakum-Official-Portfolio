@@ -76,6 +76,16 @@ a cancellation made on PayPal's side will not reach the platform.
 
 ### 5. Check it came up
 
+Start at `/api/health`. It answers `200` when the platform can actually serve,
+and `503` with a breakdown when it cannot — which variable is missing, and
+whether the database answered. It reports presence, never values.
+
+```json
+{ "ok": true, "config": { "AUTH_SECRET": true, "DATABASE_URL": true }, "database": { "ok": true } }
+```
+
+Then, by hand:
+
 - `/` renders and offers the language choice
 - `/robots.txt` and `/sitemap.xml` answer
 - Sign in as the bootstrapped owner and open `/console`
