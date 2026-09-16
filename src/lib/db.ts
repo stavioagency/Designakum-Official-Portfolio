@@ -51,13 +51,20 @@ function createPool(): Pool {
  *
  * Reused across hot reloads in development so a file save does not leak a pool.
  */
-function getPool(): Pool {
-  const existing = globalThis.__designakumPool;
-  if (existing) return existing;
+let pool: Pool | undefined;
 
-  const created = createPool();
-  if (process.env.NODE_ENV !== "production") globalThis.__designakumPool = created;
-  return created;
+function getPool(): Pool {
+  // The module-level binding is what makes this a pool at all. Caching only on
+  // globalThis in development meant production built a new Pool — and paid a
+  // fresh TLS handshake to the pooler, about 800ms across an ocean — on every
+  // single query, while leaking the connection behind it.
+  pool ??= globalThis.__designakumPool ?? createPool();
+
+  // The global is only for development: it survives a hot reload, so saving a
+  // file does not strand the previous pool's connections.
+  if (process.env.NODE_ENV !== "production") globalThis.__designakumPool = pool;
+
+  return pool;
 }
 
 /**
