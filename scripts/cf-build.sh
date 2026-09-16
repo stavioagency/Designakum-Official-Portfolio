@@ -30,5 +30,5 @@ for f in .env.local .env.development.local .env.production.local .env; do
 done
 
 node scripts/brand-manifest.mjs
-next build
+BUILD_STANDALONE=1 next build
 opennextjs-cloudflare build --skipNextBuild

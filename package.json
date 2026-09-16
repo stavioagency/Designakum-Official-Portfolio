@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "NEXT_DIST_DIR=.next-build next build",
-    "start": "NEXT_DIST_DIR=.next-build next start -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
     "seed": "node scripts/seed.mjs",
     "backup": "node scripts/backup.mjs",
     "restore": "node scripts/restore.mjs",
@@ -18,7 +18,9 @@
     "prebuild": "node scripts/brand-manifest.mjs",
     "cf:build": "sh scripts/cf-build.sh",
     "cf:preview": "opennextjs-cloudflare preview",
-    "cf:deploy": "opennextjs-cloudflare deploy"
+    "cf:deploy": "opennextjs-cloudflare deploy",
+    "build:local": "NEXT_DIST_DIR=.next-build next build",
+    "start:local": "NEXT_DIST_DIR=.next-build next start -p 3000"
   },
   "dependencies": {
     "eslint-config-next": "^15.5.25",

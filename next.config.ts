@@ -30,10 +30,10 @@ const nextConfig: NextConfig = {
   // chunks. `npm run build` sets NEXT_DIST_DIR so both can run at once.
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
 
-  // OpenNext bundles the Worker from Next's standalone output, so this is what
-  // makes a Cloudflare build possible at all. It is harmless everywhere else:
-  // Netlify's plugin ignores it, and `next dev` does not produce it.
-  output: "standalone",
+  // Only the Cloudflare build wants this: OpenNext bundles the Worker from
+  // Next's standalone output. Vercel and Netlify each have their own packaging
+  // and standalone only confuses them, so scripts/cf-build.sh opts in.
+  output: process.env.BUILD_STANDALONE === "1" ? "standalone" : undefined,
 
   experimental: {
     // Vercel caps a serverless request body at 4.5 MB, so anything larger here
