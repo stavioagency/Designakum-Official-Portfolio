@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { currentLocale } from "@/lib/locale";
 import { dict } from "@/lib/i18n";
-import { Mark } from "@/components/brand/logo";
+import { Wordmark } from "@/components/brand/logo";
 
 export default async function NotFound() {
   const d = dict(await currentLocale()).notFound;
@@ -10,7 +10,7 @@ export default async function NotFound() {
     <main className="relative z-10 grid min-h-dvh place-items-center px-6 text-center">
       <div className="card max-w-sm p-8">
         <div className="mb-5 flex justify-center">
-          <Mark size={44} />
+          <Wordmark height={26} />
         </div>
         <p className="accent-text text-5xl font-bold">404</p>
         <h1 className="mt-3 text-xl font-bold">{d.title}</h1>

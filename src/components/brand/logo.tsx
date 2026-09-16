@@ -46,61 +46,25 @@ export function Wordmark({
   );
 }
 
-export function Mark({
-  variant = "light",
-  size = 38,
-  className = "",
-}: {
-  variant?: Variant;
-  size?: number;
-  className?: string;
-}) {
-  const src = brandAsset(`mark-${variant}`) ?? brandAsset("mark-light");
-
-  if (src) {
-    return (
-      <span
-        className={`grid shrink-0 place-items-center overflow-hidden rounded-2xl ${className}`}
-        style={{
-          width: size,
-          height: size,
-          background: variant === "light" ? BRAND.blue : "transparent",
-        }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt="" className="h-[74%] w-[74%] object-contain" />
-      </span>
-    );
-  }
-
-  return (
-    <span
-      className={`accent-grad grid shrink-0 place-items-center rounded-2xl font-bold text-white ${className}`}
-      style={{ width: size, height: size, fontSize: size * 0.42 }}
-    >
-      D
-    </span>
-  );
-}
-
-/** Mark + wordmark lockup, used in navigation bars. */
+/**
+ * The logo, as a link home.
+ *
+ * The wordmark alone. The monogram is the favicon and the app icon and nothing
+ * else — paired with the wordmark it read as two logos rather than one.
+ */
 export function LogoLockup({
   href = "/",
   size = 38,
   className = "",
 }: {
   href?: string;
+  /** Kept as the caller's sense of scale; the wordmark is sized from it. */
   size?: number;
   className?: string;
 }) {
   return (
-    <Link
-      href={href}
-      className={`flex items-center gap-2.5 ${className}`}
-      aria-label={BRAND.nameEn}
-    >
-      <Mark size={size} />
-      <Wordmark height={size * 0.6} className="hidden sm:block" />
+    <Link href={href} className={`flex items-center ${className}`} aria-label={BRAND.nameEn}>
+      <Wordmark height={size * 0.72} />
     </Link>
   );
 }

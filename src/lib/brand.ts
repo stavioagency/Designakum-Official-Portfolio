@@ -34,7 +34,6 @@ export type BrandAssetName =
   | "mark-light"
   | "mark-brand"
   | "mark-dark"
-  | "pattern-light"
   | "welcome-ar"
   | "og"
   | "riyal";
@@ -69,11 +68,6 @@ export const BRAND_ASSETS: {
     name: "mark-dark",
     description: "الأيقونة بالأسود — للخلفيات الفاتحة",
     descriptionEn: "Icon in black — for light backgrounds",
-  },
-  {
-    name: "pattern-light",
-    description: "الشريط الزخرفي الكوفي بالأبيض — فواصل وحواف",
-    descriptionEn: "The Kufic ornament band in white — dividers and edges",
   },
   {
     name: "welcome-ar",

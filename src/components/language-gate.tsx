@@ -1,6 +1,6 @@
 import { setLocaleAction } from "@/app/actions/auth";
-import { Mark } from "@/components/brand/logo";
-import { PatternBand, WelcomeCalligraphy } from "@/components/brand/ornament";
+import { Wordmark } from "@/components/brand/logo";
+import { WelcomeCalligraphy } from "@/components/brand/ornament";
 import type { Locale } from "@/lib/types";
 
 /**
@@ -28,12 +28,10 @@ export function LanguageGate({
         {/* The calligraphy says "welcome" better than either sentence did, and it
             says it before the visitor has told us which language to use. */}
         <div className="flex justify-center">
-          <Mark size={44} />
+          <Wordmark height={30} />
         </div>
 
         <WelcomeCalligraphy className="mt-7" />
-
-        <PatternBand className="mt-7" />
 
         <p className="mt-7 text-[12.5px] text-mist-400">
           <span dir="rtl" lang="ar">اختر لغتك</span>

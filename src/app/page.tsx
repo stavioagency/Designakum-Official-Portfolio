@@ -10,7 +10,6 @@ import { readSettings } from "@/lib/settings";
 import { MaintenanceNotice } from "@/components/maintenance-notice";
 import { BRAND } from "@/lib/brand";
 import { LogoLockup, Wordmark } from "@/components/brand/logo";
-import { PatternBand } from "@/components/brand/ornament";
 import { LocaleSwitch } from "@/components/locale-switch";
 import { Pricing } from "@/components/pricing";
 import { Briefcase, Globe, Eye, Image as ImageIcon, Pencil, Shield, Sparkle } from "@/components/icons";
@@ -148,9 +147,7 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <PatternBand className="mt-20" />
-
-        <div className="mt-20">
+        <div className="mt-24">
           <Pricing copy={copy} currentPlan={user ? (await entitlementsFor(user)).plan : undefined} />
         </div>
 
@@ -190,9 +187,7 @@ export default async function LandingPage() {
         </section>
       </main>
 
-      <PatternBand className="mt-20" opacity={0.12} />
-
-      <footer className="mt-9 border-t border-white/8 py-9">
+      <footer className="mt-24 border-t border-white/8 py-9">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-3 px-5 text-center">
           <Wordmark height={22} className="opacity-70" />
           <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12.5px] text-mist-500">

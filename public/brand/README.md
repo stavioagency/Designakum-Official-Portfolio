@@ -5,13 +5,12 @@ extension can be `.svg`, `.png`, `.webp`, `.jpg` or `.avif`.
 
 | File | Use |
 | --- | --- |
-| `wordmark-light.*` | Full logo in white — dark and blue backgrounds (site header, dashboards) |
+| `wordmark-light.*` | **The logo.** White, for dark and blue backgrounds — header, dashboards, footers |
 | `wordmark-brand.*` | Full logo in Designakum blue — black or light backgrounds |
 | `wordmark-dark.*` | Full logo in black — light backgrounds, print, invoices |
-| `mark-light.*` | Icon only, white |
+| `mark-light.*` | Icon only, white — **favicon and app icon only**, never beside the wordmark |
 | `mark-brand.*` | Icon only, blue |
 | `mark-dark.*` | Icon only, black |
-| `pattern-light.*` | Kufic ornament band in white — dividers |
 | `welcome-ar.*` | “Ahlan wa sahlan” calligraphy — welcome and language screens |
 | `riyal.*` | Official Saudi Riyal symbol, single colour — recoloured in CSS, so export it as a solid black or white glyph |
 | `favicon.png` / `icon.png` | 512×512 app icon (optional; falls back to `mark-*`) |
