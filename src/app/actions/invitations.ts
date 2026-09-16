@@ -82,12 +82,7 @@ export async function createInvitationAction(_prev: ActionState, fd: FormData): 
           months,
           signupUrl: `${origin}/signup?invite=${encodeURIComponent(invitation.code)}`,
         });
-        const result = await sendMail({
-          to: email,
-          subject: composed.subject,
-          kind: "invitation",
-          body: composed.body,
-        });
+        const result = await sendMail({ to: email, kind: "invitation", ...composed });
         mailed = result.delivered;
       } catch (error) {
         // The invitation exists and its code is on screen either way.

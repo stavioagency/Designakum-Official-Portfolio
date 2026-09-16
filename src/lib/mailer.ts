@@ -2,13 +2,25 @@ import "server-only";
 import { now, run } from "./db";
 import { newId } from "./ids";
 import { readSettings } from "./settings";
+import { siteUrl } from "./site";
+import { toHtml, type Block } from "./email-render";
+import type { Locale } from "./types";
 import { reportError } from "./observability";
 
 export interface Mail {
   to: string;
   subject: string;
+  /** Plain text. Always sent, and the only thing `mail_outbox` keeps. */
   body: string;
   kind?: string;
+  /**
+   * The message as blocks. Present, it is rendered to a branded HTML part and
+   * sent alongside the text; absent, the mail goes out as text alone. Spreading
+   * a composed template supplies these three without the caller naming them.
+   */
+  blocks?: Block[];
+  locale?: Locale;
+  preheader?: string;
 }
 
 const configured = () =>
@@ -53,6 +65,20 @@ export async function sendMail(mail: Mail): Promise<{ delivered: boolean; error?
     }
 
     const settings = await readSettings();
+
+    // The HTML half carries a logo, so it needs an absolute origin — a mail
+    // client has no page to resolve a relative path against. A webhook has no
+    // request either, which is why this is `siteUrl()` and not the origin of
+    // whatever happened to trigger the send.
+    const html = mail.blocks?.length
+      ? toHtml(mail.blocks, {
+          locale: mail.locale ?? "ar",
+          origin: await siteUrl(),
+          preheader: mail.preheader,
+          supportEmail: settings["brand.support_email"] || undefined,
+        })
+      : undefined;
+
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -65,6 +91,7 @@ export async function sendMail(mail: Mail): Promise<{ delivered: boolean; error?
         reply_to: settings["brand.support_email"] || undefined,
         subject: mail.subject,
         text: mail.body,
+        html,
       }),
     });
 

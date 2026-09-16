@@ -101,12 +101,7 @@ async function sendWelcome(user: User, slug: string, locale: Locale) {
       portfolioUrl: `${origin}/p/${slug}`,
       dashboardUrl: `${origin}/dashboard`,
     });
-    await sendMail({
-      to: user.email,
-      subject: composed.subject,
-      kind: "welcome",
-      body: composed.body,
-    });
+    await sendMail({ to: user.email, kind: "welcome", ...composed });
   } catch (error) {
     reportError(error, { area: "welcome-email", userId: user.id });
   }
@@ -233,12 +228,7 @@ export async function changePasswordAction(
         name: user.display_name || "",
         resetUrl: `${origin}/forgot`,
       });
-      await sendMail({
-        to: user.email,
-        subject: composed.subject,
-        kind: "password_changed",
-        body: composed.body,
-      });
+      await sendMail({ to: user.email, kind: "password_changed", ...composed });
     } catch (error) {
       reportError(error, { area: "password-changed-email", userId: user.id });
     }
@@ -294,12 +284,7 @@ export async function requestPasswordResetAction(
     link,
   });
 
-  const result = await sendMail({
-    to: user.email,
-    subject: composed.subject,
-    kind: "password_reset",
-    body: composed.body,
-  });
+  const result = await sendMail({ to: user.email, kind: "password_reset", ...composed });
 
   // Without a mail provider the link cannot reach anyone, and saying otherwise
   // would leave the customer waiting for an email that will never arrive.

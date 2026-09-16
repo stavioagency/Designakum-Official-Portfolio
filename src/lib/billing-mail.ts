@@ -1,5 +1,5 @@
 import "server-only";
-import { emailTemplate } from "./emails";
+import { emailTemplate, type Composed } from "./emails";
 import { sendMail } from "./mailer";
 import { reportError } from "./observability";
 import { siteUrl } from "./site";
@@ -36,9 +36,9 @@ const formatDay = (ms: number, locale: Locale) =>
 const localeOf = (user: { locale?: string | null }): Locale =>
   user.locale === "en" || user.locale === "ar" ? user.locale : DEFAULT_LOCALE;
 
-async function send(kind: string, user: User, composed: { subject: string; body: string }) {
+async function send(kind: string, user: User, composed: Composed) {
   try {
-    await sendMail({ to: user.email, subject: composed.subject, kind, body: composed.body });
+    await sendMail({ to: user.email, kind, ...composed });
   } catch (error) {
     reportError(error, { area: "billing-mail", kind, userId: user.id });
   }
