@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { CurrencySwitch } from "@/components/currency-switch";
+import { visitorCurrency } from "@/lib/visitor-currency";
 import { currentUser } from "@/lib/auth";
 import { listPortfolios, loadBundle } from "@/lib/portfolios";
 import { currentLocale } from "@/lib/locale";
@@ -30,7 +32,8 @@ export default async function LandingPage() {
   const [user, locale] = await Promise.all([await currentUser(), await currentLocale()]);
   const settings = await readSettings();
   const d = dict(locale);
-  const copy = await pricingCopy(locale);
+  const money = await visitorCurrency();
+  const copy = await pricingCopy(locale, money.code);
 
   // One published portfolio, loaded in full, to show the product rather than
   // describe it. Gated on the same setting the old showcase used.
@@ -150,6 +153,9 @@ export default async function LandingPage() {
 
         <div className="mt-24">
           <Pricing copy={copy} currentPlan={user ? (await entitlementsFor(user)).plan : undefined} />
+        <div className="mt-6">
+          <CurrencySwitch current={money.code} locale={locale} label={d.pricing.currencyLabel} />
+        </div>
         </div>
 
         <section className="card mt-24 overflow-hidden p-8 text-center sm:p-12">

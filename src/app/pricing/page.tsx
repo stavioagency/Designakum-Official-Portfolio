@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { visitorCurrency } from "@/lib/visitor-currency";
 import Link from "next/link";
 import { currentUser } from "@/lib/auth";
 import { currentLocale } from "@/lib/locale";
@@ -38,7 +39,7 @@ export default async function PricingPage() {
 
       <main className="mx-auto w-full max-w-6xl px-5 py-12">
         <Pricing
-          copy={await pricingCopy(locale)}
+          copy={await pricingCopy(locale, (await visitorCurrency()).code)}
           currentPlan={user ? (await entitlementsFor(user)).plan : undefined}
           ctaHref={user ? "/dashboard/billing" : "/signup"}
         />

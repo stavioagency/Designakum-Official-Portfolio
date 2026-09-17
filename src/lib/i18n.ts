@@ -91,6 +91,7 @@ const ar = {
   ],
 
   pricing: {
+    currencyLabel: "اعرض الأسعار بـ",
     title: "اشتراك واحد، كل المزايا",
     sub: "ابنِ معرضك مجانًا. الاشتراك يفتح النشر.",
     monthly: "شهري",
@@ -1455,6 +1456,7 @@ const en: typeof ar = {
   ],
 
   pricing: {
+    currencyLabel: "Show prices in",
     title: "One subscription, everything included",
     sub: "Build it free. Publish when you\u2019re ready.",
     monthly: "Monthly",

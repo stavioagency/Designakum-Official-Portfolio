@@ -1,4 +1,5 @@
 import { get, databaseSource } from "@/lib/db";
+import { headers } from "next/headers";
 
 /**
  * Says why the platform is not working, without saying anything secret.
@@ -19,6 +20,9 @@ export async function GET() {
   const config = {
     AUTH_SECRET: present("AUTH_SECRET") && (process.env.AUTH_SECRET?.length ?? 0) >= 32,
     DATABASE: databaseSource(),
+    // Where the platform thinks this request came from. Diagnostic, and the
+    // only way to confirm the edge is actually attaching geo to requests.
+    COUNTRY: (await headers()).get("x-vercel-ip-country") ?? "unknown",
     SITE_URL: present("SITE_URL"),
     STORAGE_DRIVER: process.env.STORAGE_DRIVER ?? "local",
     SUPABASE_URL: present("SUPABASE_URL"),

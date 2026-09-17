@@ -32,6 +32,10 @@ export const SETTING_DEFAULTS = {
   // here rather than in the code in case that ever changes.
   "pricing.sar_per_usd": 3.75,
   "pricing.charge_currency": "USD",
+  // Floating rates, unlike the Gulf pegs, so they are correctable without a
+  // deploy. Zero means "use the value compiled into currency.ts".
+  "pricing.gbp_per_usd": 0,
+  "pricing.aud_per_usd": 0,
 
   // Written by the app, not by hand: PayPal's product and plan ids, kept so the
   // catalogue is created once. A plan id is stored as "CUR:amount|id" so a price

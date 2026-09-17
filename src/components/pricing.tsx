@@ -5,6 +5,13 @@ import { fill, type Dictionary } from "@/lib/i18n";
 import type { Locale, Plan } from "@/lib/types";
 
 export interface PricingCopy {
+  /** The currency the figures are written in, which may not be the one charged. */
+  displayCurrency: string;
+  /** Text to print beside the number, or null when the riyal artwork is used. */
+  unitSymbol: string | null;
+  currencyName: string;
+  /** True when the figures are a conversion rather than the amount charged. */
+  approximate: boolean;
   d: Dictionary["pricing"];
   locale: Locale;
   riyalSrc: string | null;
@@ -28,6 +35,7 @@ function Price({
   locale,
   charged,
   currency,
+  unitSymbol,
 }: {
   amount: string;
   suffix: string;
@@ -35,15 +43,23 @@ function Price({
   locale: Locale;
   charged?: string;
   currency?: string;
+  /** null means the riyal glyph; anything else is printed as written. */
+  unitSymbol?: string | null;
 }) {
   return (
     <div>
       <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span className="tnum text-[46px] font-bold leading-none">{amount}</span>
-        <Riyal src={riyalSrc} locale={locale} size="1.5rem" className="translate-y-[3px]" />
+        {unitSymbol == null ? (
+          <Riyal src={riyalSrc} locale={locale} size="1.5rem" className="translate-y-[3px]" />
+        ) : (
+          <span className="text-[19px] font-semibold text-mist-300">{unitSymbol}</span>
+        )}
         <span className="text-[13.5px] text-mist-400">/ {suffix}</span>
       </p>
-      {charged && currency && currency !== "SAR" && (
+      {/* What actually leaves the account. Everything above may be a
+          conversion; this line never is. */}
+      {charged && currency && (
         <p className="tnum mt-2 text-[12px] text-mist-500">
           {locale === "ar"
             ? `يُحصّل ${charged} ${currency} عبر بوابة الدفع`
@@ -109,6 +125,7 @@ export function Pricing({
               amount={copy.monthlyPrice}
               suffix={d.perMonth}
               riyalSrc={riyalSrc}
+              unitSymbol={copy.unitSymbol}
               locale={locale}
               charged={copy.monthlyCharged}
               currency={copy.chargeCurrency}
@@ -147,6 +164,7 @@ export function Pricing({
               amount={copy.yearlyPrice}
               suffix={d.perYear}
               riyalSrc={riyalSrc}
+              unitSymbol={copy.unitSymbol}
               locale={locale}
               charged={copy.yearlyCharged}
               currency={copy.chargeCurrency}

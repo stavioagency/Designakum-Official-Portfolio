@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { visitorCurrency } from "@/lib/visitor-currency";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import {
@@ -39,7 +40,7 @@ export default async function BillingPage() {
     yearly: d.dashboard.settings.planYearly,
   };
   const statusLabel: Record<string, string> = b.status;
-  const copy = await pricingCopy(locale);
+  const copy = await pricingCopy(locale, (await visitorCurrency()).code);
 
   const subscription = await activeSubscription(user.id);
   const latest = await latestSubscription(user.id);
