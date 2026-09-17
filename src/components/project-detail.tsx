@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ExternalLink, X } from "./icons";
-import type { Project } from "@/lib/types";
+import type { Project, ProjectImageRow } from "@/lib/types";
 
 /**
  * The whole of an item, rather than the corner of it that fits on a card.
@@ -17,17 +17,34 @@ import type { Project } from "@/lib/types";
  */
 export function ProjectDetail({
   project,
+  images,
   openLabel,
   closeLabel,
   visitLabel,
 }: {
   project: Project;
+  /** In order, the first being the main one. Empty falls back to the cover. */
+  images?: ProjectImageRow[];
   openLabel: string;
   closeLabel: string;
   visitLabel: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
+
+  /**
+   * The gallery, or the old single cover for a project that predates it.
+   *
+   * Written this way rather than migrating every caller: the cover column is
+   * still what the card reads, and a project with no gallery rows should show
+   * its picture rather than nothing.
+   */
+  const gallery: ProjectImageRow[] =
+    images && images.length > 0
+      ? images
+      : project.image_url
+        ? [{ id: project.id, project_id: project.id, url: project.image_url, width: 0, height: 0, position: 0 }]
+        : [];
 
   // Closing can come from Escape or the backdrop as well as the button, so the
   // element is what the state follows rather than the other way round.
@@ -75,13 +92,37 @@ export function ProjectDetail({
           className="card overflow-hidden text-start"
           onClick={(event) => event.stopPropagation()}
         >
-          {project.image_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={project.image_url}
-              alt={project.title}
-              className="max-h-[52vh] w-full object-cover"
-            />
+          {/*
+            Every image, each at its own shape.
+
+            A fixed box and `object-cover` crops somebody's work to fit a
+            layout: a tall poster loses its top and bottom, a wide banner loses
+            its ends. The real dimensions are read from the file when it is
+            uploaded, so the space is reserved at the right ratio before the
+            image arrives, which also means the dialog does not jump as they
+            load. `object-contain` is the safety net for the rows migrated from
+            the old single-image column, where the size was never recorded.
+          */}
+          {gallery.length > 0 && (
+            <div className="max-h-[70vh] overflow-y-auto">
+              {gallery.map((image, index) => (
+                <img
+                  // eslint-disable-next-line @next/next/no-img-element
+                  key={image.id}
+                  src={image.url}
+                  alt={index === 0 ? project.title : ""}
+                  loading={index === 0 ? "eager" : "lazy"}
+                  width={image.width || undefined}
+                  height={image.height || undefined}
+                  className="block w-full object-contain"
+                  style={
+                    image.width && image.height
+                      ? { aspectRatio: `${image.width} / ${image.height}` }
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
           )}
 
           <div className="space-y-3 p-5 sm:p-6">

@@ -150,6 +150,18 @@ export interface PortfolioBundle {
   projects: Project[];
   stats: Stat[];
   socials: Social[];
+  /** A project's own images, keyed by project id, in display order. */
+  projectImages: Record<string, ProjectImageRow[]>;
+}
+
+export interface ProjectImageRow {
+  id: string;
+  project_id: string;
+  url: string;
+  /** Zero when the size could not be read; the page falls back to a plain box. */
+  width: number;
+  height: number;
+  position: number;
 }
 
 export type ThemeKey =

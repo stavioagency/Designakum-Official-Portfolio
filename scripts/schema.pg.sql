@@ -92,6 +92,22 @@ CREATE TABLE IF NOT EXISTS projects (
 );
 CREATE INDEX IF NOT EXISTS idx_projects_portfolio ON projects(portfolio_id, position, seq);
 
+-- A project's images. The one at position 0 is the main one, shown on the card;
+-- the rest are the project itself. Width and height come from the file header at
+-- upload so each image can be displayed at its own shape rather than cropped
+-- into a common rectangle.
+CREATE TABLE IF NOT EXISTS project_images (
+  seq        BIGSERIAL,
+  id         TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  url        TEXT NOT NULL,
+  width      INTEGER NOT NULL DEFAULT 0,
+  height     INTEGER NOT NULL DEFAULT 0,
+  position   INTEGER NOT NULL DEFAULT 0,
+  created_at BIGINT NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_project_images ON project_images(project_id, position, seq);
+
 CREATE TABLE IF NOT EXISTS stats (
   seq          BIGSERIAL,
   id           TEXT PRIMARY KEY,

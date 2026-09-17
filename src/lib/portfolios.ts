@@ -2,7 +2,8 @@ import "server-only";
 import { cache } from "react";
 import { DEFAULT_LOCALE, dict } from "./i18n";
 import { messages } from "./locale";
-import type { Locale } from "./types";
+import type {
+  ProjectImageRow, Locale } from "./types";
 import { all, get, now, run } from "./db";
 import { newId, slugify } from "./ids";
 import { dayKey, markUniqueVisitor, recordPortfolioEvent } from "./analytics";
@@ -91,7 +92,24 @@ async function uncachedLoadBundle(portfolio: Portfolio): Promise<PortfolioBundle
     child<Social>("socials"),
   ]);
 
-  return { portfolio, slides, projects, stats, socials };
+  /**
+   * One query for every project's images rather than one per project. A
+   * portfolio with twenty projects would otherwise make twenty round trips to
+   * a database in another region to render a single page.
+   */
+  const projectImages: Record<string, ProjectImageRow[]> = {};
+  if (projects.length) {
+    const rows = await all<ProjectImageRow>(
+      `SELECT id, project_id, url, width, height, position
+         FROM project_images
+        WHERE project_id IN (${projects.map(() => "?").join(", ")})
+        ORDER BY position, seq`,
+      ...projects.map((p) => p.id),
+    );
+    for (const row of rows) (projectImages[row.project_id] ??= []).push(row);
+  }
+
+  return { portfolio, slides, projects, stats, socials, projectImages };
 }
 
 export const loadBundle = cache(uncachedLoadBundle);

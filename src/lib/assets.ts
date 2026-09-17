@@ -24,7 +24,19 @@ const ALLOWED = new Set(["image/png", "image/jpeg", "image/webp", "image/gif", "
 const MAX_SIDE = 12_000;
 const MAX_PIXELS = 40_000_000;
 
+export interface StoredImage {
+  url: string;
+  /** From the file's own header, so a gallery can lay each image out at its real shape. */
+  width: number;
+  height: number;
+}
+
+/** The url alone, for the callers that only ever wanted that. */
 export async function storeImage(file: File, user: User): Promise<string> {
+  return (await storeImageSized(file, user)).url;
+}
+
+export async function storeImageSized(file: File, user: User): Promise<StoredImage> {
   // The words come from the dictionary: this runs inside the customer's own
   // request, and they should be told what went wrong in their language.
   const m = await messages();
@@ -58,7 +70,7 @@ export async function storeImage(file: File, user: User): Promise<string> {
     now(),
   );
 
-  return `/api/asset/${id}`;
+  return { url: `/api/asset/${id}`, width: info.width, height: info.height };
 }
 
 export interface StoredAsset {

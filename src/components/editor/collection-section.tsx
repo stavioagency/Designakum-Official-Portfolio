@@ -89,6 +89,7 @@ function ItemCard({
   confirmText,
   chrome,
   children,
+  aside,
 }: {
   table: CollectionTable;
   portfolioId: string;
@@ -99,6 +100,8 @@ function ItemCard({
   confirmText: string;
   chrome: CollectionChrome;
   children: React.ReactNode;
+  /** Rendered outside the save form, for controls that post on their own. */
+  aside?: React.ReactNode;
 }) {
   const [state, save] = useActionState(saveItemAction, null);
 
@@ -121,6 +124,8 @@ function ItemCard({
           chrome={chrome}
         />
       </div>
+
+      {aside && <div className="mb-4">{aside}</div>}
 
       <form action={save} className="space-y-4">
         <input type="hidden" name="portfolioId" value={portfolioId} />
@@ -147,6 +152,7 @@ export function CollectionSection<T extends Item>({
   confirmText,
   itemTitle,
   renderFields,
+  renderAside,
   chrome,
 }: {
   table: CollectionTable;
@@ -159,6 +165,8 @@ export function CollectionSection<T extends Item>({
   confirmText: string;
   itemTitle: (item: T, index: number) => string;
   renderFields: (item: T) => React.ReactNode;
+  /** Sits above the form, for controls with actions of their own. */
+  renderAside?: (item: T) => React.ReactNode;
   chrome: CollectionChrome;
 }) {
   const [addState, add] = useActionState(addItemAction, null);
@@ -185,6 +193,7 @@ export function CollectionSection<T extends Item>({
           title={itemTitle(item, index)}
           confirmText={confirmText}
           chrome={chrome}
+          aside={renderAside?.(item)}
         >
           {renderFields(item)}
         </ItemCard>

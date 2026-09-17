@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CollectionSection } from "./collection-section";
+import { ProjectGallery } from "./project-gallery";
 import { ProfileSection } from "./profile-section";
 import { SettingsSection } from "./settings-section";
 import { Field } from "./ui";
@@ -41,7 +42,7 @@ export function Editor({
   locale: Locale;
 }) {
   const [tab, setTab] = useState<TabKey>("profile");
-  const { portfolio, slides, projects, stats, socials } = bundle;
+  const { portfolio, slides, projects, stats, socials, projectImages } = bundle;
 
   const imageChrome = {
     choose: copy.common.choose,
@@ -134,15 +135,27 @@ export function Editor({
             emptyLabel={copy.projects.empty}
             confirmText={copy.projects.confirm}
             itemTitle={(item) => item.title || copy.projects.untitled}
+            renderAside={(project) => (
+              <ProjectGallery
+                portfolioId={portfolio.id}
+                projectId={project.id}
+                images={projectImages[project.id] ?? []}
+                chrome={{
+                  heading: copy.projects.gallery,
+                  hint: copy.projects.galleryHint,
+                  add: copy.projects.galleryAdd,
+                  adding: copy.common.pending,
+                  main: copy.projects.galleryMain,
+                  makeMain: copy.projects.galleryMakeMain,
+                  earlier: copy.projects.galleryEarlier,
+                  later: copy.projects.galleryLater,
+                  remove: copy.common.clear,
+                  empty: copy.projects.galleryEmpty,
+                }}
+              />
+            )}
             renderFields={(project) => (
               <>
-                <ImageField
-                  chrome={imageChrome}
-                  name="image"
-                  current={project.image_url}
-                  label={copy.projects.image}
-                  aspect={1}
-                />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label={copy.projects.name}>
                     <input name="title" defaultValue={project.title} className="field" />

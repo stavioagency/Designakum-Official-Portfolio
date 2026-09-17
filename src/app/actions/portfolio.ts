@@ -4,9 +4,10 @@ import { revalidatePath } from "next/cache";
 import { messages } from "@/lib/locale";
 import { fill } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
-import { storeImage } from "@/lib/assets";
+import { storeImage, storeImageSized } from "@/lib/assets";
 import { canPublish } from "@/lib/billing";
 import { isSafeUrl, safeUrl, socialHref } from "@/lib/safe-url";
+import { addProjectImage, moveProjectImage, removeProjectImage } from "@/lib/project-images";
 import { all, now, run } from "@/lib/db";
 import {
   TenantError,
@@ -178,6 +179,69 @@ export async function saveProfileAction(_prev: ActionState, fd: FormData): Promi
 
     refresh(slug);
     return { ok: (await messages()).profileSaved };
+  } catch (error) {
+    return await fail(error);
+  }
+}
+
+/* ------------------------------------------------------ project galleries */
+
+/**
+ * One image added to one project.
+ *
+ * Its own action rather than a field on the project form: a gallery is edited
+ * a picture at a time, and making somebody press Save on the whole project to
+ * add a second photograph is how you end up with half-saved projects.
+ */
+export async function addProjectImageAction(
+  _prev: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  try {
+    const { user, slug } = await withPortfolio(fd);
+    const file = fd.get("image");
+    if (!(file instanceof File) || file.size === 0) {
+      return { error: (await messages()).noImageChosen };
+    }
+
+    const stored = await storeImageSized(file, user);
+    await addProjectImage(str(fd, "projectId"), user, stored);
+
+    refresh(slug);
+    return { ok: (await messages()).imageAdded };
+  } catch (error) {
+    return await fail(error);
+  }
+}
+
+export async function removeProjectImageAction(
+  _prev: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  try {
+    const { user, slug } = await withPortfolio(fd);
+    await removeProjectImage(str(fd, "imageId"), user);
+    refresh(slug);
+    return { ok: (await messages()).imageDeleted };
+  } catch (error) {
+    return await fail(error);
+  }
+}
+
+/**
+ * Reorders, which is also how an image is made the main one: position zero is
+ * the main image, so "make main" is a move to the front and needs no separate
+ * concept.
+ */
+export async function moveProjectImageAction(
+  _prev: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  try {
+    const { user, slug } = await withPortfolio(fd);
+    await moveProjectImage(str(fd, "imageId"), user, Number(str(fd, "to")) || 0);
+    refresh(slug);
+    return { ok: (await messages()).saved };
   } catch (error) {
     return await fail(error);
   }

@@ -82,7 +82,7 @@ export function PortfolioView({
    */
   hideBranding?: boolean;
 }) {
-  const { portfolio, slides, projects, stats, socials } = bundle;
+  const { portfolio, slides, projects, stats, socials, projectImages } = bundle;
   const locale = portfolio.locale;
   const d = dict(locale).portfolio;
 
@@ -323,6 +323,7 @@ export function PortfolioView({
                         {Card}
                         <ProjectDetail
                           project={{ ...project, link: safeUrl(project.link) ?? "" }}
+                          images={projectImages[project.id]}
                           openLabel={d.openProject}
                           closeLabel={d.closeProject}
                           visitLabel={d.visitProject}
