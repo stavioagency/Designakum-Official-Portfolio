@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { ANNOUNCEMENT_HOURS } from "@/lib/announcement-durations";
 import {
   createAnnouncementAction,
   deleteAnnouncementAction,
@@ -63,8 +64,14 @@ export function CreateAnnouncementForm({ copy }: { copy: Copy }) {
         <Field label={copy.startsAt} hint={copy.startsHint}>
           <input name="startsAt" type="date" className="field" />
         </Field>
-        <Field label={copy.endsAt} hint={copy.endsHint}>
-          <input name="endsAt" type="date" className="field" />
+        <Field label={copy.runFor} hint={copy.runForHint}>
+          <select name="runHours" defaultValue="168" className="field">
+            {ANNOUNCEMENT_HOURS.map((hours) => (
+              <option key={hours} value={hours}>
+                {copy.durations[String(hours) as keyof typeof copy.durations]}
+              </option>
+            ))}
+          </select>
         </Field>
       </div>
 

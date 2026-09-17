@@ -8,6 +8,7 @@ import { requireUser } from "@/lib/auth";
 import {
   createAnnouncement,
   deleteAnnouncement,
+  endsAtFromHours,
   getAnnouncement,
   markAnnouncementRead,
   updateAnnouncement,
@@ -52,7 +53,9 @@ export async function createAnnouncementAction(_prev: ActionState, fd: FormData)
       bodyEn: str(fd, "bodyEn").slice(0, 2000),
       severity,
       startsAt: parseDate(str(fd, "startsAt")),
-      endsAt: parseDate(str(fd, "endsAt"), true),
+      // A duration beats an end date: it is how the decision is made, and an
+      // hour cannot be expressed with a date picker at all.
+      endsAt: endsAtFromHours(Number(str(fd, "runHours")), parseDate(str(fd, "startsAt")) ?? Date.now()),
       createdBy: actor.id,
     });
 

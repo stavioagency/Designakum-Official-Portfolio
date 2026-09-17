@@ -4,6 +4,7 @@ import { currentUser } from "@/lib/auth";
 import { needsOnboarding } from "@/lib/onboarding";
 import { getPortfolioForUser } from "@/lib/portfolios";
 import { TopNav } from "@/components/top-nav";
+import { announcementHistoryFor } from "@/lib/announcements";
 import { currentLocale } from "@/lib/locale";
 import { dict } from "@/lib/i18n";
 import { maintenanceState } from "@/lib/maintenance";
@@ -41,6 +42,17 @@ export default async function DashboardLayout({
         locale={locale}
         ownerLabel={nav.owner}
         logoutLabel={nav.logout}
+        notifications={{
+          items: await announcementHistoryFor(user.id),
+          locale,
+          copy: {
+            title: dict(locale).announcements.hubTitle,
+            empty: dict(locale).announcements.hubEmpty,
+            seen: dict(locale).announcements.hubSeen,
+            open: dict(locale).announcements.hubOpen,
+            dismiss: dict(locale).announcements.dismiss,
+          },
+        }}
         links={[
           { href: "/dashboard", label: nav.editor },
           { href: "/dashboard/preview", label: nav.preview },

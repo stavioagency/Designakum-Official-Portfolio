@@ -406,6 +406,23 @@ const ar = {
       startsAt: "يبدأ في",
       startsHint: "اتركه فارغًا ليظهر فورًا.",
       endsAt: "ينتهي في",
+      runFor: "مدة العرض",
+      runForHint: "من ساعة واحدة إلى 30 يومًا، تُحسب من وقت البدء. بعدها يختفي الإعلان تلقائيًا.",
+      durations: {
+        "0": "بدون نهاية — حتى أوقفه يدويًا",
+        "1": "ساعة واحدة",
+        "6": "6 ساعات",
+        "12": "12 ساعة",
+        "24": "يوم واحد",
+        "72": "3 أيام",
+        "168": "7 أيام",
+        "336": "14 يومًا",
+        "720": "30 يومًا",
+      },
+      hubTitle: "الإشعارات",
+      hubEmpty: "لا توجد إشعارات.",
+      hubSeen: "مقروء",
+      hubOpen: "فتح الإشعارات",
       endsHint: "اتركه فارغًا ليستمر حتى توقفه.",
       publish: "نشر الإعلان",
       pause: "إيقاف",
@@ -1151,6 +1168,10 @@ const ar = {
 
   announcements: {
     dismiss: "إغلاق الإعلان",
+    hubTitle: "الإشعارات",
+    hubEmpty: "لا توجد إشعارات.",
+    hubSeen: "مقروء",
+    hubOpen: "فتح الإشعارات",
   },
 
   report: {
@@ -1698,6 +1719,23 @@ const en: typeof ar = {
       startsAt: "Starts",
       startsHint: "Leave empty to show it immediately.",
       endsAt: "Ends",
+      runFor: "Stays up for",
+      runForHint: "From one hour to 30 days, counted from when it starts. After that it disappears on its own.",
+      durations: {
+        "0": "No end — until I turn it off",
+        "1": "1 hour",
+        "6": "6 hours",
+        "12": "12 hours",
+        "24": "1 day",
+        "72": "3 days",
+        "168": "7 days",
+        "336": "14 days",
+        "720": "30 days",
+      },
+      hubTitle: "Notifications",
+      hubEmpty: "Nothing here yet.",
+      hubSeen: "Seen",
+      hubOpen: "Open notifications",
       endsHint: "Leave empty to keep it until you stop it.",
       publish: "Publish the announcement",
       pause: "Pause",
@@ -2443,6 +2481,10 @@ const en: typeof ar = {
 
   announcements: {
     dismiss: "Dismiss this announcement",
+    hubTitle: "Notifications",
+    hubEmpty: "Nothing here yet.",
+    hubSeen: "Seen",
+    hubOpen: "Open notifications",
   },
 
   report: {

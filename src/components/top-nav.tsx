@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NotificationHub } from "./notification-hub";
 import { logoutAction } from "@/app/actions/auth";
 import { LogoLockup } from "./brand/logo";
 import { LocaleSwitch } from "./locale-switch";
@@ -29,12 +30,15 @@ export function TopNav({
   locale,
   ownerLabel,
   logoutLabel,
+  notifications,
 }: {
   user: User;
   links: NavLink[];
   locale: Locale;
   ownerLabel: string;
   logoutLabel: string;
+  /** Absent for staff, who read announcements in the console instead. */
+  notifications?: React.ComponentProps<typeof NotificationHub> | null;
 }) {
   return (
     <header className="sticky top-0 z-40 border-b border-white/8 bg-ink-950/70 backdrop-blur-xl">
@@ -50,6 +54,8 @@ export function TopNav({
         </nav>
 
         <span className="flex-1 sm:hidden" />
+
+        {notifications && <NotificationHub {...notifications} />}
 
         {user.role === "owner" && (
           <span className="hidden items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 text-[11.5px] text-mist-300 sm:flex">

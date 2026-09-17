@@ -3,6 +3,10 @@ import { all, get, now, run } from "./db";
 import { newId } from "./ids";
 import type { Announcement, AnnouncementSeverity } from "./types";
 
+// Re-exported so server callers have one import, while the console form takes
+// them straight from the pure module.
+export { ANNOUNCEMENT_HOURS, endsAtFromHours } from "./announcement-durations";
+
 export const SEVERITIES: AnnouncementSeverity[] = ["info", "success", "warning", "critical"];
 
 const SEVERITY_LABEL_AR: Record<AnnouncementSeverity, string> = {
@@ -99,6 +103,31 @@ export async function liveAnnouncementsFor(userId: string) {
     ts,
     ts,
     userId,
+  );
+}
+
+/**
+ * Everything this client has been shown, dismissed or not.
+ *
+ * The banner only carries what is live and undismissed, which means a notice
+ * disappears the moment it is closed with no way back to it. This is what the
+ * bell reads: the same announcements, plus the ones they have already seen, so
+ * closing one is tidying rather than destroying.
+ */
+export async function announcementHistoryFor(userId: string, limit = 30) {
+  const ts = now();
+  return await all<Announcement & { read_at: number | null }>(
+    `SELECT a.*, r.created_at AS read_at
+       FROM announcements a
+       LEFT JOIN announcement_reads r
+         ON r.announcement_id = a.id AND r.user_id = ?
+      WHERE a.active = 1
+        AND (a.starts_at IS NULL OR a.starts_at <= ?)
+      ORDER BY a.created_at DESC
+      LIMIT ?`,
+    userId,
+    ts,
+    Math.min(Math.max(1, limit), 100),
   );
 }
 
