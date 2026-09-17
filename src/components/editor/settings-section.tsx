@@ -8,6 +8,7 @@ import { setBrandingAction } from "@/app/actions/portfolio";
 import { setLocaleAction } from "@/app/actions/auth";
 import { EmailChange } from "@/components/account/email-change";
 import { QrCode } from "./qr-code";
+import { YourData } from "@/components/account/your-data";
 import { Check, Link as LinkIcon } from "@/components/icons";
 import type { Portfolio, User } from "@/lib/types";
 import type { Dictionary } from "@/lib/i18n";
@@ -288,6 +289,25 @@ export function SettingsSection({
           </div>
         </form>
       </section>
+
+      <YourData
+        email={user.email}
+        hasPassword={hasPassword}
+        saving={copy.common.saving}
+        copy={{
+          exportHeading: t.exportHeading,
+          exportNote: t.exportNote,
+          exportCta: t.exportCta,
+          deleteHeading: t.deleteHeading,
+          deleteNote: t.deleteNote,
+          deleteWarn: t.deleteWarn,
+          deleteConfirmLabel: t.deleteConfirmLabel,
+          deletePasswordLabel: t.currentPassword,
+          deleteCta: t.deleteCta,
+          deleteOpen: t.deleteOpen,
+          cancel: copy.common.cancel ?? t.deleteCancel,
+        }}
+      />
     </div>
   );
 }

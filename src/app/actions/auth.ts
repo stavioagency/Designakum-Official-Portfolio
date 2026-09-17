@@ -35,6 +35,7 @@ import {
 } from "@/lib/email-change";
 import { emailConfigured, sendMail } from "@/lib/mailer";
 import { emailTemplate } from "@/lib/emails";
+import { accountRemnants, deleteAccount } from "@/lib/account-data";
 import { requestOrigin } from "@/lib/origin";
 import { get } from "@/lib/db";
 import { reportError } from "@/lib/observability";
@@ -237,6 +238,75 @@ export async function changePasswordAction(
   }
 }
 
+
+/* ----------------------------------------------------------- deleting an account */
+
+/**
+ * Erases the account, on the customer's own say-so.
+ *
+ * Confirmation is their own email address typed out, not a checkbox. The action
+ * is irreversible and takes their published page down with it, and a checkbox
+ * is something a person clicks past; typing the address is a moment where they
+ * have to know what they are doing. An account with a password must also give
+ * it, because someone who walks up to an unlocked laptop should not be able to
+ * end the account from the settings page.
+ */
+export async function deleteAccountAction(
+  _prev: { ok?: string; error?: string } | null,
+  fd: FormData,
+): Promise<{ ok?: string; error?: string } | null> {
+  const m = await messages();
+  try {
+    const user = await requireUser();
+
+    // The last owner cannot delete themselves out of the platform: there would
+    // be nobody able to reach the console afterwards, including to undo it.
+    if (user.role === "owner") {
+      const owners = await get<{ n: number }>(
+        "SELECT COUNT(*) AS n FROM users WHERE role = 'owner' AND status = 'active'",
+      );
+      if ((owners?.n ?? 0) <= 1) return { error: m.lastOwner };
+    }
+
+    const typed = String(fd.get("confirmEmail") ?? "").trim().toLowerCase();
+    if (typed !== user.email.trim().toLowerCase()) return { error: m.deleteEmailMismatch };
+
+    if (user.password_hash !== "") {
+      const password = String(fd.get("password") ?? "");
+      if (!verifyPassword(password, user.password_hash)) {
+        return { error: m.wrongCurrentPassword };
+      }
+    }
+
+    const report = await deleteAccount(user);
+
+    // Checked rather than assumed: the cascade is a promise the schema makes,
+    // and this is the one operation where a promise that quietly failed would
+    // leave someone's data behind after they were told it was gone.
+    const left = await accountRemnants(user.id, user.email);
+    if (left > 0) {
+      reportError(new Error(`account ${user.id} left ${left} rows behind`), {
+        area: "account-delete",
+      });
+    }
+
+    reportError(new Error("account deleted"), {
+      area: "account-delete",
+      level: "info",
+      files: report.files,
+      mail: report.mail,
+      auditEntries: report.auditEntries,
+    });
+  } catch (error) {
+    reportError(error, { area: "account-delete" });
+    return { error: error instanceof Error ? error.message : m.deleteFailed };
+  }
+
+  // Outside the try: redirect() throws by design, and catching it here would
+  // turn a successful deletion into an error message on a page that no longer
+  // has an account behind it.
+  redirect("/?farewell=1");
+}
 
 /* -------------------------------------------------------------- email change */
 
