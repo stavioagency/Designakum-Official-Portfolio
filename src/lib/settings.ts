@@ -16,6 +16,13 @@ export const SETTING_DEFAULTS = {
   // designakum.com, not .sa: the .sa domain has never existed — no nameservers,
   // no MX — so this default put a guaranteed bounce on the support page and in
   // the reply_to of every email the platform sent.
+  /**
+   * Which published page the landing page shows. Empty falls back to whichever
+   * one sorts first, which is how the marketing page came to be demonstrating a
+   * portfolio with one link and one project on it.
+   */
+  "landing.showcase_slug": "",
+
   "brand.support_email": "support@designakum.com",
 
   "pricing.monthly_halalas": 1200,

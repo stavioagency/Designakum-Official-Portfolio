@@ -41,7 +41,14 @@ export default async function LandingPage() {
   const showcase = settings["features.public_showcase"]
     ? (await listPortfolios()).filter((p) => p.published === 1 && p.suspended === 0)
     : [];
-  const featured = showcase.find((p) => p.locale === locale) ?? showcase[0];
+  // The owner names the page that sells the product. Without that this took
+  // whichever portfolio sorted first, which is how the section headed "this is
+  // what your page looks like" came to be showing one with a single link on it.
+  const chosen = settings["landing.showcase_slug"];
+  const featured =
+    showcase.find((p) => p.slug === chosen) ??
+    showcase.find((p) => p.locale === locale) ??
+    showcase[0];
   const preview = featured ? await loadBundle(featured) : null;
 
   return (
@@ -67,48 +74,51 @@ export default async function LandingPage() {
       </header>
 
       <main className="mx-auto w-full max-w-6xl px-5 pb-20">
-        <section className="rise pt-10 text-center sm:pt-16">
-          <p className="panel mx-auto mb-6 inline-flex items-center gap-2 px-4 py-2 text-[12.5px] text-mist-300">
-            <Sparkle className="h-4 w-4" style={{ color: "var(--accent-ring)" }} />
-            {d.landing.badge}
-          </p>
-          <h1 className="mx-auto max-w-3xl text-[38px] font-bold leading-[1.25] sm:text-[56px]">
-            {d.landing.headline1}
-            <br />
-            <span className="accent-text">{d.landing.headline2}</span>
-          </h1>
-          <p className="mx-auto mt-5 max-w-xl text-[15px] leading-[1.9] text-mist-400 sm:text-base">
-            {d.landing.sub}
-          </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/signup" className="btn btn-primary">{d.landing.ctaPrimary}</Link>
-            {featured && (
-              <Link href={`/p/${featured.slug}`} className="btn btn-ghost">
-                {d.landing.ctaSecondary}
-              </Link>
-            )}
-          </div>
-        </section>
-
-        {/* A real published portfolio, in a real device frame.
-            `live` is left false so a visit to the landing page is never counted
-            as a visit to the designer's page — this is a shop window, not
-            traffic they earned. */}
-        {preview && (
-          <section className="mt-20">
-            <h2 className="text-center text-2xl font-bold sm:text-3xl">
-              {d.landing.previewTitle}
-            </h2>
-            <p className="mx-auto mt-2 max-w-md text-center text-[13.5px] text-mist-400">
-              {d.landing.previewSub}
+        {/*
+          The page beside the promise, not three screens below it.
+          The demo used to be its own section, seventy-eight percent of the
+          viewport tall, which meant scrolling the marketing page through
+          somebody's portfolio and never seeing the two together. Here the claim
+          and the thing it describes share the first screen.
+        */}
+        <section className="rise grid items-center gap-10 pt-10 sm:pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)] lg:gap-14">
+          <div className="text-center lg:text-start">
+            <p className="panel mb-6 inline-flex items-center gap-2 px-4 py-2 text-[12.5px] text-mist-300">
+              <Sparkle className="h-4 w-4" style={{ color: "var(--accent-ring)" }} />
+              {d.landing.badge}
             </p>
-            <div className="mt-8" data-theme={preview.portfolio.theme}>
-              <PreviewFrame labels={{ mobile: d.landing.mobile, desktop: d.landing.desktop }}>
+            <h1 className="text-[38px] font-bold leading-[1.2] sm:text-[52px]">
+              {d.landing.headline1}
+              <br />
+              <span className="accent-text">{d.landing.headline2}</span>
+            </h1>
+            <p className="mx-auto mt-5 max-w-xl text-[15px] leading-[1.9] text-mist-400 sm:text-base lg:mx-0">
+              {d.landing.sub}
+            </p>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+              <Link href="/signup" className="btn btn-primary">{d.landing.ctaPrimary}</Link>
+              {featured && (
+                <Link href={`/p/${featured.slug}`} className="btn btn-ghost">
+                  {d.landing.ctaSecondary}
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {/* `live` is left false, so a visit to the landing page is never
+              counted as a visit to the designer's own page — this is a shop
+              window, not traffic they earned. */}
+          {preview && (
+            <div data-theme={preview.portfolio.theme}>
+              <PreviewFrame
+                labels={{ mobile: d.landing.mobile, desktop: d.landing.desktop }}
+                height="min(560px, 68dvh)"
+              >
                 <PortfolioView bundle={preview} />
               </PreviewFrame>
             </div>
-          </section>
-        )}
+          )}
+        </section>
 
         <section className="mt-20">
           <h2 className="text-center text-2xl font-bold sm:text-3xl">{d.landing.offerTitle}</h2>

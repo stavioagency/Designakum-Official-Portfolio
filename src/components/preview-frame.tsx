@@ -10,9 +10,17 @@ const MODES = [
 export function PreviewFrame({
   children,
   labels,
+  /**
+   * How tall the device is. The default fills most of the viewport, which suits
+   * a section that exists to be looked at; beside a headline it has to be
+   * shorter than the screen or the copy next to it is pushed out of the first
+   * frame, which is the one thing that section cannot afford.
+   */
+  height = "78dvh",
 }: {
   children: React.ReactNode;
   labels: { mobile: string; desktop: string };
+  height?: string;
 }) {
   const [mode, setMode] = useState<(typeof MODES)[number]["key"]>("mobile");
   const width = MODES.find((m) => m.key === mode)!.width;
@@ -41,7 +49,10 @@ export function PreviewFrame({
         }`}
         style={{ maxWidth: width || "100%" }}
       >
-        <div className={width ? "no-scrollbar max-h-[78dvh] overflow-y-auto rounded-[36px]" : ""}>
+        <div
+          className={width ? "no-scrollbar overflow-y-auto rounded-[36px]" : ""}
+          style={width ? { maxHeight: height } : undefined}
+        >
           {children}
         </div>
       </div>
