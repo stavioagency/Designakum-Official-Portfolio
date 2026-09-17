@@ -157,7 +157,7 @@ export default async function SubscriptionsPage({
             <span className="text-[12.5px] text-mist-500">{t.perMonth}</span>
           </p>
           <p className="mt-2 text-[12px] text-mist-500">
-            {fill(t.subscriberCount, { n: nf.format(revenue.monthlyCount) })}
+            {fill(t.subscriberCount, { n: nf.format(revenue.monthlyPaid) })}
           </p>
         </div>
         <div className="card accent-glow p-5">
@@ -175,7 +175,7 @@ export default async function SubscriptionsPage({
             })}
           </p>
           <p className="mt-1 text-[12px] text-mist-500">
-            {fill(t.subscriberCount, { n: nf.format(revenue.yearlyCount) })}
+            {fill(t.subscriberCount, { n: nf.format(revenue.yearlyPaid) })}
           </p>
         </div>
       </section>

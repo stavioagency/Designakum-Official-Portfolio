@@ -181,6 +181,9 @@ export interface RevenueSnapshot {
   arr: number;
   monthlyCount: number;
   yearlyCount: number;
+  /** Of those, the ones that actually billed money. */
+  monthlyPaid: number;
+  yearlyPaid: number;
   compedCount: number;
   paidCount: number;
 }
@@ -211,6 +214,8 @@ export async function revenueSnapshot(): Promise<RevenueSnapshot>{
   let mrr = 0;
   let monthlyCount = 0;
   let yearlyCount = 0;
+  let monthlyPaid = 0;
+  let yearlyPaid = 0;
   let compedCount = 0;
   let paidCount = 0;
 
@@ -220,6 +225,8 @@ export async function revenueSnapshot(): Promise<RevenueSnapshot>{
 
     if (row.source === "paid") {
       paidCount += row.n;
+      if (row.plan === "monthly") monthlyPaid += row.n;
+      if (row.plan === "yearly") yearlyPaid += row.n;
       const amount = row.amount || plans[row.plan as "monthly" | "yearly"].amount;
       mrr += row.plan === "yearly" ? (amount / 12) * row.n : amount * row.n;
     } else {
@@ -227,7 +234,7 @@ export async function revenueSnapshot(): Promise<RevenueSnapshot>{
     }
   }
 
-  return { mrr, arr: mrr * 12, monthlyCount, yearlyCount, compedCount, paidCount };
+  return { mrr, arr: mrr * 12, monthlyCount, yearlyCount, monthlyPaid, yearlyPaid, compedCount, paidCount };
 }
 
 /** Cancellations and expiries in the window, over what was live going into it. */
@@ -262,9 +269,23 @@ export async function conversionRate(): Promise<{
   percent: number;
 }> {
   const total = (await get<{ n: number }>("SELECT COUNT(*) AS n FROM users WHERE role = 'client'"))?.n ?? 0;
+
+  /**
+   * Customers who actually paid.
+   *
+   * This counted every subscription row — any status, any source, staff
+   * included — so two granted free plans against one customer reported a
+   * conversion rate of 200%. A plan the platform handed out is not a
+   * conversion; nobody chose to buy anything.
+   *
+   * Ever-paid rather than currently paying, because someone who subscribed and
+   * later cancelled did convert. That is churn, which is the card beside it.
+   */
   const converted =
     (await get<{ n: number }>(
-      "SELECT COUNT(DISTINCT user_id) AS n FROM subscriptions",
+      `SELECT COUNT(DISTINCT s.user_id) AS n FROM subscriptions s
+         JOIN users u ON u.id = s.user_id AND u.role = 'client'
+        WHERE s.source = 'paid'`,
     ))?.n ?? 0;
   return { converted, total, percent: total > 0 ? (converted / total) * 100 : 0 };
 }
