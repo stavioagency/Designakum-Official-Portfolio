@@ -421,6 +421,16 @@ export default async function CustomerProfilePage({
             qrSvg={await portfolioQr(`${origin}/p/${portfolio.slug}`)}
             preview={<PortfolioView bundle={await loadBundle(portfolio)} />}
             toured
+          /* Staff looking at a customer's studio. Their own second factor is
+             theirs to manage, from their own account, so this panel is inert
+             here: an empty secret enrols nothing. */
+          twoFactor={{
+            enabled: false,
+            codesLeft: 0,
+            secret: "",
+            qrSvg: "",
+            copy: dict(locale).twoFactor,
+          }}
           hasPassword={customer.password_hash !== ""}
             canPublish={await canPublish(customer)}
             copy={dict(locale).dashboard}

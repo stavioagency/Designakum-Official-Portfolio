@@ -10,6 +10,7 @@ import { requestOrigin } from "@/lib/origin";
 import { Editor } from "@/components/editor/editor";
 import { PortfolioView } from "@/components/portfolio-view";
 import { portfolioQr } from "@/lib/qr";
+import { generateSecret, otpauthUri, isEnabled, recoveryCodesLeft } from "@/lib/two-factor";
 import { Eye, ExternalLink } from "@/components/icons";
 import { liveAnnouncementsFor } from "@/lib/announcements";
 import { AnnouncementBanner } from "@/components/announcement-banner";
@@ -36,6 +37,7 @@ export default async function DashboardPage() {
   const locale = await currentLocale();
   const d = dict(locale);
   const copy = d.dashboard;
+  const enrolmentSecret = generateSecret();
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-7 sm:px-6 lg:py-10">
@@ -88,6 +90,16 @@ export default async function DashboardPage() {
         preview={<PortfolioView bundle={bundle} />}
         qrSvg={await portfolioQr(`${origin}/p/${portfolio.slug}`)}
         toured={user.toured_at !== null}
+        twoFactor={{
+          enabled: isEnabled(user),
+          codesLeft: await recoveryCodesLeft(user.id),
+          // A fresh secret per page load, stored only if enrolment succeeds, so
+          // a pairing abandoned halfway leaves nothing to trip over at the next
+          // sign-in.
+          secret: enrolmentSecret,
+          qrSvg: await portfolioQr(otpauthUri(enrolmentSecret, user.email)),
+          copy: d.twoFactor,
+        }}
         hasPassword={user.password_hash !== ""}
         canPublish={await canPublish(user)}
         copy={copy}

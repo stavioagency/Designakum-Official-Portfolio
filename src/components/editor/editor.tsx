@@ -31,6 +31,7 @@ export function Editor({
   qrSvg,
   locale,
   toured,
+  twoFactor,
 }: {
   bundle: PortfolioBundle;
   user: User;
@@ -45,6 +46,8 @@ export function Editor({
   locale: Locale;
   /** False the first time somebody opens the studio, which is when the tour runs. */
   toured: boolean;
+  /** Passed straight through to the settings tab. */
+  twoFactor: React.ComponentProps<typeof SettingsSection>["twoFactor"];
 }) {
   const [tab, setTab] = useState<TabKey>("profile");
   const { portfolio, slides, projects, stats, socials, projectImages } = bundle;
@@ -286,6 +289,7 @@ export function Editor({
             copy={copy}
             passwordCopy={passwordCopy}
             qrSvg={qrSvg}
+            twoFactor={twoFactor}
           />
         )}
       </div>

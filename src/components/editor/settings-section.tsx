@@ -7,6 +7,7 @@ import { changePasswordAction } from "@/app/actions/auth";
 import { setBrandingAction } from "@/app/actions/portfolio";
 import { setLocaleAction } from "@/app/actions/auth";
 import { EmailChange } from "@/components/account/email-change";
+import { TwoFactor } from "@/components/account/two-factor";
 import { QrCode } from "./qr-code";
 import { YourData } from "@/components/account/your-data";
 import { Check, Link as LinkIcon } from "@/components/icons";
@@ -24,6 +25,7 @@ export function SettingsSection({
   copy,
   passwordCopy,
   qrSvg,
+  twoFactor,
 }: {
   portfolio: Portfolio;
   user: User;
@@ -36,6 +38,21 @@ export function SettingsSection({
   passwordCopy: Dictionary["password"];
   /** Rendered on the server: the encoder is not worth shipping to the browser. */
   qrSvg: string;
+  /**
+   * Two-step verification, for the customer's own account.
+   *
+   * The same panel staff get. The sign-in flow has always challenged any
+   * account with it switched on, whatever their role, and the actions that turn
+   * it on only ask for a signed-in user; the only thing missing was somewhere
+   * for a customer to press the button.
+   */
+  twoFactor: {
+    enabled: boolean;
+    codesLeft: number;
+    secret: string;
+    qrSvg: string;
+    copy: Dictionary["twoFactor"];
+  };
 }) {
   const t = copy.settings;
   const planLabel: Record<string, string> = {
@@ -232,6 +249,21 @@ export function SettingsSection({
             <Status state={brandingState} />
           </form>
         </section>
+      )}
+
+      {/* Only for the person whose account it is. Staff viewing a customer's
+          studio from the console get no secret, and no panel: their own second
+          factor belongs on their own account. */}
+      {twoFactor.secret && (
+        <TwoFactor
+          enabled={twoFactor.enabled}
+        hasPassword={hasPassword}
+          codesLeft={twoFactor.codesLeft}
+          secret={twoFactor.secret}
+          qrSvg={twoFactor.qrSvg}
+          copy={twoFactor.copy}
+          saving={copy.common.saving}
+        />
       )}
 
       <EmailChange
