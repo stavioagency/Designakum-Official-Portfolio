@@ -9,6 +9,7 @@ import { PortfolioView } from "@/components/portfolio-view";
 import { PreviewFrame } from "@/components/preview-frame";
 import { PublishBar } from "@/components/editor/publish-bar";
 import { canPublish } from "@/lib/billing";
+import { ExternalLink } from "@/components/icons";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -35,9 +36,22 @@ export default async function PreviewPage() {
             {copy.home.previewSub}
           </p>
         </div>
-        <Link href="/dashboard" className="btn btn-ghost">
-          {copy.home.backToEditor}
-        </Link>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {portfolio.published === 1 && (
+            <Link
+              href={`/p/${portfolio.slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-primary"
+            >
+              <ExternalLink className="h-4 w-4" />
+              {copy.home.openPage}
+            </Link>
+          )}
+          <Link href="/dashboard" className="btn btn-ghost">
+            {copy.home.backToEditor}
+          </Link>
+        </div>
       </div>
 
       <PublishBar copy={copy} portfolio={portfolio} canPublish={await canPublish(user)} />

@@ -6,6 +6,7 @@ import { publishAction } from "@/app/actions/portfolio";
 import type { Portfolio } from "@/lib/types";
 import type { Dictionary } from "@/lib/i18n";
 import { Status, Submit } from "./ui";
+import { ExternalLink } from "@/components/icons";
 
 export function PublishBar({
   portfolio,
@@ -53,6 +54,23 @@ export function PublishBar({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
+        {/*
+          The way out to the real thing, next to the switch that put it there.
+          A customer who has just pressed Publish wants to see the page, and
+          until now the only route to it was a link in the top navigation that
+          reads as a section rather than as their own address.
+        */}
+        {isPublished && (
+          <Link
+            href={`/p/${portfolio.slug}`}
+            target="_blank"
+            rel="noreferrer"
+            className="btn btn-ghost"
+          >
+            <ExternalLink className="h-4 w-4" />
+            {copy.home.openPage}
+          </Link>
+        )}
         <Status state={state} />
         <Submit
           className={isPublished ? "btn btn-ghost" : "btn btn-primary"}

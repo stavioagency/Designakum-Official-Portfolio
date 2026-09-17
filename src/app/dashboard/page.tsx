@@ -10,7 +10,7 @@ import { requestOrigin } from "@/lib/origin";
 import { Editor } from "@/components/editor/editor";
 import { PortfolioView } from "@/components/portfolio-view";
 import { portfolioQr } from "@/lib/qr";
-import { Eye } from "@/components/icons";
+import { Eye, ExternalLink } from "@/components/icons";
 import { liveAnnouncementsFor } from "@/lib/announcements";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 
@@ -63,9 +63,22 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        <Link href="/dashboard/preview" className="btn btn-ghost">
-          {copy.home.previewCta}
-        </Link>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {published && (
+            <Link
+              href={`/p/${portfolio.slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-ghost"
+            >
+              <ExternalLink className="h-4 w-4" />
+              {copy.home.openPage}
+            </Link>
+          )}
+          <Link href="/dashboard/preview" className="btn btn-ghost">
+            {copy.home.previewCta}
+          </Link>
+        </div>
       </div>
 
       <Editor
