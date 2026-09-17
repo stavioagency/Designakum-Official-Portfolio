@@ -89,6 +89,45 @@ function unseal(raw: string | undefined): string | null {
   return timingSafeEqual(Buffer.from(mac), Buffer.from(expected)) ? id : null;
 }
 
+/**
+ * The half-signed-in state between a correct password and a correct code.
+ *
+ * A cookie rather than a session row: no session exists yet, and creating one
+ * to then withhold its privileges would mean every guard in the app had to know
+ * about a session that is not really a session. The value is signed with the
+ * same secret as a session cookie, so it cannot be minted by hand, and it lasts
+ * five minutes — long enough to open an authenticator app, short enough that a
+ * borrowed laptop is not a way in.
+ */
+const PENDING_COOKIE = "dk_2fa";
+const PENDING_TTL = 1000 * 60 * 5;
+
+export async function startSecondFactor(userId: string) {
+  const jar = await cookies();
+  jar.set(PENDING_COOKIE, seal(`${userId}:${now() + PENDING_TTL}`), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: PENDING_TTL / 1000,
+  });
+}
+
+/** The account waiting on a code, or null when there is none or it has expired. */
+export async function pendingSecondFactor(): Promise<User | null> {
+  const raw = unseal((await cookies()).get(PENDING_COOKIE)?.value);
+  if (!raw) return null;
+
+  const [userId, expiresAt] = raw.split(":");
+  if (!userId || !expiresAt || Number(expiresAt) < now()) return null;
+
+  return (await get<User>("SELECT * FROM users WHERE id = ?", userId)) ?? null;
+}
+
+export async function clearSecondFactor() {
+  (await cookies()).delete(PENDING_COOKIE);
+}
+
 export async function createSession(userId: string) {
   const id = newToken();
   const ts = now();

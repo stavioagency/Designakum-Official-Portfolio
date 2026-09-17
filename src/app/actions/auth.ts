@@ -2,11 +2,14 @@
 
 import { cookies } from "next/headers";
 import { messages } from "@/lib/locale";
-import { fill } from "@/lib/i18n";
+import { dict, fill } from "@/lib/i18n";
 import { redirect } from "next/navigation";
 import {
+  clearSecondFactor,
   createSession,
   currentUser,
+  pendingSecondFactor,
+  startSecondFactor,
   destroySession,
   findUserByEmail,
   hashPassword,
@@ -36,6 +39,8 @@ import {
 import { emailConfigured, sendMail } from "@/lib/mailer";
 import { emailTemplate } from "@/lib/emails";
 import { accountRemnants, deleteAccount } from "@/lib/account-data";
+import * as twoFactor from "@/lib/two-factor";
+import { isEnabled, verifySecondFactor } from "@/lib/two-factor";
 import { requestOrigin } from "@/lib/origin";
 import { get } from "@/lib/db";
 import { reportError } from "@/lib/observability";
@@ -129,6 +134,44 @@ export async function loginAction(_prev: FormState, fd: FormData): Promise<FormS
     return { error: "suspended" };
   }
 
+  // A correct password is not a session when a second factor is on. No session
+  // is created here at all — the half-signed-in state is a short-lived signed
+  // cookie, so nothing downstream has to know about a session that is not yet
+  // allowed to do anything.
+  if (isEnabled(user)) {
+    await startSecondFactor(user.id);
+    redirect("/login/verify");
+  }
+
+  await createSession(user.id);
+  await adoptAccountLocale(user);
+  redirect(user.role === "client" ? "/dashboard" : "/console");
+}
+
+/**
+ * The second step: six digits from the app, or one recovery code.
+ *
+ * Rate limited hard. Six digits is a million combinations, which sounds like a
+ * lot until something tries them at machine speed against a window that is
+ * ninety seconds wide.
+ */
+export async function verifySecondFactorAction(
+  _prev: FormState,
+  fd: FormData,
+): Promise<FormState> {
+  const user = await pendingSecondFactor();
+  if (!user) return { error: "two_factor_expired" };
+
+  const fingerprint = await callerFingerprint();
+  const limit = await rateLimit(`2fa:${user.id}`, 10, 15 * 60 * 1000);
+  const caller = await rateLimit(`2fa-caller:${fingerprint}`, 20, 15 * 60 * 1000);
+  if (!limit.ok || !caller.ok) return { error: "too_many_attempts" };
+
+  if (!(await verifySecondFactor(user, String(fd.get("code") ?? "")))) {
+    return { error: "two_factor_bad_code" };
+  }
+
+  await clearSecondFactor();
   await createSession(user.id);
   await adoptAccountLocale(user);
   redirect(user.role === "client" ? "/dashboard" : "/console");
@@ -238,6 +281,75 @@ export async function changePasswordAction(
   }
 }
 
+
+/* -------------------------------------------------------------- two factor */
+
+/**
+ * Turns it on, but only once a code from the app has been checked.
+ *
+ * The secret is not written until that check passes. An account that pairs
+ * badly and walks away leaves nothing behind to trip over at the next sign-in,
+ * which for the last owner would mean losing the platform to a typo.
+ */
+export async function enableTwoFactorAction(
+  _prev: { ok?: string; error?: string; codes?: string[] } | null,
+  fd: FormData,
+): Promise<{ ok?: string; error?: string; codes?: string[] } | null> {
+  const d = dict(await currentLocale()).twoFactor;
+  try {
+    const user = await requireUser();
+    const secret = String(fd.get("secret") ?? "");
+    const code = String(fd.get("code") ?? "");
+
+    const result = await twoFactor.enable(user, secret, code);
+    if (!result.ok) return { error: d.badCode };
+
+    await audit({
+      actor: user,
+      action: "account.two_factor_enabled",
+      targetType: "user",
+      targetId: user.id,
+      targetLabel: user.email,
+    });
+
+    // Returned once, shown once. There is no second chance to read them.
+    return { ok: d.enabled, codes: result.recoveryCodes };
+  } catch (error) {
+    reportError(error, { area: "two-factor-enable" });
+    return { error: (await messages()).failed };
+  }
+}
+
+export async function disableTwoFactorAction(
+  _prev: { ok?: string; error?: string } | null,
+  fd: FormData,
+): Promise<{ ok?: string; error?: string } | null> {
+  const d = dict(await currentLocale()).twoFactor;
+  try {
+    const user = await requireUser();
+
+    // Their password, to turn off the thing guarding the password. Without it,
+    // an unlocked laptop is enough to remove the second factor entirely.
+    if (user.password_hash !== "") {
+      if (!verifyPassword(String(fd.get("password") ?? ""), user.password_hash)) {
+        return { error: (await messages()).wrongCurrentPassword };
+      }
+    }
+
+    await twoFactor.disable(user);
+    await audit({
+      actor: user,
+      action: "account.two_factor_disabled",
+      targetType: "user",
+      targetId: user.id,
+      targetLabel: user.email,
+    });
+    return { ok: d.disabled };
+  } catch (error) {
+    reportError(error, { area: "two-factor-disable" });
+    return { error: (await messages()).failed };
+  }
+}
 
 /* ----------------------------------------------------------- deleting an account */
 

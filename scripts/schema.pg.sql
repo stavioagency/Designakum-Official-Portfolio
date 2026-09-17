@@ -332,6 +332,15 @@ CREATE TABLE IF NOT EXISTS password_resets (
 );
 CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets(user_id, created_at DESC);
 
+CREATE TABLE IF NOT EXISTS two_factor_recovery (
+  id         TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  code_hash  TEXT NOT NULL,
+  used_at    BIGINT,
+  created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_two_factor_recovery_user ON two_factor_recovery(user_id, used_at);
+
 CREATE TABLE IF NOT EXISTS email_changes (
   id         TEXT PRIMARY KEY,
   user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

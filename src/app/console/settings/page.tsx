@@ -13,6 +13,9 @@ import { SettingsGroup } from "@/components/console/settings-form";
 import { CreateStaffForm, StaffRoleControl } from "@/components/console/staff-forms";
 import { BrandAssets } from "@/components/admin/brand-assets";
 import { EmailChange } from "@/components/account/email-change";
+import { TwoFactor } from "@/components/account/two-factor";
+import { generateSecret, otpauthUri, isEnabled, recoveryCodesLeft } from "@/lib/two-factor";
+import { portfolioQr } from "@/lib/qr";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: dict(await currentLocale()).console.nav.settings };
@@ -28,6 +31,7 @@ export default async function SettingsPage() {
   const t = d.settings;
   const staffCopy = d.staff;
   const staff = await staffMembers();
+  const enrolmentSecret = generateSecret();
 
   const assetSlots = [
     ...BRAND_ASSETS.map((asset) => ({
@@ -171,6 +175,21 @@ export default async function SettingsPage() {
         {/* Owners and support reach the console but not the customer dashboard —
             two of the three owner accounts have no portfolio at all — so the
             account's own email has to be changeable from here too. */}
+        {/*
+          A fresh secret per page load, stored only if enrolment succeeds — so a
+          pairing that is abandoned halfway leaves nothing behind to trip over
+          at the next sign-in.
+        */}
+        <TwoFactor
+          enabled={isEnabled(me)}
+          hasPassword={me.password_hash !== ""}
+          codesLeft={await recoveryCodesLeft(me.id)}
+          secret={enrolmentSecret}
+          qrSvg={await portfolioQr(otpauthUri(enrolmentSecret, me.email))}
+          copy={dict(locale).twoFactor}
+          saving={dict(locale).dashboard.common.saving}
+        />
+
         <EmailChange
           currentEmail={me.email}
           hasPassword={me.password_hash !== ""}
