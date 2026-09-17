@@ -10,8 +10,10 @@
 # artefact for 90 days.
 #
 # Two secrets are needed, both set in Settings, Secrets and variables, Actions:
-#   DATABASE_URL       the direct Postgres URI from Supabase (port 5432, not the
-#                      transaction pooler on 6543, which pg_dump cannot use)
+#   DATABASE_URL       Supabase, Connect, "Session pooler" (port 5432). Not the
+#                      direct host, which resolves to IPv6 only and cannot be
+#                      reached from a GitHub runner, and not the transaction
+#                      pooler on 6543, which pg_dump cannot use.
 #   BACKUP_PASSPHRASE  a long random passphrase, kept somewhere other than GitHub
 #
 # To restore: download the artefact, then

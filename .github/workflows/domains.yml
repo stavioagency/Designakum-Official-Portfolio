@@ -5,7 +5,8 @@
 # on. See scripts/sync-domains.mjs.
 #
 # Secrets needed, in Settings, Secrets and variables, Actions:
-#   DATABASE_URL       the direct Postgres URI (port 5432)
+#   DATABASE_URL       Supabase, Connect, "Session pooler" (port 5432). The
+#                      direct host is IPv6 only and a runner cannot reach it.
 #   VERCEL_TOKEN       an API token for the account that owns the project
 #   VERCEL_PROJECT_ID  Vercel, project, Settings, General
 #   VERCEL_TEAM_ID     only when the project belongs to a team

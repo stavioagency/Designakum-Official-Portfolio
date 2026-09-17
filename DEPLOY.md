@@ -104,7 +104,7 @@ Actions:
 
 | Secret | What |
 | --- | --- |
-| `DATABASE_URL` | The **direct** Postgres URI from Supabase, port 5432. The transaction pooler on 6543 cannot serve `pg_dump`. |
+| `DATABASE_URL` | Supabase → Connect → **Session pooler**, port 5432. Not the direct host: it resolves to IPv6 only and a GitHub runner is IPv4, so the job cannot reach it. Not the transaction pooler on 6543 either, which `pg_dump` cannot use. |
 | `BACKUP_PASSPHRASE` | A long random passphrase, kept somewhere other than GitHub. Without it the backups cannot be read, and neither can anyone else read them. |
 
 Until both are set the job logs a warning and takes no backup, rather than
