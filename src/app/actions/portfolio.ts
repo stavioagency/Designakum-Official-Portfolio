@@ -184,6 +184,23 @@ export async function saveProfileAction(_prev: ActionState, fd: FormData): Promi
   }
 }
 
+/**
+ * Remembers that this person has been shown around.
+ *
+ * Idempotent and quiet: it is called when the tour ends, however it ended, and
+ * a failure here should never surface as an error over a tour somebody has
+ * just finished reading.
+ */
+export async function finishTourAction(): Promise<void> {
+  try {
+    const user = await requireUser();
+    await run("UPDATE users SET toured_at = ?, updated_at = ? WHERE id = ? AND toured_at IS NULL",
+      now(), now(), user.id);
+  } catch {
+    /* see above */
+  }
+}
+
 /* ------------------------------------------------------ project galleries */
 
 /**

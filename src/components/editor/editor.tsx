@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { CollectionSection } from "./collection-section";
+import { StudioTour } from "./studio-tour";
+import { finishTourAction } from "@/app/actions/portfolio";
 import { ProjectGallery } from "./project-gallery";
 import { ProfileSection } from "./profile-section";
 import { SettingsSection } from "./settings-section";
@@ -28,6 +30,7 @@ export function Editor({
   passwordCopy,
   qrSvg,
   locale,
+  toured,
 }: {
   bundle: PortfolioBundle;
   user: User;
@@ -40,6 +43,8 @@ export function Editor({
   qrSvg: string;
   /** Needed where a label lives in code rather than the dictionary, like the stat icons. */
   locale: Locale;
+  /** False the first time somebody opens the studio, which is when the tour runs. */
+  toured: boolean;
 }) {
   const [tab, setTab] = useState<TabKey>("profile");
   const { portfolio, slides, projects, stats, socials, projectImages } = bundle;
@@ -70,10 +75,11 @@ export function Editor({
         {/* Wrapped, not scrolled. A hidden scrollbar on a phone means the tabs
             past the right edge are not merely awkward to reach — nothing on
             screen says they exist. */}
-        <nav className="-mx-1 flex flex-wrap gap-2 px-1 pb-1">
+        <nav className="-mx-1 flex flex-wrap items-center gap-2 px-1 pb-1" data-tour="tabs">
           {TAB_KEYS.map((key) => (
             <button
               key={key}
+              data-tour={`tab-${key}`}
               onClick={() => setTab(key)}
               className={`shrink-0 rounded-2xl border px-4 py-2.5 text-[13.5px] font-medium transition ${
                 tab === key
@@ -84,6 +90,30 @@ export function Editor({
               {copy.tabs[key]}
             </button>
           ))}
+
+          {/* Beside the tabs rather than in a corner: it is about them. */}
+          <StudioTour
+            autoStart={!toured}
+            onTab={(key) => setTab(key as TabKey)}
+            onFinish={() => void finishTourAction()}
+            chrome={{
+              start: copy.tour.start,
+              next: copy.tour.next,
+              back: copy.tour.back,
+              done: copy.tour.done,
+              skip: copy.tour.skip,
+              progress: copy.tour.progress,
+            }}
+            steps={[
+              { target: "tabs", ...copy.tour.steps[0] },
+              { tab: "profile", target: "tab-profile", ...copy.tour.steps[1] },
+              { tab: "projects", target: "tab-projects", ...copy.tour.steps[2] },
+              { tab: "stats", target: "tab-stats", ...copy.tour.steps[3] },
+              { tab: "socials", target: "tab-socials", ...copy.tour.steps[4] },
+              { tab: "settings", target: "tab-settings", ...copy.tour.steps[5] },
+              { target: "live-preview", ...copy.tour.steps[6] },
+            ]}
+          />
         </nav>
 
         {tab === "profile" && <ProfileSection portfolio={portfolio} copy={copy} />}
@@ -261,7 +291,7 @@ export function Editor({
       </div>
 
       {/* Live phone preview — desktop only, refreshes whenever an edit revalidates. */}
-      <aside className="hidden xl:sticky xl:top-24 xl:block">
+      <aside className="hidden xl:sticky xl:top-24 xl:block" data-tour="live-preview">
         <p className="mb-3 text-center text-[12.5px] text-mist-500">{copy.profile.livePreview}</p>
         <div className="mx-auto w-[380px] overflow-hidden rounded-[42px] border border-white/12 bg-ink-950 p-2 shadow-[0_40px_90px_-40px_rgba(0,0,0,1)]">
           <div className="no-scrollbar h-[720px] overflow-y-auto rounded-[34px] bg-ink-950">

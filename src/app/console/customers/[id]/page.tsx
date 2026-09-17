@@ -420,7 +420,8 @@ export default async function CustomerProfilePage({
             origin={origin}
             qrSvg={await portfolioQr(`${origin}/p/${portfolio.slug}`)}
             preview={<PortfolioView bundle={await loadBundle(portfolio)} />}
-            hasPassword={customer.password_hash !== ""}
+            toured
+          hasPassword={customer.password_hash !== ""}
             canPublish={await canPublish(customer)}
             copy={dict(locale).dashboard}
             passwordCopy={dict(locale).password}

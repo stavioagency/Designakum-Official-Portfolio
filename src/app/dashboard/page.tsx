@@ -74,6 +74,7 @@ export default async function DashboardPage() {
         origin={origin}
         preview={<PortfolioView bundle={bundle} />}
         qrSvg={await portfolioQr(`${origin}/p/${portfolio.slug}`)}
+        toured={user.toured_at !== null}
         hasPassword={user.password_hash !== ""}
         canPublish={await canPublish(user)}
         copy={copy}

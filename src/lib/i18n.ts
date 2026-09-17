@@ -1007,6 +1007,44 @@ const ar = {
       socials: "روابط التواصل",
       settings: "الإعدادات",
     },
+    tour: {
+      start: "جولة سريعة",
+      next: "التالي",
+      back: "السابق",
+      done: "تمام",
+      skip: "تخطّي",
+      progress: "{n} من {total}",
+      steps: [
+        {
+          title: "هذا هو الاستوديو",
+          body: "كل ما تعدّله في صفحتك موجود خلف هذه الأزرار. تنقّل بينها كما تشاء، ولا شيء يظهر للناس قبل أن تحفظ.",
+        },
+        {
+          title: "من أنت",
+          body: "اسمك، تخصصك، نبذتك، صورتك، ولون صفحتك. هذا أول ما يراه الزائر.",
+        },
+        {
+          title: "أعمالك",
+          body: "كل عمل يحمل صورًا بعدد ما تحتاج. الصورة الأولى هي التي تظهر على البطاقة، ويمكنك ترتيبها أو حذف واحدة وحدها.",
+        },
+        {
+          title: "الأرقام التي تستحق الذكر",
+          body: "سنوات الخبرة، عدد العملاء، تقييمك. اتركها فارغة إن لم تناسبك.",
+        },
+        {
+          title: "طرق التواصل",
+          body: "حساباتك وروابطك. تظهر كأيقونات في أعلى صفحتك.",
+        },
+        {
+          title: "النشر والرابط",
+          body: "من هنا تنشر صفحتك، وتجد رابطك ورمز الـ QR الخاص بك، وتضبط إعدادات حسابك.",
+        },
+        {
+          title: "شاهدها وهي تتغيّر",
+          body: "هذه صفحتك الحقيقية، تتحدّث مع كل حفظ. ما تراه هنا هو ما يراه زوّارك.",
+        },
+      ],
+    },
     common: {
       save: "حفظ التغييرات",
       pending: "لحظة…",
@@ -2444,6 +2482,44 @@ const en: typeof ar = {
       stats: "Numbers",
       socials: "Social links",
       settings: "Settings",
+    },
+    tour: {
+      start: "Show me around",
+      next: "Next",
+      back: "Back",
+      done: "Done",
+      skip: "Skip",
+      progress: "{n} of {total}",
+      steps: [
+        {
+          title: "This is the studio",
+          body: "Everything on your page lives behind these buttons. Move between them freely; nothing reaches anyone until you save.",
+        },
+        {
+          title: "Who you are",
+          body: "Your name, what you do, your bio, your picture and your page colour. This is the first thing a visitor sees.",
+        },
+        {
+          title: "Your work",
+          body: "Each piece holds as many images as it needs. The first is the one on the card, and you can reorder them or remove one on its own.",
+        },
+        {
+          title: "Numbers worth saying",
+          body: "Years working, clients, a rating. Leave them out if they are not your thing.",
+        },
+        {
+          title: "How people reach you",
+          body: "Your accounts and links. They appear as icons at the top of your page.",
+        },
+        {
+          title: "Publishing and your link",
+          body: "Publish from here, find your link and your QR code, and manage your account settings.",
+        },
+        {
+          title: "Watch it change",
+          body: "This is your real page, updating with every save. What you see here is what your visitors get.",
+        },
+      ],
     },
     common: {
       save: "Save changes",

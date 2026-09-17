@@ -26,7 +26,9 @@ CREATE TABLE IF NOT EXISTS users (
   onboarded_at       BIGINT,                            -- NULL until they have chosen their own link
   email_verified_at  BIGINT,                            -- NULL until a link sent to it was opened
   created_at         BIGINT NOT NULL,
-  updated_at         BIGINT NOT NULL
+  updated_at         BIGINT NOT NULL,
+  -- Null until they have been shown around the studio. See 0015.
+  toured_at        BIGINT
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google ON users(google_id) WHERE google_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role, created_at DESC);

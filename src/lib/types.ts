@@ -34,6 +34,8 @@ export interface User {
   last_seen_at: number | null;
   /** NULL until the customer has chosen their own portfolio link. */
   onboarded_at: number | null;
+  /** NULL until they have been shown around the studio, or skipped the tour. */
+  toured_at: number | null;
   created_at: number;
   updated_at: number;
 }
