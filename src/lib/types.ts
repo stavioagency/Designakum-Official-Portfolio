@@ -250,6 +250,7 @@ export interface Invitation {
 export type AnnouncementSeverity = "info" | "success" | "warning" | "critical";
 
 export interface Announcement {
+  archived_at: number | null;
   id: string;
   title: string;
   body: string;

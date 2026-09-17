@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { ANNOUNCEMENT_HOURS } from "@/lib/announcement-durations";
 import {
+  archiveAnnouncementAction,
   createAnnouncementAction,
   deleteAnnouncementAction,
   setAnnouncementEndAction,
@@ -92,6 +93,7 @@ export function AnnouncementControls({
   title,
   active,
   endsAt,
+  archived,
   copy,
   dialog,
 }: {
@@ -100,12 +102,14 @@ export function AnnouncementControls({
   active: boolean;
   /** Milliseconds, or null when it runs until someone stops it. */
   endsAt: number | null;
+  archived: boolean;
   copy: Copy;
   dialog: DialogChrome;
 }) {
   const [toggleState, toggle] = useActionState(toggleAnnouncementAction, null);
   const [deleteState, remove] = useActionState(deleteAnnouncementAction, null);
   const [endState, setEnd] = useActionState(setAnnouncementEndAction, null);
+  const [archiveState, archive] = useActionState(archiveAnnouncementAction, null);
 
   /** A datetime-local field wants the console's own clock, without a zone. */
   const localValue = (ms: number | null) => {
@@ -149,23 +153,35 @@ export function AnnouncementControls({
         </Submit>
       </form>
 
-      <form action={remove}>
+      <form action={archive}>
         <input type="hidden" name="announcementId" value={id} />
-        <ConfirmSubmit
+        <Submit className="btn btn-ghost !px-3 !py-1.5 !text-[12px]" pendingLabel="…">
+          {archived ? copy.restore : copy.archive}
+        </Submit>
+      </form>
+
+      {/* Deleting destroys the record of what customers were told. Available,
+          but only once something is archived — never the first button. */}
+      {archived && (
+        <form action={remove}>
+          <input type="hidden" name="announcementId" value={id} />
+          <ConfirmSubmit
             cancelLabel={dialog.cancel}
             pendingLabel={dialog.pending}
             confirmParts={dialog.confirmParts}
-          label={copy.remove}
-          className="btn btn-danger !px-3 !py-1.5 !text-[12px]"
-          title={copy.removeTitle}
-          body={fill(copy.removeBody, { title })}
-          confirmLabel={copy.removeConfirm}
-        />
-      </form>
+            label={copy.remove}
+            className="btn btn-danger !px-3 !py-1.5 !text-[12px]"
+            title={copy.removeTitle}
+            body={fill(copy.removeBody, { title })}
+            confirmLabel={copy.removeConfirm}
+          />
+        </form>
+      )}
 
       <Status state={toggleState} />
+      <Status state={archiveState} />
       <Status state={deleteState} />
-    </div>
+      </div>
     </div>
   );
 }

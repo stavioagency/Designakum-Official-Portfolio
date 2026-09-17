@@ -7,7 +7,9 @@ import { audit } from "@/lib/audit";
 import { requireUser } from "@/lib/auth";
 import {
   createAnnouncement,
+  archiveAnnouncement,
   deleteAnnouncement,
+  unarchiveAnnouncement,
   endsAtFromHours,
   getAnnouncement,
   markAnnouncementRead,
@@ -147,6 +149,37 @@ export async function setAnnouncementEndAction(_prev: ActionState, fd: FormData)
     refresh();
     const m = await messages();
     return { ok: endsAt ? m.announcementEndSet : m.announcementNoEnd };
+  } catch (error) {
+    return await fail(error);
+  }
+}
+
+/**
+ * The everyday way to retire one. Deleting stays available for an archived
+ * announcement, so tidying up is possible but is never the first button.
+ */
+export async function archiveAnnouncementAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  try {
+    const actor = await requirePermission("announcements.manage");
+    const id = str(fd, "announcementId");
+    const announcement = await getAnnouncement(id);
+    if (!announcement) return { error: (await messages()).announcementMissing };
+
+    const restoring = announcement.archived_at !== null;
+    if (restoring) await unarchiveAnnouncement(id);
+    else await archiveAnnouncement(id);
+
+    await audit({
+      actor,
+      action: restoring ? "announcement.unarchived" : "announcement.archived",
+      targetType: "announcement",
+      targetId: id,
+      targetLabel: announcement.title,
+    });
+
+    refresh();
+    const m = await messages();
+    return { ok: restoring ? m.announcementRestored : m.announcementArchived };
   } catch (error) {
     return await fail(error);
   }

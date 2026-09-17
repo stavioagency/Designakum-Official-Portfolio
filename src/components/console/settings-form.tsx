@@ -7,7 +7,15 @@ import { Field, Status, Submit } from "@/components/editor/ui";
 export type SettingField =
   | { key: string; label: string; hint?: string; type: "text" | "textarea" | "number"; value: string | number }
   | { key: string; label: string; hint?: string; type: "boolean"; value: boolean }
-  | { key: string; label: string; hint?: string; type: "money"; value: number };
+  | { key: string; label: string; hint?: string; type: "money"; value: number }
+  | {
+      key: string;
+      label: string;
+      hint?: string;
+      type: "select";
+      value: string;
+      options: { value: string; label: string }[];
+    };
 
 /** Prices live in halalas; the operator types riyals and this keeps both in sync. */
 function MoneyField({
@@ -94,6 +102,20 @@ export function SettingsGroup({
 
           if (field.type === "money") {
             return <MoneyField key={field.key} field={field} riyalLabel={riyalLabel} />;
+          }
+
+          if (field.type === "select") {
+            return (
+              <Field key={field.key} label={field.label} hint={field.hint}>
+                <select name={field.key} defaultValue={field.value} className="field">
+                  {field.options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            );
           }
 
           if (field.type === "textarea") {

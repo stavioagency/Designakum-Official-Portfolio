@@ -56,6 +56,16 @@ export const SETTING_DEFAULTS = {
   "platform.maintenance_message_en":
     "The platform is under maintenance and will be back shortly. Thanks for your patience.",
   "support.hours_en": "Sunday to Thursday, 9am to 5pm",
+
+  /**
+   * Opening hours, chosen from lists rather than typed. Both languages are
+   * written from these four values, so the two can no longer drift apart —
+   * which is what happened whenever somebody updated one and not the other.
+   */
+  "support.day_from": "sun",
+  "support.day_to": "thu",
+  "support.open_at": "09:00",
+  "support.close_at": "17:00",
   "support.intro_en": "Describe the problem in as much detail as you can and we'll get back to you.",
   "rules.portfolio_en":
     "No content that breaks Saudi law, no work credited to someone other than its author, nothing abusive or misleading, and no fake contact details.",

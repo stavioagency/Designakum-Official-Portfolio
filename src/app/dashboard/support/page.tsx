@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatHours } from "@/lib/support-hours";
 import type { Metadata } from "next";
 import { currentLocale } from "@/lib/locale";
 import { dict, fill } from "@/lib/i18n";
@@ -32,7 +33,17 @@ export default async function CustomerSupportPage() {
       <header className="mb-6">
         <h1 className="text-[26px] font-bold">{t.title}</h1>
         <p className="mt-1 text-[13.5px] text-mist-400">
-          {localized(settings, "support.hours", locale)}
+          {/* Written from the four chosen values, so both languages say the
+              same thing without anyone keeping two sentences in step. */}
+          {formatHours(
+            {
+              from: settings["support.day_from"],
+              to: settings["support.day_to"],
+              open: settings["support.open_at"],
+              close: settings["support.close_at"],
+            },
+            locale,
+          )}
         </p>
       </header>
 

@@ -72,14 +72,49 @@ export async function updateAnnouncement(
   );
 }
 
+/**
+ * Takes an announcement out of the way without destroying it.
+ *
+ * An announcement is a statement the platform made to its customers, and the
+ * record of what was said and when is the part worth keeping. Deleting one
+ * throws that away to tidy a list.
+ */
+export async function archiveAnnouncement(id: string) {
+  await run("UPDATE announcements SET archived_at = ?, active = 0, updated_at = ? WHERE id = ?", now(), now(), id);
+}
+
+export async function unarchiveAnnouncement(id: string) {
+  await run("UPDATE announcements SET archived_at = NULL, updated_at = ? WHERE id = ?", now(), id);
+}
+
+/**
+ * Archives anything whose run has finished.
+ *
+ * Called when the console list is read rather than on a schedule: the list is
+ * the only place it matters, somebody is already waiting on a query, and a
+ * background job for one UPDATE is a moving part that can stop moving without
+ * anyone noticing.
+ */
+export async function archiveExpired() {
+  await run(
+    `UPDATE announcements SET archived_at = ?, updated_at = ?
+      WHERE archived_at IS NULL AND ends_at IS NOT NULL AND ends_at < ?`,
+    now(),
+    now(),
+    now(),
+  );
+}
+
 export async function deleteAnnouncement(id: string) {
   await run("DELETE FROM announcements WHERE id = ?", id);
 }
 
-/** Newest first, capped — announcements are never deleted, only expired. */
-export async function listAnnouncements(limit = 100) {
+/** Newest first, capped. Archived ones are a separate list, not a hidden one. */
+export async function listAnnouncements(archived = false, limit = 100) {
   return await all<Announcement>(
-    "SELECT * FROM announcements ORDER BY created_at DESC LIMIT ?",
+    `SELECT * FROM announcements
+      WHERE archived_at IS ${archived ? "NOT NULL" : "NULL"}
+      ORDER BY created_at DESC LIMIT ?`,
     Math.min(Math.max(1, limit), 200),
   );
 }
@@ -94,6 +129,7 @@ export async function liveAnnouncementsFor(userId: string) {
   return await all<Announcement>(
     `SELECT a.* FROM announcements a
       WHERE a.active = 1
+        AND a.archived_at IS NULL
         AND (a.starts_at IS NULL OR a.starts_at <= ?)
         AND (a.ends_at IS NULL OR a.ends_at >= ?)
         AND NOT EXISTS (SELECT 1 FROM announcement_reads r
@@ -122,6 +158,7 @@ export async function announcementHistoryFor(userId: string, limit = 30) {
        LEFT JOIN announcement_reads r
          ON r.announcement_id = a.id AND r.user_id = ?
       WHERE a.active = 1
+        AND a.archived_at IS NULL
         AND (a.starts_at IS NULL OR a.starts_at <= ?)
       ORDER BY a.created_at DESC
       LIMIT ?`,

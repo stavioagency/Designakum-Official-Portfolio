@@ -13,6 +13,7 @@ import { SettingsGroup } from "@/components/console/settings-form";
 import { CreateStaffForm, StaffRoleControl } from "@/components/console/staff-forms";
 import { BrandAssets } from "@/components/admin/brand-assets";
 import { EmailChange } from "@/components/account/email-change";
+import { DAYS, TIMES, clockLabel, dayLabel, formatHours } from "@/lib/support-hours";
 import { TwoFactor } from "@/components/account/two-factor";
 import { generateSecret, otpauthUri, isEnabled, recoveryCodesLeft } from "@/lib/two-factor";
 import { portfolioQr } from "@/lib/qr";
@@ -32,6 +33,20 @@ export default async function SettingsPage() {
   const staffCopy = d.staff;
   const staff = await staffMembers();
   const enrolmentSecret = generateSecret();
+
+  const dayOptions = DAYS.map((day) => ({ value: day, label: dayLabel(day, locale) }));
+  const timeOptions = TIMES.map((time) => ({ value: time, label: clockLabel(time, locale) }));
+  // Shown under the last picker so the sentence customers will read is visible
+  // while it is being chosen, rather than only after saving.
+  const hoursPreview = formatHours(
+    {
+      from: settings["support.day_from"],
+      to: settings["support.day_to"],
+      open: settings["support.open_at"],
+      close: settings["support.close_at"],
+    },
+    locale,
+  );
 
   const assetSlots = [
     ...BRAND_ASSETS.map((asset) => ({
@@ -147,10 +162,14 @@ export default async function SettingsPage() {
           saveLabel={t.save}
           riyalLabel={t.riyal}
           title={t.support}
-          columns={1}
+          columns={2}
           fields={[
-            { key: "support.hours", label: t.supportHours, type: "text", value: settings["support.hours"] },
-            { key: "support.hours_en", label: t.supportHoursEn, hint: t.englishHint, type: "text", value: settings["support.hours_en"] },
+            // Four pickers rather than the same sentence typed twice, once per
+            // language. Both languages are written from these.
+            { key: "support.day_from", label: t.dayFrom, type: "select", value: settings["support.day_from"], options: dayOptions },
+            { key: "support.day_to", label: t.dayTo, type: "select", value: settings["support.day_to"], options: dayOptions },
+            { key: "support.open_at", label: t.openAt, type: "select", value: settings["support.open_at"], options: timeOptions },
+            { key: "support.close_at", label: t.closeAt, hint: hoursPreview, type: "select", value: settings["support.close_at"], options: timeOptions },
             { key: "support.intro", label: t.supportIntro, type: "textarea", value: settings["support.intro"] },
             { key: "support.intro_en", label: t.supportIntroEn, hint: t.englishHint, type: "textarea", value: settings["support.intro_en"] },
           ]}

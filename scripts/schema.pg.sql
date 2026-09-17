@@ -286,6 +286,7 @@ CREATE TABLE IF NOT EXISTS announcements (
   starts_at  BIGINT,
   ends_at    BIGINT,
   created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+  archived_at BIGINT,
   created_at BIGINT NOT NULL,
   updated_at BIGINT NOT NULL
 );

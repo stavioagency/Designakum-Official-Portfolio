@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { currentLocale } from "@/lib/locale";
 import { dict, fill } from "@/lib/i18n";
-import { announcementIsLive, listAnnouncements, severityLabel } from "@/lib/announcements";
+import { announcementIsLive, archiveExpired, listAnnouncements, severityLabel } from "@/lib/announcements";
 import { guardPage } from "@/lib/permissions";
 import {
   Badge,
@@ -31,7 +31,12 @@ const SEVERITY_TONE: Record<AnnouncementSeverity, "neutral" | "good" | "warn" | 
 
 export default async function AnnouncementsPage() {
   await guardPage("announcements.manage");
+  // Swept here rather than on a timer: this list is the only place it shows,
+  // somebody is already waiting on a query, and a background job for one UPDATE
+  // is a moving part that can stop moving without anyone noticing.
+  await archiveExpired();
   const announcements = await listAnnouncements();
+  const archived = await listAnnouncements(true);
   const locale = await currentLocale();
   const t = dict(locale).console.announcements;
   const dialogChrome = {
@@ -77,6 +82,7 @@ export default async function AnnouncementsPage() {
                       id={announcement.id}
                       title={announcement.title}
                       endsAt={announcement.ends_at}
+                archived={announcement.archived_at !== null}
                 active={announcement.active === 1}
                     />
                   </div>
@@ -99,6 +105,39 @@ export default async function AnnouncementsPage() {
                 </li>
               );
             })}
+          </ul>
+        )}
+      </SectionCard>
+
+      {/* Kept, not hidden: what was said and when is the part worth keeping. */}
+      <SectionCard title={t.archivedTitle} description={t.archivedNote} className="mt-4">
+        {archived.length === 0 ? (
+          <p className="px-5 py-6 text-[13.5px] text-mist-500">{t.archivedEmpty}</p>
+        ) : (
+          <ul className="divide-y divide-white/6">
+            {archived.map((announcement) => (
+              <li key={announcement.id} className="px-5 py-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-semibold text-mist-300">{announcement.title}</p>
+                    <p className="mt-1 text-[11.5px] text-mist-600">
+                      {announcement.ends_at
+                        ? fill(t.until, { date: formatDate(announcement.ends_at, locale) })
+                        : t.noEnd}
+                    </p>
+                  </div>
+                  <AnnouncementControls
+                    id={announcement.id}
+                    title={announcement.title}
+                    active={announcement.active === 1}
+                    endsAt={announcement.ends_at}
+                    archived
+                    copy={t}
+                    dialog={dialogChrome}
+                  />
+                </div>
+              </li>
+            ))}
           </ul>
         )}
       </SectionCard>
