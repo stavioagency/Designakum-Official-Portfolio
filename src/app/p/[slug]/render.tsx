@@ -175,14 +175,6 @@ export async function PortfolioPage({ slug }: { slug: string }) {
         // brings the line back on its own.
         hideBranding={portfolio.hide_branding === 1 && ownerMayPublish}
       />
-      {canEdit && (
-        <Link
-          href="/dashboard"
-          className="btn btn-primary fixed bottom-5 left-1/2 z-50 -translate-x-1/2 shadow-2xl"
-        >
-          {d.portfolio.edit}
-        </Link>
-      )}
     </>
   );
 }

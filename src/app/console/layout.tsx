@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { announcementHistoryFor } from "@/lib/announcements";
 import { openErrorCount } from "@/lib/error-log";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
@@ -32,6 +33,17 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
   return (
     <ConsoleShell
       user={user}
+      notifications={{
+        items: await announcementHistoryFor(user!.id),
+        locale,
+        copy: {
+          title: dict(locale).announcements.hubTitle,
+          empty: dict(locale).announcements.hubEmpty,
+          seen: dict(locale).announcements.hubSeen,
+          open: dict(locale).announcements.hubOpen,
+          dismiss: dict(locale).announcements.dismiss,
+        },
+      }}
       counts={{ errors: await openErrorCount(), reports: reports.pending + reports.reviewing, tickets }}
       copy={dict(locale).console}
       locale={locale}

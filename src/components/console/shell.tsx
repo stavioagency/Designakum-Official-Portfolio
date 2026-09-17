@@ -6,18 +6,23 @@ import { can, roleLabel } from "@/lib/permissions";
 import { ConsoleNav, type NavItem } from "./nav";
 import { MobileDrawer } from "./mobile-drawer";
 import { LocaleSwitch } from "@/components/locale-switch";
+import { NotificationHub } from "@/components/notification-hub";
+import { Globe } from "@/components/icons";
 import type { Dictionary } from "@/lib/i18n";
 import type { Locale, User } from "@/lib/types";
 
 export function ConsoleShell({
   user,
   counts,
+  notifications,
   children,
   copy,
   locale,
 }: {
   user: User;
   counts: { reports: number; tickets: number; errors: number };
+  /** Staff read platform announcements here, same as a customer does. */
+  notifications: React.ComponentProps<typeof NotificationHub>;
   children: React.ReactNode;
   copy: Dictionary["console"];
   locale: Locale;
@@ -48,6 +53,7 @@ export function ConsoleShell({
           <LogoLockup href="/console" size={36} />
 
           <div className="flex items-center gap-2 lg:hidden">
+            <NotificationHub {...notifications} />
             <LocaleSwitch locale={locale} />
             <form action={logoutAction}>
               <button type="submit" aria-label={nav.logout} className="icon-btn !h-10 !w-10">
@@ -84,8 +90,21 @@ export function ConsoleShell({
 
           {/* Staff need the switch too — a support agent answering an English
               customer should be able to read the console in the same language. */}
-          <div className="mt-2 px-1">
+          <div className="mt-2 flex items-center gap-2 px-1">
             <LocaleSwitch locale={locale} />
+            <div className="hidden lg:block">
+              <NotificationHub {...notifications} />
+            </div>
+            {/* The logo goes to the console for anyone signed in, so without
+                this there is no way out to the site from inside it. */}
+            <Link
+              href="/"
+              aria-label={nav.home}
+              title={nav.home}
+              className="icon-btn !h-9 !w-9"
+            >
+              <Globe className="h-4 w-4" />
+            </Link>
           </div>
         </div>
 
