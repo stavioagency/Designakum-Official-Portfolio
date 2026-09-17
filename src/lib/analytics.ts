@@ -167,7 +167,12 @@ export async function topPortfolios(limit = 8, days?: number) {
        JOIN users u ON u.id = p.user_id
        LEFT JOIN portfolio_events e
          ON e.portfolio_id = p.id AND e.kind = 'view' AND e.day >= ?
-      GROUP BY p.id
+      -- u.email as well as p.id. Grouping by a primary key lets Postgres infer
+      -- the rest of that table's columns, but only that table's: a column from
+      -- the joined users row is not determined by it, and Postgres refuses the
+      -- query outright. SQLite allowed it, which is why this survived the move
+      -- and only ever failed on the window that uses a date range.
+      GROUP BY p.id, u.email
       ORDER BY views DESC LIMIT ?`,
     lastDays(days)[0],
     limit,
