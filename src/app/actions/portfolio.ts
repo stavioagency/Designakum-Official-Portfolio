@@ -6,7 +6,7 @@ import { fill } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
 import { storeImage } from "@/lib/assets";
 import { canPublish } from "@/lib/billing";
-import { isSafeUrl, socialHref } from "@/lib/safe-url";
+import { isSafeUrl, safeUrl, socialHref } from "@/lib/safe-url";
 import { all, now, run } from "@/lib/db";
 import {
   TenantError,
@@ -154,6 +154,24 @@ export async function saveProfileAction(_prev: ActionState, fd: FormData): Promi
       accent_hex: accentHex,
       background_hex: backgroundHex,
       footer_note: str(fd, "footer_note"),
+      /**
+       * These three were on the form and not in this patch.
+       *
+       * The fields rendered, accepted what was typed, saved with everything
+       * else and reported success, and the values went nowhere: the action
+       * never read them. So the SEO settings the whole feature was built for
+       * have never once been stored. Found while wiring the favicon next to
+       * them.
+       */
+      // What the works section is called: "Branches" for a restaurant, "Our
+      // services" for a company. Same story as the three below it, and this is
+      // the one that was reported as working.
+      works_label: str(fd, "works_label").slice(0, 40),
+      seo_title: str(fd, "seo_title").slice(0, 60),
+      seo_description: str(fd, "seo_description").slice(0, 160),
+      // Ends up in an og:image URL, so it goes through the same scheme check
+      // as every other customer-supplied link. Empty clears it.
+      og_image_url: safeUrl(str(fd, "og_image_url")) ?? "",
       ...(avatar === undefined ? {} : { avatar_url: avatar }),
       ...(favicon === undefined ? {} : { favicon_url: favicon }),
     });

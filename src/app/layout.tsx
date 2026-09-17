@@ -88,8 +88,6 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await currentLocale();
-  const icon = brandAsset("favicon") ?? brandAsset("icon") ?? brandAsset("mark-brand") ?? brandAsset("mark-light");
-
   const d = dict(locale);
 
   // Asked once, on the marketing and account journey only, and never of a crawler
@@ -109,6 +107,22 @@ export default async function RootLayout({ children }: { children: React.ReactNo
    */
   const written = (await pageLocale(pathname)) ?? locale;
   const page = written === locale ? d : dict(written);
+
+  /**
+   * The platform's icon, except on a page that belongs to somebody else.
+   *
+   * A customer page sets its own, and this one was being emitted alongside it:
+   * two `<link rel="icon">` tags, ours first. Chrome takes the last, Safari
+   * takes the first, so the customer's icon appeared for some visitors and not
+   * others, which reads as the feature not working at all. On their pages we
+   * say nothing and let theirs stand, falling back to the icon file in `app/`
+   * when they have not uploaded one.
+   */
+  const onPortfolio =
+    pathname.startsWith("/p/") || (await headers()).get("x-portfolio-page") === "1";
+  const icon = onPortfolio
+    ? null
+    : (brandAsset("favicon") ?? brandAsset("icon") ?? brandAsset("mark-brand") ?? brandAsset("mark-light"));
 
   return (
     <html lang={written} dir={DIR[written]} className={`${arabic.variable} ${latin.variable} ${display.variable}`}>

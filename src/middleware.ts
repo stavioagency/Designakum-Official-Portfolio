@@ -92,6 +92,10 @@ export function middleware(request: NextRequest) {
   if (host && !isPlatformHost(host) && !SHARED_PREFIXES.some((p) => pathname.startsWith(p))) {
     const url = request.nextUrl.clone();
     url.pathname = `/sites/${encodeURIComponent(host.replace(/:\d+$/, "").toLowerCase())}`;
+    // Says "this response is a customer's page", which the root layout needs:
+    // x-pathname is the path before the rewrite, so on a customer's domain it
+    // is "/" and indistinguishable from the platform's own front page.
+    headers.set("x-portfolio-page", "1");
     const rewritten = NextResponse.rewrite(url, { request: { headers } });
     rewritten.headers.set("Content-Security-Policy", csp);
     return rewritten;

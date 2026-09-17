@@ -351,27 +351,26 @@ export function ProfileSection({
           something that survives at sixteen pixels: a letter or a symbol, not a
           photograph.
         */}
-        <Field label={t.favicon} hint={t.faviconHint}>
-          <div className="max-w-[140px]">
-            <ImageField
-              name="favicon"
-              current={portfolio.favicon_url}
-              label={t.favicon}
-              aspect={1}
-              chrome={{
-                choose: copy.common.choose,
-                replace: copy.common.replace,
-                clear: copy.common.clear,
-                cropTitle: copy.common.cropTitle,
-                cropHint: copy.common.cropHint,
-                zoom: copy.common.zoom,
-                cancel: copy.common.cancel,
-                confirmCrop: copy.common.confirmCrop,
-                pending: copy.common.pending,
-              }}
-            />
-          </div>
-        </Field>
+        <div className="max-w-[160px]">
+          <ImageField
+            name="favicon"
+            current={portfolio.favicon_url}
+            label={t.favicon}
+            hint={t.faviconHint}
+            aspect={1}
+            chrome={{
+              choose: copy.common.choose,
+              replace: copy.common.replace,
+              clear: copy.common.clear,
+              cropTitle: copy.common.cropTitle,
+              cropHint: copy.common.cropHint,
+              zoom: copy.common.zoom,
+              cancel: copy.common.cancel,
+              confirmCrop: copy.common.confirmCrop,
+              pending: copy.common.pending,
+            }}
+          />
+        </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <Submit pendingLabel={copy.common.saving}>{copy.common.save}</Submit>
