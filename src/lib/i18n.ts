@@ -66,7 +66,6 @@ const ar = {
   },
 
   landing: {
-    badge: "منصة عربية — كل شيء برابط واحد",
     headline1: "كل حساباتك وروابطك وأعمالك",
     headline2: "في رابط واحد",
     sub: "اجمع حساباتك، روابطك، أعمالك ومعلوماتك في صفحة واحدة، وشاركها برابط واحد.",
@@ -1453,7 +1452,6 @@ const en: typeof ar = {
   },
 
   landing: {
-    badge: "Built for Arabic — everything on one link",
     headline1: "Your accounts, links and work",
     headline2: "on one link",
     sub: "Gather your accounts, links, work and details on one page, and share all of it with a single link.",

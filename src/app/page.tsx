@@ -86,10 +86,6 @@ export default async function LandingPage() {
         */}
         <section className="rise grid items-center gap-10 pt-10 sm:pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,430px)] lg:gap-14">
           <div className="text-center lg:text-start">
-            <p className="panel mb-6 inline-flex items-center gap-2 px-4 py-2 text-[12.5px] text-mist-300">
-              <Sparkle className="h-4 w-4" style={{ color: "var(--accent-ring)" }} />
-              {d.landing.badge}
-            </p>
             <h1 className="text-[38px] font-bold leading-[1.2] sm:text-[52px]">
               {d.landing.headline1}
               <br />
