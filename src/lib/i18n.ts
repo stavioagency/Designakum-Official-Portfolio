@@ -85,6 +85,8 @@ const ar = {
     claimDomain: "أو اربط نطاقك الخاص (مثل yourname.com) بعد الاشتراك.",
     claimTaken: "نتحقق من توفّر الرابط بعد إنشاء الحساب، فأسماء العملاء ليست شيئًا نكشفه قبل ذلك.",
     trust: ["بدون بطاقة", "رابطك باسمك", "ألغِ متى شئت"],
+    yourLink: "صفحتك",
+    openYourPage: "افتح صفحتك",
 
     /** The rotating showcase beside it. */
     showcaseNote: "صفحات حقيقية منشورة على المنصة",
@@ -1510,6 +1512,8 @@ const en: typeof ar = {
     claimDomain: "Or connect your own domain (like yourname.com) once you subscribe.",
     claimTaken: "We check whether the link is free once you have an account. Customer names are not ours to reveal before that.",
     trust: ["No card needed", "A link with your name on it", "Cancel any time"],
+    yourLink: "Your page",
+    openYourPage: "Open your page",
 
     showcaseNote: "Real pages, published on Designakum",
     showcaseGo: "Open this page",

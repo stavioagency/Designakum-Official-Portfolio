@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CurrencySwitch } from "@/components/currency-switch";
 import { visitorCurrency } from "@/lib/visitor-currency";
 import { currentUser } from "@/lib/auth";
-import { listPortfolios, loadBundle } from "@/lib/portfolios";
+import { getPortfolioForUser, listPortfolios, loadBundle } from "@/lib/portfolios";
 import { pickShowcase } from "@/lib/showcase";
 import { currentLocale } from "@/lib/locale";
 import { dict } from "@/lib/i18n";
@@ -65,6 +65,10 @@ export default async function LandingPage() {
   const bundles = await Promise.all(shortlist.map((p) => loadBundle(p)));
   const pages = bundles.filter((b) => b !== null);
 
+  // Their own page, to put in the hero instead of a bare button. Staff have one
+  // too, so this is not gated on the role.
+  const mine = user ? await getPortfolioForUser(user.id) : null;
+
   const origin = await requestOrigin();
   const host = origin.replace(/^https?:\/\//, "");
   // A code a reader can point a phone at. Only when there is a real page behind
@@ -117,13 +121,6 @@ export default async function LandingPage() {
           somebody's portfolio and never seeing the two together. Here the claim
           and the thing it describes share the first screen.
         */}
-        {/*
-          The page beside the promise, not three screens below it.
-          The demo used to be its own section, seventy-eight percent of the
-          viewport tall, which meant scrolling the marketing page through
-          somebody's portfolio and never seeing the two together. Here the claim
-          and the thing it describes share the first screen.
-        */}
         <section className="rise grid grid-cols-1 items-center gap-10 pt-8 sm:pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,430px)] lg:gap-14">
           <div className="text-center lg:text-start">
             <h1 className="display text-balance text-[34px] font-bold leading-[1.2] sm:text-[44px] lg:text-[52px] lg:leading-[1.15]">
@@ -135,28 +132,51 @@ export default async function LandingPage() {
               {d.landing.sub}
             </p>
 
-            {/* Signed in already: the address bar is not an offer they need. */}
+            {/*
+              Signed in, so the address bar is not an offer they need: they have
+              a link already, and this is where it should be. The reassurances
+              underneath go with it, because "no card needed" and "cancel any
+              time" are answers to questions an existing customer has stopped
+              asking.
+            */}
             {user ? (
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
-                <Link
-                  href={user.role === "client" ? "/dashboard" : "/console"}
-                  className="btn btn-primary"
-                >
-                  {d.nav.dashboard}
-                </Link>
+              <div className="mt-8">
+                {mine && (
+                  <p className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-1 text-[13px] text-mist-400 lg:justify-start">
+                    <span>{d.landing.yourLink}</span>
+                    <span dir="ltr" className="font-semibold text-mist-200">
+                      {host}/p/{mine.slug}
+                    </span>
+                  </p>
+                )}
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+                  <Link
+                    href={user.role === "client" ? "/dashboard" : "/console"}
+                    className="btn btn-primary"
+                  >
+                    {d.nav.dashboard}
+                  </Link>
+                  {mine && (
+                    <Link href={`/p/${mine.slug}`} className="btn btn-ghost">
+                      {d.landing.openYourPage}
+                    </Link>
+                  )}
+                </div>
               </div>
             ) : (
-              <ClaimLink host={host} d={d.landing} />
-            )}
+              <>
+                <ClaimLink host={host} d={d.landing} />
 
-            <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12.5px] text-mist-500 lg:justify-start">
-              {d.landing.trust.map((item) => (
-                <li key={item} className="flex items-center gap-1.5">
-                  <Check className="h-3.5 w-3.5" style={{ color: "var(--accent-ring)" }} />
-                  {item}
-                </li>
-              ))}
-            </ul>
+                <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12.5px] text-mist-500 lg:justify-start">
+                  {d.landing.trust.map((item) => (
+                    <li key={item} className="flex items-center gap-1.5">
+                      <Check className="h-3.5 w-3.5" style={{ color: "var(--accent-ring)" }} />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
 
           {/* `live` is left false, so a visit to the landing page is never
