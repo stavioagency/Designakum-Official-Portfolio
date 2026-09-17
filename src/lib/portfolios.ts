@@ -176,6 +176,7 @@ const PROFILE_FIELDS = [
   "accent_hex",
   "background_hex",
   "works_label",
+  "locale",
   "seo_title",
   "seo_description",
   "og_image_url",

@@ -36,14 +36,24 @@ describe("naming the works section", () => {
     await restore(p);
   });
 
-  test("an empty name falls back to the platform's, in the reader's language", async () => {
+  /**
+   * The page's language, not the reader's. A portfolio is written in one
+   * language and a visitor arriving with the other preference is still reading
+   * that page — the section's default name has to come from the same place
+   * every other word on it does.
+   */
+  test("an empty name falls back to the platform's word in the page's language", async () => {
     const p = await subject();
-    await d.prepare("UPDATE portfolios SET works_label = '' WHERE id = ?").run(p.id);
+    const row = await d.prepare("SELECT locale FROM portfolios WHERE id = ?").get(p.id);
+    const expected = row.locale === "en" ? "Selected work" : "أعمالي";
 
-    const arabic = await visit(`/p/${p.slug}`, { locale: "ar" });
-    assert.ok(arabic.body.includes("أعمالي"), "Arabic default missing");
-
-    await restore(p);
+    try {
+      await d.prepare("UPDATE portfolios SET works_label = '' WHERE id = ?").run(p.id);
+      const page = await visit(`/p/${p.slug}`, { locale: row.locale === "en" ? "ar" : "en" });
+      assert.ok(page.body.includes(expected), `expected the ${row.locale} default: ${expected}`);
+    } finally {
+      await restore(p);
+    }
   });
 });
 

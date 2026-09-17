@@ -77,3 +77,36 @@ export async function messages() {
   const { dict } = await import("./i18n");
   return dict(await currentLocale()).messages;
 }
+
+
+/**
+ * The language a page is written in, which is not always the reader's.
+ *
+ * A portfolio belongs to its owner and is written in one language; a visitor
+ * arriving with the other preference is still reading that page. The document's
+ * own `lang` and `dir` have to say so — a screen reader announcing an English
+ * page as Arabic is wrong, and so is telling a search engine the same thing.
+ *
+ * Only portfolio routes have an answer; everything else is the platform talking
+ * to the reader, and that follows the reader. The lookup is React-cached, so the
+ * layout and the page it wraps share one query rather than making two.
+ */
+export async function pageLocale(pathname: string): Promise<Locale | null> {
+  const slugMatch = /^\/p\/([^/]+)/.exec(pathname);
+  const hostMatch = /^\/sites\/([^/]+)/.exec(pathname);
+  if (!slugMatch && !hostMatch) return null;
+
+  const { getPortfolioBySlug } = await import("./portfolios");
+
+  if (slugMatch) {
+    const portfolio = await getPortfolioBySlug(decodeURIComponent(slugMatch[1]));
+    return portfolio && isLocale(portfolio.locale) ? portfolio.locale : null;
+  }
+
+  const { portfolioIdForHost } = await import("./domains");
+  const { get } = await import("./db");
+  const id = await portfolioIdForHost(decodeURIComponent(hostMatch![1]));
+  if (!id) return null;
+  const row = await get<{ locale: string }>("SELECT locale FROM portfolios WHERE id = ?", id);
+  return row && isLocale(row.locale) ? row.locale : null;
+}

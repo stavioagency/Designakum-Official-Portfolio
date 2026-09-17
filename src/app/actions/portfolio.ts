@@ -21,6 +21,7 @@ import {
 } from "@/lib/portfolios";
 import { THEMES, type ThemeKey, type User } from "@/lib/types";
 import { normaliseHex } from "@/lib/accent";
+import { isLocale } from "@/lib/i18n";
 import { reportError } from "@/lib/observability";
 
 export type ActionState = { ok?: string; error?: string } | null;
@@ -120,6 +121,12 @@ export async function saveProfileAction(_prev: ActionState, fd: FormData): Promi
     const theme = str(fd, "theme");
     if (!(theme in THEMES)) return { error: (await messages()).unknownTheme };
 
+    // The language the public page is written in, which is not the language the
+    // owner reads the dashboard in. A designer working in Arabic may well want
+    // an English page, and until now the one chosen at sign-up was permanent.
+    const pageLocale = str(fd, "locale");
+    if (!isLocale(pageLocale)) return { error: (await messages()).unknownLocale };
+
     // Validated here, not just in the browser: this ends up inside a style
     // attribute, so anything that is not a plain six-digit colour is refused
     // rather than trusted. Empty means "use the theme".
@@ -142,6 +149,7 @@ export async function saveProfileAction(_prev: ActionState, fd: FormData): Promi
       whatsapp: str(fd, "whatsapp"),
       whatsapp_label: str(fd, "whatsapp_label"),
       theme: theme as ThemeKey,
+      locale: pageLocale,
       accent_hex: accentHex,
       background_hex: backgroundHex,
       footer_note: str(fd, "footer_note"),

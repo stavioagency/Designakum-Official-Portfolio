@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { publishAction, saveSlugAction } from "@/app/actions/portfolio";
 import { changePasswordAction } from "@/app/actions/auth";
 import { setBrandingAction } from "@/app/actions/portfolio";
+import { setLocaleAction } from "@/app/actions/auth";
 import { EmailChange } from "@/components/account/email-change";
 import { QrCode } from "./qr-code";
 import { Check, Link as LinkIcon } from "@/components/icons";
@@ -167,6 +168,31 @@ export function SettingsSection({
         <p className="text-[12px] leading-relaxed text-mist-500">
           {t.accountNote}
         </p>
+      </section>
+
+      {/*
+        The header toggle already writes this, but nothing ever said what it
+        governs — the interface, every email, and which language announcements
+        arrive in. Said plainly here, and set from the same action.
+      */}
+      <section className="card space-y-4 p-5 sm:p-6">
+        <header>
+          <h2 className="text-lg font-semibold">{t.accountLanguage}</h2>
+          <p className="mt-1 text-[13px] leading-relaxed text-mist-400">{t.accountLanguageNote}</p>
+        </header>
+
+        <form action={setLocaleAction} className="flex flex-wrap items-center gap-3">
+          <input type="hidden" name="path" value="/dashboard" />
+          <select
+            name="locale"
+            defaultValue={user.locale === "en" ? "en" : "ar"}
+            className="field !w-auto"
+          >
+            <option value="ar">العربية</option>
+            <option value="en">English</option>
+          </select>
+          <Submit pendingLabel={copy.common.saving}>{copy.common.save}</Submit>
+        </form>
       </section>
 
       <QrCode

@@ -187,6 +187,18 @@ export function ProfileSection({
           </div>
         </Field>
 
+        {/*
+          The page's own language, which is not the one the owner reads this
+          form in. Chosen at sign-up and permanent until now, so an Arabic
+          designer who wanted an English page had no way to get one.
+        */}
+        <Field label={t.pageLanguage} hint={t.pageLanguageHint}>
+          <select name="locale" defaultValue={portfolio.locale} className="field">
+            <option value="ar">العربية</option>
+            <option value="en">English</option>
+          </select>
+        </Field>
+
         <Field label={t.worksLabel} hint={t.worksLabelHint}>
           <input
             name="works_label"

@@ -3,7 +3,7 @@ import { IBM_Plex_Sans_Arabic, Inter } from "next/font/google";
 import { BRAND, brandAsset } from "@/lib/brand";
 import { DIR } from "@/lib/i18n";
 import { headers } from "next/headers";
-import { currentLocale, gateApplies, hasChosenLocale, suggestedLocale } from "@/lib/locale";
+import { currentLocale, gateApplies, hasChosenLocale, pageLocale, suggestedLocale } from "@/lib/locale";
 import { dict } from "@/lib/i18n";
 import { callerIsBot } from "@/lib/bots";
 import { requestOrigin } from "@/lib/origin";
@@ -84,8 +84,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       ? await suggestedLocale()
       : null;
 
+  /**
+   * A portfolio is written in its owner's language, and the document has to say
+   * which — an English page announced as Arabic is wrong to a screen reader and
+   * to a crawler, and the right-to-left document direction leaked out past the
+   * page into the notice and the scrollbar. Everywhere else is the platform
+   * speaking to the reader, which follows the reader.
+   */
+  const written = (await pageLocale(pathname)) ?? locale;
+  const page = written === locale ? d : dict(written);
+
   return (
-    <html lang={locale} dir={DIR[locale]} className={`${arabic.variable} ${latin.variable}`}>
+    <html lang={written} dir={DIR[written]} className={`${arabic.variable} ${latin.variable}`}>
       <head>{icon && <link rel="icon" href={icon} />}</head>
       <body className="ambient">
         {gate ? (
@@ -96,10 +106,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         ) : (
           <>
             {children}
+            {/* In the page's language too. A notice in the other one, on a
+                page that is entirely in this one, reads as a broken page
+                rather than as a considerate translation. */}
             <CookieNotice
-              body={d.cookies.body}
-              policy={d.cookies.policy}
-              dismiss={d.cookies.dismiss}
+              body={page.cookies.body}
+              policy={page.cookies.policy}
+              dismiss={page.cookies.dismiss}
             />
           </>
         )}
