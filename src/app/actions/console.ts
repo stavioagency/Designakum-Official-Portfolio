@@ -145,9 +145,31 @@ export async function checkPaypalAction(): Promise<{ ok: boolean; message: strin
     const mode = result.live ? "live" : "sandbox";
 
     if (result.ok) return { ok: true, message: fill(m.paypalOk, { mode }) };
-    if (result.detail.startsWith("missing")) return { ok: false, message: m.paypalMissing };
     if (result.detail === "unreachable") return { ok: false, message: m.paypalUnreachable };
-    return { ok: false, message: fill(m.paypalRejected, { mode, status: String(result.status) }) };
+
+    /**
+     * What is wrong with the stored values, described without printing them.
+     *
+     * Every failure so far has been the same 401 with nothing to go on, and
+     * each round of guessing cost an evening. Length, sameness and stray
+     * whitespace identify all of them and reveal none of the credential.
+     */
+    const { shape } = result;
+    const clues: string[] = [];
+    if (shape.sameValue) clues.push(m.paypalSame);
+    if (shape.idPadded || shape.secretPadded) clues.push(m.paypalPadded);
+    clues.push(fill(m.paypalLengths, {
+      id: String(shape.idLength),
+      secret: String(shape.secretLength),
+    }));
+
+    if (result.detail.startsWith("missing")) {
+      return { ok: false, message: `${m.paypalMissing} ${clues.join(" ")}` };
+    }
+    return {
+      ok: false,
+      message: `${fill(m.paypalRejected, { mode, status: String(result.status) })} ${clues.join(" ")}`,
+    };
   } catch (error) {
     return { ok: false, message: error instanceof Error ? error.message : "failed" };
   }

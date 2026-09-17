@@ -19,8 +19,20 @@ const API = () =>
     ? "https://api-m.paypal.com"
     : "https://api-m.sandbox.paypal.com";
 
+/**
+ * Trimmed, because a credential is pasted by a human into a web form.
+ *
+ * A trailing newline survives the paste, survives the save, and is invisible
+ * everywhere: the dashboard shows the value as correct, the length looks right
+ * at a glance, and the only symptom is that the Basic auth header carries a
+ * character PayPal has never seen, so every request comes back 401 with no
+ * clue attached. One trim removes an entire class of evening.
+ */
+const credential = (name: "PAYPAL_CLIENT_ID" | "PAYPAL_CLIENT_SECRET") =>
+  (process.env[name] ?? "").trim();
+
 export const paypalConfigured = () =>
-  Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET);
+  Boolean(credential("PAYPAL_CLIENT_ID") && credential("PAYPAL_CLIENT_SECRET"));
 
 export const paypalIsLive = () => process.env.PAYPAL_ENV === "live";
 
@@ -29,8 +41,8 @@ let cachedToken: { value: string; expiresAt: number } | null = null;
 async function accessToken(): Promise<string> {
   if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) return cachedToken.value;
 
-  const id = process.env.PAYPAL_CLIENT_ID;
-  const secret = process.env.PAYPAL_CLIENT_SECRET;
+  const id = credential("PAYPAL_CLIENT_ID");
+  const secret = credential("PAYPAL_CLIENT_SECRET");
   if (!id || !secret) throw new Error("PayPal credentials are not configured.");
 
   const response = await fetch(`${API()}/v1/oauth2/token`, {
@@ -267,21 +279,52 @@ export async function verifyWebhook(
  * which is the same message whichever way round it is. Nothing here returns any
  * part of a credential.
  */
+export interface CredentialShape {
+  idLength: number;
+  secretLength: number;
+  /** The single most common mistake: the client id pasted into both fields. */
+  sameValue: boolean;
+  /** A newline or space that survived the paste, and is invisible in any UI. */
+  idPadded: boolean;
+  secretPadded: boolean;
+}
+
 export async function verifyCredentials(): Promise<{
   ok: boolean;
   status: number;
   live: boolean;
   detail: string;
+  shape: CredentialShape;
 }> {
   const live = paypalIsLive();
-  const id = process.env.PAYPAL_CLIENT_ID;
-  const secret = process.env.PAYPAL_CLIENT_SECRET;
+  const raw = {
+    id: process.env.PAYPAL_CLIENT_ID ?? "",
+    secret: process.env.PAYPAL_CLIENT_SECRET ?? "",
+  };
+  const id = raw.id.trim();
+  const secret = raw.secret.trim();
+
+  /**
+   * Describes the stored values without revealing them.
+   *
+   * Length, whether the two are identical, and whether either carries
+   * whitespace are enough to identify every mistake seen so far, and none of
+   * them is the credential. Shown only to staff, in their own console.
+   */
+  const shape: CredentialShape = {
+    idLength: id.length,
+    secretLength: secret.length,
+    sameValue: Boolean(id) && id === secret,
+    idPadded: raw.id !== id,
+    secretPadded: raw.secret !== secret,
+  };
 
   if (!id || !secret) {
     return {
       ok: false,
       status: 0,
       live,
+      shape,
       detail: !id && !secret ? "missing-both" : !id ? "missing-id" : "missing-secret",
     };
   }
@@ -301,9 +344,10 @@ export async function verifyCredentials(): Promise<{
       ok: response.ok,
       status: response.status,
       live,
+      shape,
       detail: response.ok ? "ok" : response.status === 401 ? "rejected" : "error",
     };
   } catch {
-    return { ok: false, status: 0, live, detail: "unreachable" };
+    return { ok: false, status: 0, live, shape, detail: "unreachable" };
   }
 }
