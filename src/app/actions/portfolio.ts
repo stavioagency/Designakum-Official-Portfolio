@@ -89,6 +89,12 @@ export async function saveProfileAction(_prev: ActionState, fd: FormData): Promi
     const accentHex = rawHex ? normaliseHex(rawHex) : "";
     if (accentHex === null) return { error: (await messages()).badColour };
 
+    // Same rule for the background, and for the same reason: it lands in a
+    // style attribute. Empty means the platform's own dark ground.
+    const rawBackground = str(fd, "background_hex");
+    const backgroundHex = rawBackground ? normaliseHex(rawBackground) : "";
+    if (backgroundHex === null) return { error: (await messages()).badColour };
+
     await updateProfile(id, user, {
       name: str(fd, "name"),
       title: str(fd, "title"),
@@ -99,6 +105,7 @@ export async function saveProfileAction(_prev: ActionState, fd: FormData): Promi
       whatsapp_label: str(fd, "whatsapp_label"),
       theme: theme as ThemeKey,
       accent_hex: accentHex,
+      background_hex: backgroundHex,
       footer_note: str(fd, "footer_note"),
       ...(avatar === undefined ? {} : { avatar_url: avatar }),
     });

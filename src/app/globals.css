@@ -94,6 +94,24 @@ body {
   animation: haze 17s ease-in-out infinite reverse;
 }
 
+/* -------------------------------------------------------------------------
+   A themed portfolio overrides these; everywhere else the fallbacks are the
+   values that were hardcoded here before, so nothing outside a themed page
+   changes. See src/lib/surface.ts for how they are derived.
+   ------------------------------------------------------------------------- */
+
+.themed {
+  color: var(--text, var(--color-mist-50));
+  /* Paints its own ground rather than relying on the page: this component also
+     renders inside the dashboard preview and the landing page, where it must
+     colour its own box and nothing around it. */
+  background: var(--page);
+}
+.themed .text-mist-300 { color: var(--text-dim, var(--color-mist-300)); }
+.themed .text-mist-400 { color: var(--text-dim, var(--color-mist-400)); }
+.themed .text-mist-500 { color: var(--text-faint, var(--color-mist-500)); }
+.themed .text-mist-600 { color: var(--text-faint, var(--color-mist-500)); }
+
 /* -------------------------------------------------------------------- glass */
 
 .glass {
@@ -105,20 +123,20 @@ body {
 
 .card {
   border-radius: var(--radius-card);
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.062), rgba(255, 255, 255, 0.028));
+  background: linear-gradient(165deg, var(--card-top, rgba(255, 255, 255, 0.062)), var(--card-bottom, rgba(255, 255, 255, 0.028)));
   border: 1px solid var(--hairline);
   backdrop-filter: blur(24px) saturate(150%);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
-    0 24px 60px -30px rgba(0, 0, 0, 0.9);
+    0 1px 0 0 var(--inset-line, rgba(255, 255, 255, 0.06)) inset,
+    0 24px 60px -30px var(--drop-shadow, rgba(0, 0, 0, 0.9));
 }
 
 .card-tight { border-radius: 20px; }
 
 .panel {
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.032);
+  background: var(--panel-fill, rgba(255, 255, 255, 0.032));
   border: 1px solid var(--hairline-soft);
 }
 
@@ -126,13 +144,13 @@ body {
   position: relative;
   z-index: 1;
   border-radius: 38px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015) 45%, rgba(255, 255, 255, 0.03));
+  background: linear-gradient(180deg, var(--shell-top, rgba(255, 255, 255, 0.05)), var(--shell-mid, rgba(255, 255, 255, 0.015)) 45%, var(--shell-bottom, rgba(255, 255, 255, 0.03)));
   border: 1px solid var(--hairline);
   backdrop-filter: blur(26px) saturate(150%);
   -webkit-backdrop-filter: blur(26px) saturate(150%);
   box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.07) inset,
-    0 40px 100px -50px rgba(0, 0, 0, 1);
+    0 1px 0 0 var(--inset-line, rgba(255, 255, 255, 0.07)) inset,
+    0 40px 100px -50px var(--drop-shadow, rgba(0, 0, 0, 1));
 }
 
 /* ------------------------------------------------------------------ accents */

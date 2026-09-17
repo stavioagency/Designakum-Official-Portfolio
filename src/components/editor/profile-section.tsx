@@ -8,7 +8,15 @@ import { Field, Status, Submit } from "./ui";
 import { ImageField } from "./image-field";
 import { Check } from "@/components/icons";
 import { accentFromHex } from "@/lib/accent";
+import { surfaceFromHex } from "@/lib/surface";
 import { useState } from "react";
+
+/**
+ * A spread rather than a palette: the platform's own ground, two darker
+ * neutrals, two papers and two colours with a hue in them, so the row shows
+ * that any colour works instead of implying these are the options.
+ */
+const BACKGROUNDS = ["#07080e", "#12121a", "#1c1b22", "#0f172a", "#f7f5f0", "#ffffff", "#1a2e23", "#2b1b1b"];
 
 export function ProfileSection({
   portfolio,
@@ -24,6 +32,8 @@ export function ProfileSection({
   // preview on every keystroke; only a complete colour is applied.
   const [hex, setHex] = useState(portfolio.accent_hex);
   const custom = accentFromHex(hex);
+  const [bg, setBg] = useState(portfolio.background_hex);
+  const surface = surfaceFromHex(bg);
 
   return (
     <div className="space-y-5">
@@ -175,6 +185,75 @@ export function ProfileSection({
               </button>
             )}
           </div>
+        </Field>
+
+        <Field label={t.background}>
+          <p className="mb-2.5 text-[12.5px] leading-relaxed text-mist-400">{t.backgroundHint}</p>
+
+          <div className="flex flex-wrap gap-2.5">
+            {BACKGROUNDS.map((swatch) => {
+              const active = bg.toLowerCase() === swatch.toLowerCase();
+              return (
+                <button
+                  type="button"
+                  key={swatch}
+                  onClick={() => setBg(swatch)}
+                  aria-pressed={active}
+                  aria-label={swatch}
+                  title={swatch}
+                  className={`grid h-10 w-10 place-items-center rounded-full border-2 transition ${
+                    active ? "border-white/70 scale-105" : "border-white/10 hover:border-white/30"
+                  }`}
+                  style={{ background: swatch }}
+                >
+                  {active && <Check className="h-4 w-4 text-white mix-blend-difference" />}
+                </button>
+              );
+            })}
+          </div>
+
+          <input type="hidden" name="background_hex" value={surface ? surface.page : ""} />
+          <div className="mt-3.5 flex flex-wrap items-center gap-2.5">
+            <label className="text-[12.5px] text-mist-400" htmlFor="background-hex">
+              {t.customColour}
+            </label>
+            <div className="field flex items-center gap-2 !w-auto !py-1.5" dir="ltr">
+              <span
+                className="h-6 w-6 shrink-0 rounded-md border border-white/15"
+                style={{ background: surface ? surface.page : "rgba(255,255,255,0.06)" }}
+              />
+              <input
+                id="background-hex"
+                value={bg}
+                onChange={(event) => setBg(event.target.value)}
+                placeholder="#0F172A"
+                maxLength={7}
+                spellCheck={false}
+                className="w-[92px] bg-transparent text-[13px] font-medium text-mist-50 outline-none"
+              />
+            </div>
+            {bg && !surface && (
+              <span className="text-[12px] text-rose-300">{t.colourInvalid}</span>
+            )}
+            {surface && (
+              <button
+                type="button"
+                onClick={() => setBg("")}
+                className="text-[12px] text-mist-500 underline underline-offset-4 hover:text-mist-300"
+              >
+                {t.backgroundReset}
+              </button>
+            )}
+          </div>
+
+          {/* Whatever they pick, the text tones are measured against it — this
+              says which way the page just flipped, so the change is not a
+              surprise when they look at the preview. */}
+          {surface && (
+            <p className="mt-2.5 text-[12px] text-mist-500">
+              {surface.isLight ? t.backgroundLight : t.backgroundDark}
+            </p>
+          )}
         </Field>
 
         <div className="flex flex-wrap items-center gap-3">

@@ -9,6 +9,7 @@ import { DIR, dict, fill } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n";
 import { safeUrl, socialHref } from "@/lib/safe-url";
 import { accentStyle } from "@/lib/accent";
+import { surfaceStyle } from "@/lib/surface";
 import type { PortfolioBundle, Locale } from "@/lib/types";
 
 function waHref(number: string) {
@@ -82,10 +83,15 @@ export function PortfolioView({
       // A custom colour wins over the theme, and is set inline because it is
       // per-portfolio data — it cannot live in a stylesheet written at build time.
       data-theme={portfolio.accent_hex ? undefined : portfolio.theme}
-      style={accentStyle(portfolio.accent_hex)}
+      // The background carries a whole palette with it: every surface is a
+      // translucent lift off the page and every text tone is measured against
+      // it, so one colour changes all of them. `themed` is what lets those
+      // tokens reach the text utilities; without a background nothing is set
+      // and the platform's own dark values apply untouched.
+      style={{ ...accentStyle(portfolio.accent_hex), ...surfaceStyle(portfolio.background_hex) }}
       lang={locale}
       dir={DIR[locale]}
-      className="@container relative"
+      className={`@container relative${portfolio.background_hex ? " themed" : ""}`}
     >
       <main className="relative z-10 mx-auto w-full max-w-[540px] px-4 pb-10 pt-5 @5xl:max-w-6xl @5xl:px-8 @5xl:pb-16 @5xl:pt-10">
         <div className="shell p-4 sm:p-6 @5xl:p-9">

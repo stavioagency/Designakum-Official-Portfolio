@@ -174,6 +174,7 @@ const PROFILE_FIELDS = [
   "whatsapp_label",
   "theme",
   "accent_hex",
+  "background_hex",
   "footer_note",
 ] as const;
 

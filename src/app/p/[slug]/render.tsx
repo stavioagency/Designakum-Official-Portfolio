@@ -130,6 +130,12 @@ export async function PortfolioPage({ slug }: { slug: string }) {
 
   return (
     <>
+      {/* Only the public page paints the viewport. The hex is the validated
+          value from the database — normaliseHex refuses anything that is not
+          six hex digits — so there is nothing here to escape. */}
+      {portfolio.background_hex && (
+        <style>{`html,body{background:${portfolio.background_hex}}`}</style>
+      )}
       <PortfolioView
         bundle={await loadBundle(portfolio)}
         live

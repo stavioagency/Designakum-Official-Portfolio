@@ -66,7 +66,10 @@ export function HeroSlider({ slides, tall = false }: { slides: Slide[]; tall?: b
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                 <figcaption className="absolute inset-x-0 bottom-0 p-5 text-center @5xl:p-8">
                   {slide.headline && (
-                    <p className="text-[26px] font-bold leading-tight drop-shadow-lg @5xl:text-4xl">
+                    /* Always white: this sits on the image's own dark scrim, not
+                       on the page, so it must not follow a light background's
+                       dark text down onto a black gradient. */
+                    <p className="text-[26px] font-bold leading-tight text-white drop-shadow-lg @5xl:text-4xl">
                       {slide.headline}
                     </p>
                   )}
