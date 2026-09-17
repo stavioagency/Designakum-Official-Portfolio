@@ -176,6 +176,9 @@ const PROFILE_FIELDS = [
   "accent_hex",
   "background_hex",
   "works_label",
+  "seo_title",
+  "seo_description",
+  "og_image_url",
   "footer_note",
 ] as const;
 

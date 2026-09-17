@@ -266,6 +266,38 @@ export function ProfileSection({
           )}
         </Field>
 
+        {/*
+          Every one of these is optional, and the hint says what happens when it
+          is left alone — a page describes itself from the name, the bio and the
+          avatar, which is usually better than a field somebody half-filled.
+        */}
+        <Field label={t.seoHeading} hint={t.seoHint}>
+          <div className="space-y-3">
+            <input
+              name="seo_title"
+              defaultValue={portfolio.seo_title}
+              className="field"
+              maxLength={60}
+              placeholder={`${portfolio.name} — ${portfolio.title}`}
+            />
+            <textarea
+              name="seo_description"
+              defaultValue={portfolio.seo_description}
+              className="field"
+              rows={2}
+              maxLength={160}
+              placeholder={t.seoDescriptionPlaceholder}
+            />
+            <input
+              name="og_image_url"
+              defaultValue={portfolio.og_image_url}
+              className="field"
+              dir="ltr"
+              placeholder={t.seoImagePlaceholder}
+            />
+          </div>
+        </Field>
+
         <div className="flex flex-wrap items-center gap-3">
           <Submit pendingLabel={copy.common.saving}>{copy.common.save}</Submit>
           <Status state={state} />

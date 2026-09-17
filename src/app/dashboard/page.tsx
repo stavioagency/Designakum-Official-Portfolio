@@ -9,6 +9,7 @@ import { getPortfolioForUser, loadBundle } from "@/lib/portfolios";
 import { requestOrigin } from "@/lib/origin";
 import { Editor } from "@/components/editor/editor";
 import { PortfolioView } from "@/components/portfolio-view";
+import { portfolioQr } from "@/lib/qr";
 import { Eye } from "@/components/icons";
 import { liveAnnouncementsFor } from "@/lib/announcements";
 import { AnnouncementBanner } from "@/components/announcement-banner";
@@ -72,6 +73,7 @@ export default async function DashboardPage() {
         user={user}
         origin={origin}
         preview={<PortfolioView bundle={bundle} />}
+        qrSvg={await portfolioQr(`${origin}/p/${portfolio.slug}`)}
         hasPassword={user.password_hash !== ""}
         canPublish={await canPublish(user)}
         copy={copy}

@@ -6,6 +6,7 @@ import { publishAction, saveSlugAction } from "@/app/actions/portfolio";
 import { changePasswordAction } from "@/app/actions/auth";
 import { setBrandingAction } from "@/app/actions/portfolio";
 import { EmailChange } from "@/components/account/email-change";
+import { QrCode } from "./qr-code";
 import { Check, Link as LinkIcon } from "@/components/icons";
 import type { Portfolio, User } from "@/lib/types";
 import type { Dictionary } from "@/lib/i18n";
@@ -20,6 +21,7 @@ export function SettingsSection({
   canPublish,
   copy,
   passwordCopy,
+  qrSvg,
 }: {
   portfolio: Portfolio;
   user: User;
@@ -30,6 +32,8 @@ export function SettingsSection({
   canPublish: boolean;
   copy: Dictionary["dashboard"];
   passwordCopy: Dictionary["password"];
+  /** Rendered on the server: the encoder is not worth shipping to the browser. */
+  qrSvg: string;
 }) {
   const t = copy.settings;
   const planLabel: Record<string, string> = {
@@ -164,6 +168,19 @@ export function SettingsSection({
           {t.accountNote}
         </p>
       </section>
+
+      <QrCode
+        svg={qrSvg}
+        url={publicUrl}
+        filename={portfolio.slug}
+        copy={{
+          heading: t.qrHeading,
+          note: t.qrNote,
+          downloadSvg: t.qrDownloadSvg,
+          downloadPng: t.qrDownloadPng,
+          forPrint: t.qrPrint,
+        }}
+      />
 
       {/*
         Only shown to a customer who can actually have it. The server checks the

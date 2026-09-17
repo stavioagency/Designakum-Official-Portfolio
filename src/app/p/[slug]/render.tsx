@@ -10,6 +10,7 @@ import { notFound } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { get } from "@/lib/db";
 import { canPublish } from "@/lib/billing";
+import { domainsFor } from "@/lib/domains";
 import { brandAsset } from "@/lib/brand";
 import { getPortfolioBySlug, loadBundle, recordView } from "@/lib/portfolios";
 import { callerIsBot } from "@/lib/bots";
@@ -30,7 +31,11 @@ export async function portfolioMetadata(slug: string): Promise<Metadata> {
   const portfolio = await getPortfolioBySlug(slug);
   if (!portfolio) return { title: "404" };
 
-  const description = portfolio.bio.slice(0, 160) || portfolio.tagline;
+  // What the owner wrote wins; otherwise the page describes itself from what is
+  // already there, which beats a field somebody left half-filled.
+  const heading = portfolio.seo_title || `${portfolio.name} — ${portfolio.title}`;
+  const description =
+    portfolio.seo_description || portfolio.bio.slice(0, 160) || portfolio.tagline;
 
   // A page that is not actually public answers with a placeholder, and a
   // placeholder in a search index is worse for the designer than no result.
@@ -42,20 +47,41 @@ export async function portfolioMetadata(slug: string): Promise<Metadata> {
     owner.status === "active" &&
     (await canPublish(owner));
 
+  /**
+   * One page, one canonical URL.
+   *
+   * A verified custom domain serves this portfolio at its own root, and the
+   * middleware rewrites every path on that host to the same page — so the page
+   * exists at `theirdomain.com/`, at `theirdomain.com/p/slug`, and again at
+   * `designakum.com/p/slug`. Left alone, the canonical pointed at the second of
+   * those, which is the one nobody links to. It now names their domain's root
+   * when they have one, and the platform URL when they do not, so every copy
+   * points at a single address instead of splitting the signal three ways.
+   */
+  const custom = (await domainsFor(portfolio.id)).find((d) => d.status === "active");
+  const canonical = custom ? `https://${custom.hostname}/` : `/p/${portfolio.slug}`;
+
+  const share = portfolio.og_image_url || portfolio.avatar_url;
+
   return {
-    title: `${portfolio.name} — ${portfolio.title}`,
+    title: heading,
     description,
     robots: live ? undefined : { index: false, follow: false },
-    alternates: live ? { canonical: `/p/${portfolio.slug}` } : undefined,
+    alternates: live ? { canonical } : undefined,
     openGraph: {
-      title: `${portfolio.name} — ${portfolio.title}`,
+      title: heading,
       description,
       type: "profile",
-      // Their own face first; the platform card rather than nothing when a
-      // portfolio has not uploaded one yet.
-      images: portfolio.avatar_url
-        ? [portfolio.avatar_url]
-        : (brandAsset("og") ?? undefined),
+      url: live ? canonical : undefined,
+      // Their own card first, then their face; the platform card rather than
+      // nothing when a portfolio has uploaded neither.
+      images: share ? [share] : (brandAsset("og") ?? undefined),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: heading,
+      description,
+      images: share ? [share] : undefined,
     },
   };
 }

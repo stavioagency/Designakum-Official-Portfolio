@@ -25,6 +25,7 @@ export function Editor({
   canPublish,
   copy,
   passwordCopy,
+  qrSvg,
   locale,
 }: {
   bundle: PortfolioBundle;
@@ -35,6 +36,7 @@ export function Editor({
   canPublish: boolean;
   copy: Dictionary["dashboard"];
   passwordCopy: Dictionary["password"];
+  qrSvg: string;
   /** Needed where a label lives in code rather than the dictionary, like the stat icons. */
   locale: Locale;
 }) {
@@ -240,6 +242,7 @@ export function Editor({
             canPublish={canPublish}
             copy={copy}
             passwordCopy={passwordCopy}
+            qrSvg={qrSvg}
           />
         )}
       </div>

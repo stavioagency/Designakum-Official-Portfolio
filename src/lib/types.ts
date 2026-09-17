@@ -77,6 +77,9 @@ export interface Portfolio {
   background_hex: string;
   works_label: string;
   hide_branding: number;
+  seo_title: string;
+  seo_description: string;
+  og_image_url: string;
   locale: Locale;
   footer_note: string;
   published: number;

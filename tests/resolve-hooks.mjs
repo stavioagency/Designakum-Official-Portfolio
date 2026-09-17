@@ -19,7 +19,11 @@ registerHooks({
   resolve(specifier, context, next) {
     if (specifier === "server-only") return { url: "data:text/javascript,", shortCircuit: true };
     if (specifier === "next/headers") return { url: NEXT_HEADERS, shortCircuit: true };
-    if (specifier.startsWith(".") && !/\.[cm]?[jt]s$/.test(specifier)) {
+    // Our source only. A dependency's own extensionless requires are its
+    // business: appending .ts to them broke qrcode, whose lib/index.js requires
+    // "./server" and got handed "./server.ts".
+    const fromOurCode = !String(context.parentURL ?? "").includes("/node_modules/");
+    if (fromOurCode && specifier.startsWith(".") && !/\.[cm]?[jt]s$/.test(specifier)) {
       return next(`${specifier}.ts`, context);
     }
     return next(specifier, context);

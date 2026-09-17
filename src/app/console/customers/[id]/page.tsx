@@ -39,6 +39,7 @@ import { loadBundle } from "@/lib/portfolios";
 import { requestOrigin } from "@/lib/origin";
 import { Editor } from "@/components/editor/editor";
 import { PortfolioView } from "@/components/portfolio-view";
+import { portfolioQr } from "@/lib/qr";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: dict(await currentLocale()).console.customerFile.metaTitle };
@@ -417,6 +418,7 @@ export default async function CustomerProfilePage({
             bundle={await loadBundle(portfolio)}
             user={customer}
             origin={origin}
+            qrSvg={await portfolioQr(`${origin}/p/${portfolio.slug}`)}
             preview={<PortfolioView bundle={await loadBundle(portfolio)} />}
             hasPassword={customer.password_hash !== ""}
             canPublish={await canPublish(customer)}
