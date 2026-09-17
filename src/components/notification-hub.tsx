@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { dismissAnnouncementAction } from "@/app/actions/announcements";
 import { AlertTriangle, Bell, Check, Megaphone, X } from "@/components/icons";
+import { placePanel, type Placement } from "@/lib/popover";
 import type { Announcement, AnnouncementSeverity, Locale } from "@/lib/types";
 
 type Item = Announcement & { read_at: number | null };
@@ -33,7 +34,7 @@ export function NotificationHub({
   copy: { title: string; empty: string; seen: string; open: string; dismiss: string };
 }) {
   const [open, setOpen] = useState(false);
-  const [box, setBox] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [box, setBox] = useState<Placement | null>(null);
   const panel = useRef<HTMLDivElement>(null);
   const card = useRef<HTMLDivElement>(null);
   const unread = items.filter((item) => item.read_at === null).length;
@@ -46,18 +47,17 @@ export function NotificationHub({
    * anything fixed inside it — so the panel was trapped in a column narrower
    * than itself and half of it hung off the screen. A portal to the body
    * escapes that, and the numbers below keep it on screen wherever the bell is.
+   *
+   * Both axes, not just the horizontal one. In the console the bell sits at the
+   * *bottom* of the sidebar, so a panel hung underneath it started below the
+   * fold and the whole thing was invisible — which read as the notifications
+   * being broken. It opens upwards when that is where the room is, and is
+   * capped to the space it actually has either way.
    */
   const place = useCallback(() => {
     const anchor = panel.current?.getBoundingClientRect();
     if (!anchor) return;
-
-    const margin = 12;
-    const width = Math.min(340, window.innerWidth - margin * 2);
-    // Prefer hanging from the bell's own edge, then pull it back inside.
-    const preferred = anchor.right - width;
-    const left = Math.min(Math.max(margin, preferred), window.innerWidth - width - margin);
-
-    setBox({ top: anchor.bottom + 10, left, width });
+    setBox(placePanel(anchor, { width: window.innerWidth, height: window.innerHeight }));
   }, []);
 
   useEffect(() => {
@@ -117,16 +117,23 @@ export function NotificationHub({
       {open && box && createPortal(
         <div
           ref={card}
-          style={{ position: "fixed", top: box.top, left: box.left, width: box.width }}
-          className="z-[100] overflow-hidden rounded-2xl border border-white/10 bg-ink-900/95 shadow-2xl backdrop-blur-xl">
-          <div className="border-b border-white/8 px-4 py-3">
+          style={{
+            position: "fixed",
+            top: box.top,
+            bottom: box.bottom,
+            left: box.left,
+            width: box.width,
+            maxHeight: box.maxHeight,
+          }}
+          className="z-[100] flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-ink-900/95 shadow-2xl backdrop-blur-xl">
+          <div className="shrink-0 border-b border-white/8 px-4 py-3">
             <p className="text-[13.5px] font-semibold">{copy.title}</p>
           </div>
 
           {items.length === 0 ? (
             <p className="px-4 py-6 text-center text-[13px] text-mist-500">{copy.empty}</p>
           ) : (
-            <ul className="max-h-[min(60vh,420px)] divide-y divide-white/6 overflow-y-auto">
+            <ul className="min-h-0 flex-1 divide-y divide-white/6 overflow-y-auto">
               {items.map((item) => {
                 const tone = TONE[item.severity] ?? TONE.info;
                 const { title, body } = text(item);
