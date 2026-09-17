@@ -128,19 +128,34 @@ export const Whatsapp = (p: P) => (
  * Platform names in both languages. Most are transliterations of a Latin brand
  * name, so an English interface should show the brand as it is actually written.
  */
+/**
+ * Each network in its own colour, except the ones that do not have one.
+ *
+ * X, TikTok, a website and an email address are monochrome by design: their
+ * marks are black on light and white on dark, so they take the page's own text
+ * colour and stay legible on a background the page owner chose. Giving them a
+ * colour would invent branding that does not exist.
+ */
 export const SOCIAL_META: Record<
   SocialPlatform,
-  { label: string; labelEn: string; Icon: (p: P) => React.JSX.Element; prefix?: string }
+  {
+    label: string;
+    labelEn: string;
+    Icon: (p: P) => React.JSX.Element;
+    prefix?: string;
+    /** Undefined means the mark follows the page's text colour. */
+    colour?: string;
+  }
 > = {
-  instagram: { label: "إنستغرام", labelEn: "Instagram", Icon: Instagram },
+  instagram: { label: "إنستغرام", labelEn: "Instagram", Icon: Instagram, colour: "#E4405F" },
   x: { label: "إكس", labelEn: "X", Icon: XIcon },
-  telegram: { label: "تيليجرام", labelEn: "Telegram", Icon: Telegram },
-  behance: { label: "بيهانس", labelEn: "Behance", Icon: Behance },
-  dribbble: { label: "دريبل", labelEn: "Dribbble", Icon: Dribbble },
-  linkedin: { label: "لينكدإن", labelEn: "LinkedIn", Icon: Linkedin },
+  telegram: { label: "تيليجرام", labelEn: "Telegram", Icon: Telegram, colour: "#229ED9" },
+  behance: { label: "بيهانس", labelEn: "Behance", Icon: Behance, colour: "#1769FF" },
+  dribbble: { label: "دريبل", labelEn: "Dribbble", Icon: Dribbble, colour: "#EA4C89" },
+  linkedin: { label: "لينكدإن", labelEn: "LinkedIn", Icon: Linkedin, colour: "#0A66C2" },
   tiktok: { label: "تيك توك", labelEn: "TikTok", Icon: TikTok },
-  youtube: { label: "يوتيوب", labelEn: "YouTube", Icon: Youtube },
-  snapchat: { label: "سناب شات", labelEn: "Snapchat", Icon: Snapchat },
+  youtube: { label: "يوتيوب", labelEn: "YouTube", Icon: Youtube, colour: "#FF0033" },
+  snapchat: { label: "سناب شات", labelEn: "Snapchat", Icon: Snapchat, colour: "#F7D000" },
   website: { label: "الموقع", labelEn: "Website", Icon: Globe },
   email: { label: "البريد", labelEn: "Email", Icon: Mail, prefix: "mailto:" },
 };

@@ -7,7 +7,7 @@ export default async function NotFound() {
   const d = dict(await currentLocale()).notFound;
 
   return (
-    <main className="relative z-10 grid min-h-dvh place-items-center px-6 text-center">
+    <main className="relative z-10 flex min-h-dvh items-center justify-center px-6 text-center">
       <div className="card max-w-sm p-8">
         <div className="mb-5 flex justify-center">
           <Wordmark height={26} />

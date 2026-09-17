@@ -22,7 +22,7 @@ export default async function ForgotPasswordPage() {
   const copy = dict(await currentLocale()).reset;
 
   return (
-    <main className="relative z-10 grid min-h-dvh place-items-center px-5 py-12">
+    <main className="relative z-10 flex min-h-dvh items-center justify-center px-5 py-12">
       <div className="w-full max-w-[420px]">
         <div className="mb-7 flex justify-center">
           <LogoLockup size={42} />

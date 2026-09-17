@@ -171,7 +171,9 @@ export function PortfolioView({
                         aria-label={meta.label}
                         title={meta.label}
                       >
-                        <Icon />
+                        {/* Their own colour where they have one; the page's text
+                            colour where the mark is monochrome by design. */}
+                        <Icon style={meta.colour ? { color: meta.colour } : undefined} />
                       </a>
                     );
                   })}

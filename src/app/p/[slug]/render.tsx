@@ -115,7 +115,7 @@ export async function PortfolioPage({ slug }: { slug: string }) {
 
   if (portfolio.suspended === 1 && !isStaff(viewer)) {
     return (
-      <main className="relative z-10 grid min-h-dvh place-items-center px-6 text-center">
+      <main className="relative z-10 flex min-h-dvh items-center justify-center px-6 text-center">
         <div className="card max-w-sm p-8">
           <span className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-rose-500/12 text-rose-300">
             <Ban className="h-6 w-6" />
@@ -147,7 +147,7 @@ export async function PortfolioPage({ slug }: { slug: string }) {
 
   if (!publiclyVisible && !canEdit) {
     return (
-      <main className="relative z-10 grid min-h-dvh place-items-center px-6 text-center">
+      <main className="relative z-10 flex min-h-dvh items-center justify-center px-6 text-center">
         <div className="card max-w-sm p-8">
           <p className="accent-text text-sm font-semibold">{d.portfolio.soonBadge}</p>
           <h1 className="mt-2 text-2xl font-bold">{d.portfolio.soonTitle}</h1>

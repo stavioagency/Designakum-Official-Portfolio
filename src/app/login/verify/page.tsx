@@ -29,7 +29,7 @@ export default async function VerifyPage() {
   const d = dict(await currentLocale());
 
   return (
-    <main className="relative z-10 grid min-h-dvh place-items-center px-5 py-12">
+    <main className="relative z-10 flex min-h-dvh items-center justify-center px-5 py-12">
       <div className="w-full max-w-[400px]">
         <div className="mb-7 flex justify-center">
           <LogoLockup size={42} />
