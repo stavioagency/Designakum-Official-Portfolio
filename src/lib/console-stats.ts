@@ -14,6 +14,8 @@ export interface PlatformStats {
   monthlySubscribers: number;
   yearlySubscribers: number;
   compedSubscribers: number;
+  /** Customers on a subscription that actually billed money. */
+  payingSubscribers: number;
   freeUsers: number;
   suspendedUsers: number;
   suspendedPortfolios: number;
@@ -102,8 +104,10 @@ export async function platformStats(): Promise<PlatformStats>{
     monthlySubscribers: revenue.monthlyCount,
     yearlySubscribers: revenue.yearlyCount,
     compedSubscribers: revenue.compedCount,
+    payingSubscribers: revenue.paidCount,
     /**
-     * Both sides count customers now. The clamp stays as a floor rather than a
+     * Anyone with no subscription at all — granted or paid. Both sides count
+     * customers now. The clamp stays as a floor rather than a
      * fix: it was hiding the mismatch that made this negative — more
      * subscribers than customers — by quietly reporting zero.
      */

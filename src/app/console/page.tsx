@@ -115,7 +115,10 @@ export default async function ConsoleDashboard({
         />
         <StatCard
           label={t.activeSubscriptions}
-          value={nf.format(stats.activeSubscriptions)}
+          // Paid only. A granted free plan is an active subscription and is not
+          // a paying customer, and counting it as one made the overview claim
+          // revenue that never existed.
+          value={nf.format(stats.payingSubscribers)}
           hint={fill(t.planSplit, {
             monthly: nf.format(stats.monthlySubscribers),
             yearly: nf.format(stats.yearlySubscribers),
@@ -151,10 +154,11 @@ export default async function ConsoleDashboard({
 
       <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label={t.unsubscribed}
-          value={nf.format(stats.freeUsers)}
-          hint={fill(t.compedHint, { n: nf.format(stats.compedSubscribers) })}
+          label={t.freeSubscribers}
+          value={nf.format(stats.compedSubscribers)}
+          hint={fill(t.freeSubscribersHint, { n: nf.format(stats.freeUsers) })}
           icon={<Gift className="h-4 w-4" />}
+          href={can(user, "billing.manage") ? "/console/subscriptions" : undefined}
         />
         <StatCard
           label={t.suspendedAccounts}
@@ -176,6 +180,8 @@ export default async function ConsoleDashboard({
             reports: nf.format(stats.pendingReports),
             tickets: nf.format(stats.openTickets),
           })}
+          // Straight to the queue rather than telling someone there is one.
+          href={stats.pendingReports > 0 ? "/console/moderation" : "/console/support"}
           icon={<Bell className="h-4 w-4" />}
           tone={stats.pendingReports + stats.openTickets > 0 ? "warn" : "neutral"}
         />
