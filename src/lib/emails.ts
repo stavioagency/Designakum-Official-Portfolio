@@ -287,6 +287,48 @@ const welcome: Template<{ name: string; portfolioUrl: string; dashboardUrl: stri
   }),
 };
 
+/* ------------------------------------------------------------- support */
+
+/**
+ * Sent when support marks a ticket resolved.
+ *
+ * It carries the subject, because someone with several open tickets cannot tell
+ * which one this is about otherwise, and it says plainly that replying reopens
+ * it — which is true, `replyAsCustomerAction` puts a resolved ticket back to
+ * open. A person told "resolved" who does not agree needs to know the door is
+ * still open without having to find the site again.
+ */
+const ticketResolved: Template<{ name: string; subject: string; ticketUrl: string }> = {
+  ar: ({ name, subject, ticketUrl }) => ({
+    subject: `تم حل تذكرتك — ${subject}`,
+    preheader: "إن لم تُحل فعلًا، ردّك يعيد فتحها.",
+    blocks: [
+      hi("مرحبًا", name),
+      { type: "p", text: "أغلقنا تذكرتك بعد معالجتها." },
+      { type: "p", text: `الموضوع: ${subject}` },
+      { type: "cta", label: "عرض التذكرة", url: ticketUrl },
+      {
+        type: "note",
+        text: "إن كانت المشكلة ما زالت قائمة، ردّ على التذكرة وستُفتح من جديد تلقائيًا — لا حاجة لفتح تذكرة أخرى.",
+      },
+    ],
+  }),
+  en: ({ name, subject, ticketUrl }) => ({
+    subject: `Your ticket is resolved — ${subject}`,
+    preheader: "If it isn't, replying reopens it.",
+    blocks: [
+      hi("Hi", name),
+      { type: "p", text: "We've marked your support ticket as resolved:" },
+      { type: "p", text: `Subject: ${subject}` },
+      { type: "cta", label: "View the ticket", url: ticketUrl },
+      {
+        type: "note",
+        text: "If the problem is still there, reply on the ticket and it reopens automatically — you don't need to start a new one.",
+      },
+    ],
+  }),
+};
+
 /* -------------------------------------------------------------- subscriptions */
 
 const subscriptionActivated: Template<{
@@ -395,6 +437,10 @@ const subscriptionEnded: Template<{ name: string; billingUrl: string }> = {
 };
 
 export const emailTemplate = {
+  ticketResolved: (
+    locale: Locale | null | undefined,
+    input: { name: string; subject: string; ticketUrl: string },
+  ) => pick(ticketResolved, locale, input),
   emailChangeVerify: (
     locale: Locale | null | undefined,
     input: { name: string; link: string; newEmail: string },

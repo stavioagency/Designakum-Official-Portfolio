@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { notifyTicketResolved } from "@/lib/ticket-mail";
 import { messages } from "@/lib/locale";
 import { fill } from "@/lib/i18n";
 import { audit } from "@/lib/audit";
@@ -146,6 +147,46 @@ export async function replyAsStaffAction(_prev: ActionState, fd: FormData): Prom
   }
 }
 
+/**
+ * Resolves a ticket and tells the customer, in one press.
+ *
+ * The status dropdown could already do this, but a dropdown does not read as
+ * "I am finished with this" — and the thing worth being deliberate about is the
+ * email that goes out with it.
+ */
+export async function resolveTicketAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  try {
+    const actor = await requirePermission("support.manage");
+    const ticketId = str(fd, "ticketId");
+    const ticket = await getTicket(ticketId);
+    if (!ticket) return { error: (await messages()).ticketMissing };
+
+    // Pressing it twice is not an error, but it is not a second email either.
+    if (ticket.status === "resolved") {
+      refresh(ticketId);
+      return { ok: (await messages()).ticketAlreadyResolved };
+    }
+
+    await setTicketField(ticketId, "status", "resolved");
+    await notifyTicketResolved(ticket);
+
+    await audit({
+      actor,
+      action: "ticket.resolved",
+      targetType: "ticket",
+      targetId: ticketId,
+      targetLabel: ticket.subject,
+      before: { status: ticket.status },
+      after: { status: "resolved" },
+    });
+
+    refresh(ticketId);
+    return { ok: (await messages()).ticketResolvedAndNotified };
+  } catch (error) {
+    return await fail(error);
+  }
+}
+
 export async function updateTicketAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   try {
     const actor = await requirePermission("support.manage");
@@ -160,6 +201,14 @@ export async function updateTicketAction(_prev: ActionState, fd: FormData): Prom
     if (status) {
       if (!TICKET_STATUSES.includes(status as TicketStatus)) return { error: (await messages()).unknownStatus };
       await setTicketField(ticketId, "status", status);
+
+      // Resolving from the dropdown is the same event as pressing the button,
+      // so it tells the customer the same way. Guarded on the transition: a
+      // ticket already resolved must not mail them again because someone
+      // touched the priority.
+      if (status === "resolved" && ticket.status !== "resolved") {
+        await notifyTicketResolved(ticket);
+      }
     }
     if (priority) {
       if (!TICKET_PRIORITIES.includes(priority as TicketPriority)) return { error: (await messages()).unknownPriority };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { replyAsStaffAction, updateTicketAction } from "@/app/actions/support";
+import { replyAsStaffAction, resolveTicketAction, updateTicketAction } from "@/app/actions/support";
 import { Status, Submit } from "@/components/editor/ui";
 import { AutoSubmitSelect } from "./forms";
 import { TICKET_PRIORITY, TICKET_STATUS } from "@/lib/support-labels";
@@ -28,6 +28,7 @@ export function TicketControls({
   locale: Locale;
 }) {
   const [state, action] = useActionState(updateTicketAction, null);
+  const [resolveState, resolve] = useActionState(resolveTicketAction, null);
 
   return (
     <div className="space-y-3">
@@ -70,7 +71,23 @@ export function TicketControls({
         />
       </form>
 
+      {/*
+        Separate from the status dropdown on purpose. Resolving is the one change
+        here that reaches the customer — it emails them — so it gets a control
+        that says what it does rather than an option in a list.
+      */}
+      {status !== "resolved" && (
+        <form action={resolve} className="border-t border-white/8 pt-3">
+          <input type="hidden" name="ticketId" value={ticketId} />
+          <Submit className="btn btn-primary w-full" pendingLabel={copy.resolving}>
+            {copy.resolveAndNotify}
+          </Submit>
+          <p className="mt-2 text-[12px] leading-relaxed text-mist-500">{copy.resolveHint}</p>
+        </form>
+      )}
+
       <Status state={state} />
+      <Status state={resolveState} sticky />
     </div>
   );
 }

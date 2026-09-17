@@ -1,27 +1,12 @@
 import test, { after, describe } from "node:test";
 import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
 import { CONNECTION_STRING, closePool, db } from "./helpers.mjs";
 
 /**
- * The real `recordSubscription`, not a copy of it.
- *
- * An earlier version of this file reproduced the supersede in the test itself,
- * which proved only that the test agreed with itself — deleting the fix from
- * billing.ts would have left it green. Two things stand between plain node and
- * that module: `server-only`, a specifier that exists only inside Next's build,
- * and TypeScript's extensionless relative imports. Both are patched here.
+ * The real `recordSubscription`, not a copy of it. An earlier version of this
+ * file reproduced the supersede in its own helper, which proved only that the
+ * test agreed with itself — deleting the fix from billing.ts left it green.
  */
-registerHooks({
-  resolve(specifier, context, next) {
-    if (specifier === "server-only") return { url: "data:text/javascript,", shortCircuit: true };
-    if (specifier.startsWith(".") && !/\.[cm]?[jt]s$/.test(specifier)) {
-      return next(`${specifier}.ts`, context);
-    }
-    return next(specifier, context);
-  },
-});
-
 // billing.ts builds its pool from the environment; point it at the same
 // database the helpers use before it is imported.
 process.env.DATABASE_URL ??= CONNECTION_STRING;
