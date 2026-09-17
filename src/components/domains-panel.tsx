@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom";
 import type { DomainState } from "@/app/actions/domains";
 import type { Dictionary } from "@/lib/i18n";
 import type { Domain } from "@/lib/domains";
+import { isApex, subdomainLabel } from "@/lib/dns-records";
 import { Check, Globe, Trash, AlertTriangle, Clock } from "@/components/icons";
 
 const STATUS = {
@@ -46,6 +47,7 @@ export function DomainsPanel({
   domains,
   copy,
   target,
+  addresses,
   txtRecord,
   paid,
   actions,
@@ -54,6 +56,8 @@ export function DomainsPanel({
   copy: Dictionary["domains"];
   /** What the customer points their CNAME at. */
   target: string;
+  /** The platform's own A records, for a customer pointing a root domain here. */
+  addresses: string[];
   txtRecord: string;
   paid: boolean;
   actions: {
@@ -132,11 +136,38 @@ export function DomainsPanel({
                           </tr>
                         </thead>
                         <tbody className="font-mono text-mist-300">
-                          <tr>
-                            <td className="pr-3">CNAME</td>
-                            <td className="pr-3">@</td>
-                            <td className="break-all">{target}</td>
-                          </tr>
+                          {/*
+                            A root domain gets an A record and a subdomain gets
+                            a CNAME, and the difference is not a preference. The
+                            zone apex has to carry its own SOA and NS records,
+                            and a CNAME cannot sit beside anything, so a
+                            registrar refuses to create "CNAME @" at all. This
+                            panel used to ask for exactly that, which meant
+                            nobody with a root domain could follow it.
+                          */}
+                          {isApex(domain.hostname) ? (
+                            addresses.length > 0 ? (
+                              addresses.map((address) => (
+                                <tr key={address}>
+                                  <td className="pr-3">A</td>
+                                  <td className="pr-3">@</td>
+                                  <td className="break-all">{address}</td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td className="pr-3">A</td>
+                                <td className="pr-3">@</td>
+                                <td className="break-all text-mist-500">{copy.addressUnknown}</td>
+                              </tr>
+                            )
+                          ) : (
+                            <tr>
+                              <td className="pr-3">CNAME</td>
+                              <td className="pr-3">{subdomainLabel(domain.hostname)}</td>
+                              <td className="break-all">{target}</td>
+                            </tr>
+                          )}
                           <tr>
                             <td className="pr-3">TXT</td>
                             <td className="pr-3">{txtRecord}</td>

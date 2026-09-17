@@ -151,7 +151,7 @@ export async function removeDomain(domainId: string, user: User) {
  * lookup that keeps working when the platform moves to Cloudflare, and it works
  * identically on Node today.
  */
-async function resolve(name: string, type: "TXT" | "CNAME"): Promise<string[]> {
+async function resolve(name: string, type: "TXT" | "CNAME" | "A"): Promise<string[]> {
   const response = await fetch(
     `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=${type}`,
     { headers: { accept: "application/dns-json" }, cache: "no-store" },
@@ -167,23 +167,50 @@ async function resolve(name: string, type: "TXT" | "CNAME"): Promise<string[]> {
 export interface CheckResult {
   ok: boolean;
   /** A key into the `messages` dictionary, so it can be shown in either language. */
-  reason?: "domainNoTxt" | "domainNoCname" | "domainLookupFailed";
+  reason?: "domainNoTxt" | "domainNotPointed" | "domainLookupFailed";
 }
 
 /**
- * Two records, checked in order, because they answer different questions.
+ * Does this name reach us, by either of the two legal ways of pointing it here?
  *
- * The TXT record proves the customer controls the name. The CNAME is what makes
- * the name actually reach us. A domain with only the TXT is verified but dark;
- * a domain with only the CNAME is someone pointing a name they may not own.
+ * A subdomain uses a CNAME. A root domain cannot: RFC 1034 reserves the zone
+ * apex for SOA and NS records, and a CNAME may not sit beside other records at
+ * the same name, so registrars refuse to create one. A root domain therefore
+ * points at our addresses with an A record instead.
+ *
+ * The platform's own addresses are looked up rather than written down, so this
+ * keeps working when the host changes an IP, which they do without telling
+ * anybody.
+ */
+export function pointsHere(
+  cname: string[],
+  a: string[],
+  target: string,
+  platformAddresses: string[],
+): boolean {
+  if (cname.includes(normaliseHost(target))) return true;
+  return a.length > 0 && a.some((address) => platformAddresses.includes(address));
+}
+
+/**
+ * Two questions, answered by different records.
+ *
+ * The TXT record proves the customer controls the name. The CNAME or the A
+ * records are what make the name actually reach us. A domain with only the TXT
+ * is verified but dark; a domain pointed here without the TXT is somebody
+ * aiming a name they may not own.
  */
 export async function checkDomain(domain: Domain, target: string): Promise<CheckResult> {
   let txt: string[];
   let cname: string[];
+  let a: string[];
+  let platformAddresses: string[];
   try {
-    [txt, cname] = await Promise.all([
+    [txt, cname, a, platformAddresses] = await Promise.all([
       resolve(`${TXT_RECORD}.${domain.hostname}`, "TXT"),
       resolve(domain.hostname, "CNAME"),
+      resolve(domain.hostname, "A"),
+      resolve(normaliseHost(target), "A"),
     ]);
   } catch {
     return { ok: false, reason: "domainLookupFailed" };
@@ -192,10 +219,19 @@ export async function checkDomain(domain: Domain, target: string): Promise<Check
   if (!txt.includes(domain.verify_token.toLowerCase())) {
     return { ok: false, reason: "domainNoTxt" };
   }
-  if (!cname.includes(normaliseHost(target))) {
-    return { ok: false, reason: "domainNoCname" };
+  if (!pointsHere(cname, a, target, platformAddresses)) {
+    return { ok: false, reason: "domainNotPointed" };
   }
   return { ok: true };
+}
+
+/** The addresses a root domain should point at. Shown to the customer. */
+export async function platformAddresses(target: string): Promise<string[]> {
+  try {
+    return await resolve(normaliseHost(target), "A");
+  } catch {
+    return [];
+  }
 }
 
 export async function recordCheck(domain: Domain, result: CheckResult, error: string) {

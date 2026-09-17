@@ -43,7 +43,13 @@ async function accessToken(): Promise<string> {
   });
 
   if (!response.ok) {
-    throw new Error(`PayPal rejected the credentials (${response.status})`);
+    // Naming the environment is the whole diagnostic: a 401 here is almost
+    // always a live secret paired with a sandbox client id, or the reverse,
+    // and the error is identical either way until you know which endpoint was
+    // called. No part of the credential is included.
+    throw new Error(
+      `PayPal rejected the credentials (${response.status}) in ${paypalIsLive() ? "live" : "sandbox"} mode`,
+    );
   }
 
   const token = (await response.json()) as { access_token: string; expires_in: number };
@@ -249,5 +255,55 @@ export async function verifyWebhook(
   } catch (error) {
     reportError(error, { area: "paypal", step: "verify-webhook" });
     return false;
+  }
+}
+
+/**
+ * Asks PayPal whether the configured credentials are a working pair.
+ *
+ * Exists so the answer does not have to come from a customer's failed
+ * checkout. A 401 from the token endpoint means the client id and the secret
+ * do not belong together, or do not belong to the environment being called,
+ * which is the same message whichever way round it is. Nothing here returns any
+ * part of a credential.
+ */
+export async function verifyCredentials(): Promise<{
+  ok: boolean;
+  status: number;
+  live: boolean;
+  detail: string;
+}> {
+  const live = paypalIsLive();
+  const id = process.env.PAYPAL_CLIENT_ID;
+  const secret = process.env.PAYPAL_CLIENT_SECRET;
+
+  if (!id || !secret) {
+    return {
+      ok: false,
+      status: 0,
+      live,
+      detail: !id && !secret ? "missing-both" : !id ? "missing-id" : "missing-secret",
+    };
+  }
+
+  try {
+    const response = await fetch(`${API()}/v1/oauth2/token`, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${id}:${secret}`).toString("base64")}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "grant_type=client_credentials",
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      live,
+      detail: response.ok ? "ok" : response.status === 401 ? "rejected" : "error",
+    };
+  } catch {
+    return { ok: false, status: 0, live, detail: "unreachable" };
   }
 }

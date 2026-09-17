@@ -4,6 +4,7 @@ import { dict, fill } from "@/lib/i18n";
 import type { Metadata } from "next";
 import { all, get } from "@/lib/db";
 import { billingConfigured, planDefinitions, yearlySaving } from "@/lib/billing";
+import { PaypalCheck } from "@/components/console/paypal-check";
 import { conversionRate, churnRate, revenueSnapshot } from "@/lib/analytics";
 import { guardPage } from "@/lib/permissions";
 import { brandAsset } from "@/lib/brand";
@@ -111,9 +112,23 @@ export default async function SubscriptionsPage({
         title={t.title}
         description={t.description}
         actions={
-          <Badge tone={billingConfigured() ? "good" : "warn"}>
-            {billingConfigured() ? t.providerLinked : t.noProvider}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Configured is not the same as working: both keys being present
+                tells you nothing about whether they belong together. */}
+            <PaypalCheck
+              copy={{
+                test: t.testKeys,
+                testing: c.common.saving,
+                ok: "",
+                rejected: "",
+                unreachable: "",
+                missing: "",
+              }}
+            />
+            <Badge tone={billingConfigured() ? "good" : "warn"}>
+              {billingConfigured() ? t.providerLinked : t.noProvider}
+            </Badge>
+          </div>
         }
       />
 

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { canPublish } from "@/lib/billing";
 import { getPortfolioForUser } from "@/lib/portfolios";
-import { domainsFor, TXT_RECORD } from "@/lib/domains";
+import { domainsFor, platformAddresses, TXT_RECORD } from "@/lib/domains";
 import { currentLocale } from "@/lib/locale";
 import { dict } from "@/lib/i18n";
 import { DomainsPanel } from "@/components/domains-panel";
@@ -37,6 +37,10 @@ export default async function DomainPage() {
     canPublish(user),
   ]);
 
+  // Looked up rather than written down, so a customer pointing a root domain
+  // here is given the address the platform actually answers on today.
+  const addresses = await platformAddresses(target);
+
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-7 sm:px-6 lg:py-10">
       <h1 className="text-[26px] font-bold">{copy.title}</h1>
@@ -47,6 +51,7 @@ export default async function DomainPage() {
           domains={domains}
           copy={copy}
           target={target}
+          addresses={addresses}
           txtRecord={TXT_RECORD}
           paid={paid}
           actions={{

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { messages } from "@/lib/locale";
 import { fill } from "@/lib/i18n";
 import { audit } from "@/lib/audit";
+import { verifyCredentials } from "@/lib/paypal";
 import { createUser, findUserByEmail, hashPassword, revokeSessionsFor } from "@/lib/auth";
 import { PASSWORD_STAFF_MIN, passwordAcceptable } from "@/lib/password-policy";
 import {
@@ -127,6 +128,29 @@ export async function deleteCustomerAction(_prev: ActionState, fd: FormData): Pr
    * where a person expects to land after removing a row from it.
    */
   redirect(`/console/customers?deleted=${encodeURIComponent(deleted)}`);
+}
+
+/**
+ * Asks PayPal whether the configured keys are a working pair.
+ *
+ * Staff only, and it returns a sentence rather than the response: the point is
+ * to find a mismatched key pair here rather than in a customer's checkout, not
+ * to expose anything about the credentials themselves.
+ */
+export async function checkPaypalAction(): Promise<{ ok: boolean; message: string } | null> {
+  try {
+    await requirePermission("billing.manage");
+    const m = await messages();
+    const result = await verifyCredentials();
+    const mode = result.live ? "live" : "sandbox";
+
+    if (result.ok) return { ok: true, message: fill(m.paypalOk, { mode }) };
+    if (result.detail.startsWith("missing")) return { ok: false, message: m.paypalMissing };
+    if (result.detail === "unreachable") return { ok: false, message: m.paypalUnreachable };
+    return { ok: false, message: fill(m.paypalRejected, { mode, status: String(result.status) }) };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : "failed" };
+  }
 }
 
 /* ---------------------------------------------------------- subscriptions */
