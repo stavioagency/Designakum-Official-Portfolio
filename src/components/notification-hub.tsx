@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { dismissAnnouncementAction } from "@/app/actions/announcements";
 import { AlertTriangle, Bell, Check, Megaphone, X } from "@/components/icons";
 import type { Announcement, AnnouncementSeverity, Locale } from "@/lib/types";
@@ -32,15 +33,53 @@ export function NotificationHub({
   copy: { title: string; empty: string; seen: string; open: string; dismiss: string };
 }) {
   const [open, setOpen] = useState(false);
+  const [box, setBox] = useState<{ top: number; left: number; width: number } | null>(null);
   const panel = useRef<HTMLDivElement>(null);
+  const card = useRef<HTMLDivElement>(null);
   const unread = items.filter((item) => item.read_at === null).length;
+
+  /**
+   * Positioned against the viewport, and rendered outside the page.
+   *
+   * The console keeps this bell in a 260px sidebar that carries a
+   * `backdrop-filter`, and a filtered element becomes the containing block for
+   * anything fixed inside it — so the panel was trapped in a column narrower
+   * than itself and half of it hung off the screen. A portal to the body
+   * escapes that, and the numbers below keep it on screen wherever the bell is.
+   */
+  const place = useCallback(() => {
+    const anchor = panel.current?.getBoundingClientRect();
+    if (!anchor) return;
+
+    const margin = 12;
+    const width = Math.min(340, window.innerWidth - margin * 2);
+    // Prefer hanging from the bell's own edge, then pull it back inside.
+    const preferred = anchor.right - width;
+    const left = Math.min(Math.max(margin, preferred), window.innerWidth - width - margin);
+
+    setBox({ top: anchor.bottom + 10, left, width });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open, place]);
 
   // A click anywhere else, or Escape, closes it — the two things a person tries
   // without being told to.
   useEffect(() => {
     if (!open) return;
     const onClick = (event: MouseEvent) => {
-      if (!panel.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      // The card lives in a portal, so it is not inside the anchor any more.
+      if (panel.current?.contains(target) || card.current?.contains(target)) return;
+      setOpen(false);
     };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
@@ -75,8 +114,11 @@ export function NotificationHub({
         )}
       </button>
 
-      {open && (
-        <div className="absolute end-0 top-[calc(100%+10px)] z-50 w-[min(92vw,340px)] overflow-hidden rounded-2xl border border-white/10 bg-ink-900/95 shadow-2xl backdrop-blur-xl">
+      {open && box && createPortal(
+        <div
+          ref={card}
+          style={{ position: "fixed", top: box.top, left: box.left, width: box.width }}
+          className="z-[100] overflow-hidden rounded-2xl border border-white/10 bg-ink-900/95 shadow-2xl backdrop-blur-xl">
           <div className="border-b border-white/8 px-4 py-3">
             <p className="text-[13.5px] font-semibold">{copy.title}</p>
           </div>
@@ -120,7 +162,8 @@ export function NotificationHub({
               })}
             </ul>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
