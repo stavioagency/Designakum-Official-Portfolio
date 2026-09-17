@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { messages } from "@/lib/locale";
 import { fill } from "@/lib/i18n";
 import { audit } from "@/lib/audit";
@@ -83,6 +84,7 @@ export async function setAccountStatusAction(_prev: ActionState, fd: FormData): 
 }
 
 export async function deleteCustomerAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  let deleted = "";
   try {
     const actor = await requirePermission("customers.delete");
     const userId = str(fd, "userId");
@@ -110,10 +112,21 @@ export async function deleteCustomerAction(_prev: ActionState, fd: FormData): Pr
 
     revalidatePath("/console/customers");
     revalidatePath("/console");
-    return { ok: fill((await messages()).accountDeleted, { email: target.email }) };
+    deleted = target.email;
   } catch (error) {
     return await fail(error);
   }
+
+  /**
+   * Out of the try, because `redirect` works by throwing.
+   *
+   * Caught by the block above it would be reported as a failure and swallowed,
+   * and the page would stay put. Which is how this ended in a 404: the delete
+   * runs from the customer's own page, revalidating it re-renders a page for
+   * somebody who no longer exists, and that page calls notFound(). The list is
+   * where a person expects to land after removing a row from it.
+   */
+  redirect(`/console/customers?deleted=${encodeURIComponent(deleted)}`);
 }
 
 /* ---------------------------------------------------------- subscriptions */

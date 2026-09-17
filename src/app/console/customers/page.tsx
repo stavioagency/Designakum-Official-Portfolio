@@ -43,6 +43,7 @@ export default async function CustomersPage({
   const plan = (one(params.plan) ?? "all") as NonNullable<CustomerFilter["plan"]>;
   const status = (one(params.status) ?? "all") as NonNullable<CustomerFilter["status"]>;
   const sort = (one(params.sort) ?? "recent") as NonNullable<CustomerFilter["sort"]>;
+  const deleted = one(params.deleted) ?? "";
 
   const { rows, total } = await listCustomers({
     search,
@@ -77,6 +78,14 @@ export default async function CustomersPage({
         title={t.title}
         description={fill(filtered ? t.countFiltered : t.count, { n: nf.format(total) })}
       />
+
+      {/* Carried in the URL because deleting sends you back here: without it the
+          row simply vanishes and nothing confirms it was you who did that. */}
+      {deleted && (
+        <p className="mb-4 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-[13px] text-emerald-200">
+          {fill(t.deletedNotice, { email: deleted })}
+        </p>
+      )}
 
       <div className="card mb-4 flex flex-wrap items-center gap-3 p-4">
         <SearchField placeholder={t.searchPlaceholder} clearLabel={c.common.clearSearch} />

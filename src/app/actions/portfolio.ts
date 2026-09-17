@@ -118,6 +118,7 @@ export async function saveProfileAction(_prev: ActionState, fd: FormData): Promi
   try {
     const { user, id, slug } = await withPortfolio(fd);
     const avatar = await resolveImage(fd, "avatar", user);
+    const favicon = await resolveImage(fd, "favicon", user);
     const theme = str(fd, "theme");
     if (!(theme in THEMES)) return { error: (await messages()).unknownTheme };
 
@@ -154,6 +155,7 @@ export async function saveProfileAction(_prev: ActionState, fd: FormData): Promi
       background_hex: backgroundHex,
       footer_note: str(fd, "footer_note"),
       ...(avatar === undefined ? {} : { avatar_url: avatar }),
+      ...(favicon === undefined ? {} : { favicon_url: favicon }),
     });
 
     refresh(slug);

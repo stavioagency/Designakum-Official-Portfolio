@@ -86,6 +86,18 @@ export function PortfolioView({
   const locale = portfolio.locale;
   const d = dict(locale).portfolio;
 
+  /**
+   * Two columns only when there is something to put in the second one.
+   *
+   * Images and projects are optional, and plenty of pages are a name, a few
+   * links and a way to get in touch. Those pages were laid out on a fixed
+   * two-column grid regardless, so on a desktop they rendered as a narrow strip
+   * of content beside an empty half-screen. With nothing for the right column
+   * the page stays a single centred column at the width it already uses on a
+   * phone, which is the same page, read the same way, on any screen.
+   */
+  const wide = slides.length > 0 || projects.length > 0;
+
   return (
     <div
       // A custom colour wins over the theme, and is set inline because it is
@@ -96,14 +108,32 @@ export function PortfolioView({
       // it, so one colour changes all of them. `themed` is what lets those
       // tokens reach the text utilities; without a background nothing is set
       // and the platform's own dark values apply untouched.
-      style={{ ...accentStyle(portfolio.accent_hex), ...surfaceStyle(portfolio.background_hex) }}
+      style={{
+        ...accentStyle(portfolio.accent_hex),
+        ...surfaceStyle(portfolio.background_hex),
+        /* A page with no colour of its own still needs a ground, so the glow
+           below has something to sit on rather than showing the platform's own
+           light through it. */
+        ...(portfolio.background_hex ? null : { background: "var(--color-ink-950)" }),
+      }}
       lang={locale}
       dir={DIR[locale]}
-      className={`@container relative${portfolio.background_hex ? " themed" : ""}`}
+      className={`@container relative overflow-hidden${portfolio.background_hex ? " themed" : ""}`}
     >
-      <main className="relative z-10 mx-auto w-full max-w-[540px] px-4 pb-10 pt-5 @5xl:max-w-6xl @5xl:px-8 @5xl:pb-16 @5xl:pt-10">
+      {/* Behind everything, and behind the glass in particular. */}
+      <span className="page-glow" aria-hidden />
+
+      <main
+        className={`relative z-10 mx-auto w-full max-w-[540px] px-4 pb-10 pt-5 @5xl:px-8 @5xl:pb-16 @5xl:pt-10${
+          wide ? " @5xl:max-w-6xl" : ""
+        }`}
+      >
         <div className="shell p-4 sm:p-6 @5xl:p-9">
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-6 @5xl:grid-cols-[minmax(0,340px)_minmax(0,1fr)] @5xl:items-start @5xl:gap-9">
+          <div
+            className={`grid grid-cols-[minmax(0,1fr)] gap-6 @5xl:items-start @5xl:gap-9${
+              wide ? " @5xl:grid-cols-[minmax(0,340px)_minmax(0,1fr)]" : ""
+            }`}
+          >
             {/* ---------------------------------------------- identity */}
             <section className="rise min-w-0 @5xl:col-start-1 @5xl:row-start-1">
               {/*

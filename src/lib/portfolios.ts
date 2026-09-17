@@ -180,6 +180,7 @@ const PROFILE_FIELDS = [
   "seo_title",
   "seo_description",
   "og_image_url",
+  "favicon_url",
   "footer_note",
 ] as const;
 

@@ -80,6 +80,7 @@ export interface Portfolio {
   seo_title: string;
   seo_description: string;
   og_image_url: string;
+  favicon_url: string;
   locale: Locale;
   footer_note: string;
   published: number;

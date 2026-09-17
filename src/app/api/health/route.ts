@@ -29,11 +29,22 @@ export async function GET() {
     SUPABASE_SERVICE_ROLE_KEY: present("SUPABASE_SERVICE_ROLE_KEY"),
     EMAIL_API_KEY: present("EMAIL_API_KEY"),
     PAYPAL_CLIENT_ID: present("PAYPAL_CLIENT_ID"),
+    // Reported because its absence is invisible from anywhere else: checkout
+    // needs the id and the secret, and with only the id set this endpoint said
+    // PayPal was configured while customers were told the platform takes no
+    // money. Both halves, or the answer is worthless.
+    PAYPAL_CLIENT_SECRET: present("PAYPAL_CLIENT_SECRET"),
     PAYPAL_WEBHOOK_ID: present("PAYPAL_WEBHOOK_ID"),
     // Not a secret, and the one PayPal setting whose value matters rather than
     // its presence: live credentials in sandbox mode take no money and look
     // completely healthy from every other angle.
     PAYPAL_ENV: process.env.PAYPAL_ENV === "live" ? "live" : "sandbox",
+    // The one line that answers "can this platform take money right now?"
+    CHECKOUT_READY:
+      present("PAYPAL_CLIENT_ID") &&
+      present("PAYPAL_CLIENT_SECRET") &&
+      present("PAYPAL_WEBHOOK_ID") &&
+      process.env.PAYPAL_ENV === "live",
     // Sign-in falls back silently when these are absent, which is exactly the
     // kind of "configured or not?" question this endpoint exists to answer.
     GOOGLE_CLIENT_ID: present("GOOGLE_CLIENT_ID"),

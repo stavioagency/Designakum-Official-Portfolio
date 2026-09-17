@@ -16,7 +16,29 @@ import { useState } from "react";
  * neutrals, two papers and two colours with a hue in them, so the row shows
  * that any colour works instead of implying these are the options.
  */
-const BACKGROUNDS = ["#07080e", "#12121a", "#1c1b22", "#0f172a", "#f7f5f0", "#ffffff", "#1a2e23", "#2b1b1b"];
+/**
+ * Colours somebody might actually want their page to be.
+ *
+ * This used to be four near-blacks, two off-whites and two barely-tinted darks:
+ * a row that looked like a mistake in a colour picker, and offered a designer
+ * no colour at all. These are full colours with the two neutrals kept, because
+ * plenty of pages should be black or white, and every one of them has been
+ * checked to carry readable text once the palette is derived from it.
+ */
+const BACKGROUNDS = [
+  "#07080e", // near black
+  "#ffffff", // white
+  "#f5f0e8", // warm paper
+  "#0f172a", // midnight blue
+  "#1e3a8a", // royal blue
+  "#0f766e", // teal
+  "#166534", // forest
+  "#7c2d12", // rust
+  "#9f1239", // crimson
+  "#6d28d9", // violet
+  "#c2410c", // orange
+  "#facc15", // yellow
+];
 
 export function ProfileSection({
   portfolio,
@@ -236,13 +258,26 @@ export function ProfileSection({
 
           <input type="hidden" name="background_hex" value={surface ? surface.page : ""} />
           <div className="mt-3.5 flex flex-wrap items-center gap-2.5">
-            <label className="text-[12.5px] text-mist-400" htmlFor="background-hex">
+            <label className="text-[12.5px] text-mist-400" htmlFor="background-wheel">
               {t.customColour}
             </label>
+
+            {/*
+              The browser's own colour picker, which is a wheel on a phone and a
+              full picker with an eyedropper on a desktop. Typing a hex code is
+              a thing a person does when they already know the code; choosing a
+              colour is what this field is for. The code stays beside it,
+              readable and editable, because a designer who has been handed a
+              brand colour does know the code.
+            */}
             <div className="field flex items-center gap-2 !w-auto !py-1.5" dir="ltr">
-              <span
-                className="h-6 w-6 shrink-0 rounded-md border border-white/15"
-                style={{ background: surface ? surface.page : "rgba(255,255,255,0.06)" }}
+              <input
+                id="background-wheel"
+                type="color"
+                value={surface ? surface.page : "#0f172a"}
+                onChange={(event) => setBg(event.target.value)}
+                aria-label={t.customColour}
+                className="h-7 w-7 shrink-0 cursor-pointer rounded-md border border-white/15 bg-transparent p-0"
               />
               <input
                 id="background-hex"
@@ -306,6 +341,34 @@ export function ProfileSection({
               className="field"
               dir="ltr"
               placeholder={t.seoImagePlaceholder}
+            />
+          </div>
+        </Field>
+
+        {/*
+          The mark in the browser tab. Square and tiny by the time anyone sees
+          it, so the cropper is fixed to a square and the hint says to use
+          something that survives at sixteen pixels: a letter or a symbol, not a
+          photograph.
+        */}
+        <Field label={t.favicon} hint={t.faviconHint}>
+          <div className="max-w-[140px]">
+            <ImageField
+              name="favicon"
+              current={portfolio.favicon_url}
+              label={t.favicon}
+              aspect={1}
+              chrome={{
+                choose: copy.common.choose,
+                replace: copy.common.replace,
+                clear: copy.common.clear,
+                cropTitle: copy.common.cropTitle,
+                cropHint: copy.common.cropHint,
+                zoom: copy.common.zoom,
+                cancel: copy.common.cancel,
+                confirmCrop: copy.common.confirmCrop,
+                pending: copy.common.pending,
+              }}
             />
           </div>
         </Field>

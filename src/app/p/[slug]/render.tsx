@@ -67,6 +67,15 @@ export async function portfolioMetadata(slug: string): Promise<Metadata> {
     title: heading,
     description,
     robots: live ? undefined : { index: false, follow: false },
+    /**
+     * Their icon in the tab, not ours.
+     *
+     * Only when they have uploaded one: leaving it out lets the platform's own
+     * icon apply, which is a better answer than an empty square. A page served
+     * from a custom domain gets the same treatment, so the tab matches the
+     * address.
+     */
+    icons: portfolio.favicon_url ? { icon: portfolio.favicon_url } : undefined,
     alternates: live ? { canonical } : undefined,
     openGraph: {
       title: heading,

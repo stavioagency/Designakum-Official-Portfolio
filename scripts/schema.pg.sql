@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS portfolios (
   seo_title        TEXT NOT NULL DEFAULT '',   -- '' means derive from name and title
   seo_description  TEXT NOT NULL DEFAULT '',   -- '' means derive from the bio
   og_image_url     TEXT NOT NULL DEFAULT '',   -- '' means the avatar, then the platform card
+  favicon_url      TEXT NOT NULL DEFAULT '',   -- '' means the platform's own icon
   locale           TEXT NOT NULL DEFAULT 'ar',
   footer_note      TEXT NOT NULL DEFAULT '',
   published        INTEGER NOT NULL DEFAULT 0,

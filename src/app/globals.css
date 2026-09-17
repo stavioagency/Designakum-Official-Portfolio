@@ -171,6 +171,48 @@ html[lang="en"] .display { font-family: var(--font-display), var(--font-latin), 
 .themed .text-mist-500 { color: var(--text-faint, var(--color-mist-500)); }
 .themed .text-mist-600 { color: var(--text-faint, var(--color-mist-500)); }
 
+/*
+  Ambient light for a portfolio, in that portfolio's own colour.
+
+  The body carries the same effect for the platform's own pages, fixed to the
+  viewport and painted in the platform's blue. A customer page could not use it:
+  the accent tokens are set on the portfolio's own element, so the glow behind
+  it stayed blue whatever colour the page owner chose, and it is fixed to the
+  viewport, which is wrong inside the dashboard preview and inside the frame on
+  the landing page.
+
+  This is the same light, scoped to the page that owns it. It colours only what
+  is behind the interface: the glass keeps its own neutral fills, blur, borders
+  and shadows, so the effect is coloured light behind clear panels rather than
+  coloured panels.
+*/
+.page-glow {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.page-glow::before,
+.page-glow::after {
+  content: "";
+  position: absolute;
+  inset-inline: -10%;
+  height: 55%;
+}
+.page-glow::before {
+  top: -18%;
+  background: radial-gradient(58% 58% at 50% 50%, color-mix(in oklab, var(--accent-from) 55%, transparent), transparent 70%);
+  filter: blur(40px);
+  opacity: var(--glow-strength, 0.5);
+}
+.page-glow::after {
+  bottom: -20%;
+  background: radial-gradient(56% 52% at 50% 50%, color-mix(in oklab, var(--accent-to) 45%, transparent), transparent 72%);
+  filter: blur(50px);
+  opacity: calc(var(--glow-strength, 0.5) * 0.85);
+}
+
 /* -------------------------------------------------------------------- glass */
 
 .glass {
@@ -417,3 +459,19 @@ select.field option { background: #15151f; }
   .card-tight { border-radius: 16px; }
   .panel      { border-radius: 16px; }
 }
+
+/*
+  The native colour input, without the chrome the browser wraps it in.
+
+  Left alone it draws a thick inset swatch with its own border and padding, which
+  sits badly next to a text field of the same height. The colour is the control,
+  so it fills the box.
+*/
+input[type="color"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+}
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"]::-webkit-color-swatch { border: none; border-radius: 6px; }
+input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
