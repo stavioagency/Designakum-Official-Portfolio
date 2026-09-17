@@ -76,7 +76,8 @@ export default async function AnnouncementsPage() {
                     <AnnouncementControls copy={t} dialog={dialogChrome}
                       id={announcement.id}
                       title={announcement.title}
-                      active={announcement.active === 1}
+                      endsAt={announcement.ends_at}
+                active={announcement.active === 1}
                     />
                   </div>
 

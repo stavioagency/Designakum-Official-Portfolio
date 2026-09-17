@@ -103,6 +103,55 @@ export async function toggleAnnouncementAction(_prev: ActionState, fd: FormData)
   }
 }
 
+/**
+ * Changes when a live announcement comes down, at any point after it went up.
+ *
+ * The duration chosen at publication is a guess about how long the news stays
+ * news, and guesses are wrong: something meant for a day turns out to matter for
+ * a week, and a notice about an outage should come down the moment it is over.
+ * Until now the only ways to shorten one were to pause it or delete it, and
+ * there was no way at all to extend one.
+ *
+ * An empty value means no end — it runs until it is paused by hand.
+ */
+export async function setAnnouncementEndAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  try {
+    const actor = await requirePermission("announcements.manage");
+    const id = str(fd, "announcementId");
+    const announcement = await getAnnouncement(id);
+    if (!announcement) return { error: (await messages()).announcementMissing };
+
+    const raw = str(fd, "endsAt");
+    let endsAt: number | null = null;
+
+    if (raw) {
+      // A datetime-local field has no zone, so it is read as the console's own
+      // clock — which is the one the person setting it is looking at.
+      const parsed = Date.parse(raw);
+      if (Number.isNaN(parsed)) return { error: (await messages()).announcementBadDate };
+      endsAt = parsed;
+    }
+
+    await updateAnnouncement(id, { ends_at: endsAt });
+
+    await audit({
+      actor,
+      action: "announcement.end_changed",
+      targetType: "announcement",
+      targetId: id,
+      targetLabel: announcement.title,
+      before: { ends_at: announcement.ends_at },
+      after: { ends_at: endsAt },
+    });
+
+    refresh();
+    const m = await messages();
+    return { ok: endsAt ? m.announcementEndSet : m.announcementNoEnd };
+  } catch (error) {
+    return await fail(error);
+  }
+}
+
 export async function deleteAnnouncementAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   try {
     const actor = await requirePermission("announcements.manage");

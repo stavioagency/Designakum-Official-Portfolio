@@ -5,6 +5,7 @@ import { ANNOUNCEMENT_HOURS } from "@/lib/announcement-durations";
 import {
   createAnnouncementAction,
   deleteAnnouncementAction,
+  setAnnouncementEndAction,
   toggleAnnouncementAction,
 } from "@/app/actions/announcements";
 import { Field, Status, Submit } from "@/components/editor/ui";
@@ -90,19 +91,56 @@ export function AnnouncementControls({
   id,
   title,
   active,
+  endsAt,
   copy,
   dialog,
 }: {
   id: string;
   title: string;
   active: boolean;
+  /** Milliseconds, or null when it runs until someone stops it. */
+  endsAt: number | null;
   copy: Copy;
   dialog: DialogChrome;
 }) {
   const [toggleState, toggle] = useActionState(toggleAnnouncementAction, null);
   const [deleteState, remove] = useActionState(deleteAnnouncementAction, null);
+  const [endState, setEnd] = useActionState(setAnnouncementEndAction, null);
+
+  /** A datetime-local field wants the console's own clock, without a zone. */
+  const localValue = (ms: number | null) => {
+    if (!ms) return "";
+    const at = new Date(ms - new Date(ms).getTimezoneOffset() * 60_000);
+    return at.toISOString().slice(0, 16);
+  };
 
   return (
+    <div className="space-y-2.5">
+      {/*
+        The end time is editable after publication, not only chosen before it.
+        How long news stays news is a guess, and a notice about an outage should
+        come down when the outage does rather than when the guess said.
+      */}
+      <form action={setEnd} className="flex flex-wrap items-center gap-2">
+        <input type="hidden" name="announcementId" value={id} />
+        <label className="text-[12px] text-mist-500" htmlFor={`ends-${id}`}>
+          {copy.endsAt}
+        </label>
+        <input
+          id={`ends-${id}`}
+          name="endsAt"
+          type="datetime-local"
+          defaultValue={localValue(endsAt)}
+          className="field !w-auto !py-1.5 !text-[12.5px]"
+          dir="ltr"
+        />
+        <Submit className="btn btn-ghost !px-3 !py-1.5 !text-[12px]" pendingLabel="…">
+          {copy.saveEnd}
+        </Submit>
+        <span className="text-[11.5px] text-mist-600">{copy.clearEndHint}</span>
+        <Status state={endState} />
+      </form>
+
     <div className="flex flex-wrap items-center gap-2">
       <form action={toggle}>
         <input type="hidden" name="announcementId" value={id} />
@@ -127,6 +165,7 @@ export function AnnouncementControls({
 
       <Status state={toggleState} />
       <Status state={deleteState} />
+    </div>
     </div>
   );
 }
