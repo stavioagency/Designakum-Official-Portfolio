@@ -43,7 +43,7 @@ export default async function PreviewPage() {
       <PublishBar copy={copy} portfolio={portfolio} canPublish={await canPublish(user)} />
 
       <div className="mt-6">
-        <PreviewFrame labels={{ mobile: copy.home.mobile, desktop: copy.home.desktop }}>
+        <PreviewFrame>
           <PortfolioView bundle={await loadBundle(portfolio)} />
         </PreviewFrame>
       </div>

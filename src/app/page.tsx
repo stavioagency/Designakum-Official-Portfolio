@@ -84,7 +84,7 @@ export default async function LandingPage() {
           somebody's portfolio and never seeing the two together. Here the claim
           and the thing it describes share the first screen.
         */}
-        <section className="rise grid items-center gap-10 pt-10 sm:pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)] lg:gap-14">
+        <section className="rise grid items-center gap-10 pt-10 sm:pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,430px)] lg:gap-14">
           <div className="text-center lg:text-start">
             <p className="panel mb-6 inline-flex items-center gap-2 px-4 py-2 text-[12.5px] text-mist-300">
               <Sparkle className="h-4 w-4" style={{ color: "var(--accent-ring)" }} />
@@ -113,10 +113,7 @@ export default async function LandingPage() {
               window, not traffic they earned. */}
           {preview && (
             <div data-theme={preview.portfolio.theme}>
-              <PreviewFrame
-                labels={{ mobile: d.landing.mobile, desktop: d.landing.desktop }}
-                height="min(560px, 68dvh)"
-              >
+              <PreviewFrame height="min(580px, 70dvh)">
                 <PortfolioView bundle={preview} />
               </PreviewFrame>
             </div>
