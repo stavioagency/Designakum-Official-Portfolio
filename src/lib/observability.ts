@@ -23,6 +23,31 @@ export function reportError(
 
   console.error(JSON.stringify(payload));
 
+  /**
+   * Recorded and, when it is worth it, emailed to the owners.
+   *
+   * Fired and forgotten: this function is called from request paths that have
+   * already failed, and making them wait on a database write and an email would
+   * turn one broken response into a slow broken response. The import is dynamic
+   * so nothing on the happy path pays for a module it never uses.
+   *
+   * `level: "info"` is how a caller records something notable that is not a
+   * fault — an account deletion, say — which belongs in the log without waking
+   * anyone at three in the morning.
+   */
+  if (context.level !== "info") {
+    void import("./error-alert")
+      .then((m) =>
+        m.alertOwners({
+          area: String(context.area ?? "unknown"),
+          message: payload.message,
+          stack: payload.stack,
+          context,
+        }),
+      )
+      .catch(() => {});
+  }
+
   const endpoint = process.env.ERROR_WEBHOOK_URL;
   if (!endpoint) return;
 

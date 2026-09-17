@@ -324,6 +324,7 @@ const ar = {
       analytics: "التحليلات",
       announcements: "الإعلانات",
       audit: "سجل التدقيق",
+      errors: "الأعطال",
       settings: "الإعدادات",
       clientDashboard: "لوحة العميل",
       menu: "القائمة",
@@ -332,6 +333,15 @@ const ar = {
       title: "لوحة الإدارة",
       titleTemplate: "%s · لوحة إدارة ديزاينكم",
     },
+    errors: {
+      title: "الأعطال",
+      description: "ما فشل فعليًا، مجمّعًا حسب نوع العطل لا حسب كل مرة يحدث فيها.",
+      empty: "لا توجد أعطال",
+      emptyBody: "لم يُسجَّل أي عطل مفتوح. تظهر هنا تلقائيًا عند حدوثها، ويصلك بريد بأول مرة.",
+      resolve: "تمت المعالجة",
+      details: "التفاصيل التقنية",
+    },
+
     audit: {
       title: "سجل التدقيق",
       description: "{n} إجراء مسجّل — من نفّذه، وماذا تغيّر، ومتى.",
@@ -1689,6 +1699,7 @@ const en: typeof ar = {
       analytics: "Analytics",
       announcements: "Announcements",
       audit: "Audit log",
+      errors: "Failures",
       settings: "Settings",
       clientDashboard: "Customer dashboard",
       menu: "Menu",
@@ -1697,6 +1708,15 @@ const en: typeof ar = {
       title: "Admin console",
       titleTemplate: "%s · Designakum admin",
     },
+    errors: {
+      title: "Failures",
+      description: "What actually broke, grouped by fault rather than by every time it happened.",
+      empty: "Nothing broken",
+      emptyBody: "No open failures. They appear here on their own, and you get an email the first time each one happens.",
+      resolve: "Mark resolved",
+      details: "Technical detail",
+    },
+
     audit: {
       title: "Audit log",
       description: "{n} recorded actions — who did it, what changed, and when.",

@@ -43,6 +43,36 @@ export async function rateLimit(key: string, limit: number, windowMs: number): P
   return { ok: true, remaining: limit - row.count - 1, retryAfterSeconds: 0 };
 }
 
+/**
+ * The same window, claimed atomically.
+ *
+ * `rateLimit` reads and then writes, which is fine for the things it was built
+ * for — login attempts and ticket spam arrive as separate requests and mostly
+ * queue behind each other. It is not fine for callers that fire at once: twenty
+ * concurrent claims all read the same low count and all believe they are under
+ * the limit. This does the read and the write in one statement, so the database
+ * decides the order rather than the race.
+ */
+export async function claimSlot(key: string, limit: number, windowMs: number): Promise<boolean> {
+  const ts = now();
+  const cutoff = ts - windowMs;
+
+  const row = await get<{ count: number }>(
+    `INSERT INTO rate_limits (key, window_start, count) VALUES (?, ?, 1)
+     ON CONFLICT(key) DO UPDATE SET
+       window_start = CASE WHEN rate_limits.window_start <= ? THEN ? ELSE rate_limits.window_start END,
+       count        = CASE WHEN rate_limits.window_start <= ? THEN 1 ELSE rate_limits.count + 1 END
+     RETURNING count`,
+    key,
+    ts,
+    cutoff,
+    ts,
+    cutoff,
+  );
+
+  return (row?.count ?? limit + 1) <= limit;
+}
+
 /** A coarse, non-identifying fingerprint of the caller, for rate-limit keys. */
 export async function callerFingerprint(): Promise<string> {
   const h = await headers();

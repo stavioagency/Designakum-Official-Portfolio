@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { openErrorCount } from "@/lib/error-log";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { can } from "@/lib/permissions";
@@ -31,7 +32,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
   return (
     <ConsoleShell
       user={user}
-      counts={{ reports: reports.pending + reports.reviewing, tickets }}
+      counts={{ errors: await openErrorCount(), reports: reports.pending + reports.reviewing, tickets }}
       copy={dict(locale).console}
       locale={locale}
     >

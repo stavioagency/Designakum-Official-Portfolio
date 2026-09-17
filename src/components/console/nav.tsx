@@ -13,6 +13,7 @@ import {
   Megaphone,
   Sliders,
   Users,
+  AlertTriangle,
 } from "@/components/icons";
 
 const ICONS = {
@@ -26,6 +27,7 @@ const ICONS = {
   megaphone: Megaphone,
   history: History,
   sliders: Sliders,
+  alert: AlertTriangle,
 } as const;
 
 export type NavIcon = keyof typeof ICONS;

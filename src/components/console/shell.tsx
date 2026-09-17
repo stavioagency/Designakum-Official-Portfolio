@@ -17,7 +17,7 @@ export function ConsoleShell({
   locale,
 }: {
   user: User;
-  counts: { reports: number; tickets: number };
+  counts: { reports: number; tickets: number; errors: number };
   children: React.ReactNode;
   copy: Dictionary["console"];
   locale: Locale;
@@ -35,6 +35,7 @@ export function ConsoleShell({
     { href: "/console/analytics", label: nav.analytics, icon: "chart", permission: "analytics.view" },
     { href: "/console/announcements", label: nav.announcements, icon: "megaphone", permission: "announcements.manage" },
     { href: "/console/audit", label: nav.audit, icon: "history", permission: "audit.view" },
+    { href: "/console/errors", label: nav.errors, icon: "alert", permission: "settings.manage", badge: counts.errors },
     { href: "/console/settings", label: nav.settings, icon: "sliders", permission: "settings.manage" },
   ]
     .filter((item) => can(user, item.permission as Parameters<typeof can>[1]))
