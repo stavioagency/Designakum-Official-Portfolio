@@ -60,6 +60,10 @@ export default async function DashboardLayout({
           { href: "/dashboard/domain", label: nav.domain },
           { href: "/dashboard/support", label: nav.support },
           { href: `/p/${portfolio.slug}`, label: nav.publicPage, external: true },
+          // The platform's own front page. The logo goes to the dashboard for
+          // someone signed in, so without this there was no way back out to the
+          // site from inside it.
+          { href: "/", label: nav.home },
           ...(user.role === "owner" || user.role === "support"
             ? [{ href: "/console", label: nav.console }]
             : []),

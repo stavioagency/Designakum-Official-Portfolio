@@ -34,7 +34,7 @@ export function CurrencySwitch({
       >
         {(Object.keys(CURRENCIES) as CurrencyCode[]).map((code) => (
           <option key={code} value={code}>
-            {code} — {locale === "ar" ? CURRENCIES[code].nameAr : CURRENCIES[code].nameEn}
+            {CURRENCIES[code].flag}  {code} — {locale === "ar" ? CURRENCIES[code].nameAr : CURRENCIES[code].nameEn}
           </option>
         ))}
       </select>

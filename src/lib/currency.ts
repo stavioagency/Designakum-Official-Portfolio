@@ -29,20 +29,22 @@ export interface Currency {
    */
   perUsd: number;
   pegged: boolean;
+  /** The country's flag. Recognised faster than three letters ever are. */
+  flag: string;
   nameEn: string;
   nameAr: string;
 }
 
 export const CURRENCIES: Record<CurrencyCode, Currency> = {
-  SAR: { code: "SAR", decimals: 2, perUsd: 3.75,   pegged: true,  nameEn: "Saudi riyal",      nameAr: "ريال سعودي" },
-  AED: { code: "AED", decimals: 2, perUsd: 3.6725, pegged: true,  nameEn: "UAE dirham",       nameAr: "درهم إماراتي" },
-  QAR: { code: "QAR", decimals: 2, perUsd: 3.64,   pegged: true,  nameEn: "Qatari riyal",     nameAr: "ريال قطري" },
-  OMR: { code: "OMR", decimals: 3, perUsd: 0.3845, pegged: true,  nameEn: "Omani rial",       nameAr: "ريال عماني" },
-  BHD: { code: "BHD", decimals: 3, perUsd: 0.376,  pegged: true,  nameEn: "Bahraini dinar",   nameAr: "دينار بحريني" },
-  KWD: { code: "KWD", decimals: 3, perUsd: 0.307,  pegged: false, nameEn: "Kuwaiti dinar",    nameAr: "دينار كويتي" },
-  USD: { code: "USD", decimals: 2, perUsd: 1,      pegged: true,  nameEn: "US dollar",        nameAr: "دولار أمريكي" },
-  GBP: { code: "GBP", decimals: 2, perUsd: 0.79,   pegged: false, nameEn: "Pound sterling",   nameAr: "جنيه إسترليني" },
-  AUD: { code: "AUD", decimals: 2, perUsd: 1.52,   pegged: false, nameEn: "Australian dollar", nameAr: "دولار أسترالي" },
+  SAR: { code: "SAR", flag: "🇸🇦", decimals: 2, perUsd: 3.75,   pegged: true,  nameEn: "Saudi riyal",      nameAr: "ريال سعودي" },
+  AED: { code: "AED", flag: "🇦🇪", decimals: 2, perUsd: 3.6725, pegged: true,  nameEn: "UAE dirham",       nameAr: "درهم إماراتي" },
+  QAR: { code: "QAR", flag: "🇶🇦", decimals: 2, perUsd: 3.64,   pegged: true,  nameEn: "Qatari riyal",     nameAr: "ريال قطري" },
+  OMR: { code: "OMR", flag: "🇴🇲", decimals: 3, perUsd: 0.3845, pegged: true,  nameEn: "Omani rial",       nameAr: "ريال عماني" },
+  BHD: { code: "BHD", flag: "🇧🇭", decimals: 3, perUsd: 0.376,  pegged: true,  nameEn: "Bahraini dinar",   nameAr: "دينار بحريني" },
+  KWD: { code: "KWD", flag: "🇰🇼", decimals: 3, perUsd: 0.307,  pegged: false, nameEn: "Kuwaiti dinar",    nameAr: "دينار كويتي" },
+  USD: { code: "USD", flag: "🇺🇸", decimals: 2, perUsd: 1,      pegged: true,  nameEn: "US dollar",        nameAr: "دولار أمريكي" },
+  GBP: { code: "GBP", flag: "🇬🇧", decimals: 2, perUsd: 0.79,   pegged: false, nameEn: "Pound sterling",   nameAr: "جنيه إسترليني" },
+  AUD: { code: "AUD", flag: "🇦🇺", decimals: 2, perUsd: 1.52,   pegged: false, nameEn: "Australian dollar", nameAr: "دولار أسترالي" },
 };
 
 /**
