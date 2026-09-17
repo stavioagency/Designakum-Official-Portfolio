@@ -92,9 +92,15 @@ export async function signupAction(_prev: FormState, fd: FormData): Promise<Form
 
   await createSession(user.id);
 
-  // The link is chosen on /welcome, not on this form — see src/lib/onboarding.ts
-  // for why both sign-up routes converge there.
-  redirect("/welcome");
+  /**
+   * The link is chosen on /welcome, not on this form — see src/lib/onboarding.ts
+   * for why both sign-up routes converge there. A name typed into the landing
+   * page rides along as a suggestion, and is checked there, with an account
+   * behind the question: the availability endpoint refuses anonymous callers so
+   * that box cannot be used to enumerate customers.
+   */
+  const wanted = slugify(str(fd, "wanted"));
+  redirect(wanted ? `/welcome?slug=${encodeURIComponent(wanted)}` : "/welcome");
 }
 
 export async function loginAction(_prev: FormState, fd: FormData): Promise<FormState> {

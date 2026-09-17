@@ -5,6 +5,7 @@ import { currentUser } from "@/lib/auth";
 import { guardPage, roleLabel } from "@/lib/permissions";
 import { readSettings } from "@/lib/settings";
 import { staffMembers } from "@/lib/customers";
+import { listPortfolios } from "@/lib/portfolios";
 import { BRAND_ASSETS, brandAsset } from "@/lib/brand";
 import { billingConfigured } from "@/lib/billing";
 import { googleConfigured } from "@/lib/google";
@@ -17,6 +18,7 @@ import { DAYS, TIMES, clockLabel, dayLabel, formatHours } from "@/lib/support-ho
 import { TwoFactor } from "@/components/account/two-factor";
 import { generateSecret, otpauthUri, isEnabled, recoveryCodesLeft } from "@/lib/two-factor";
 import { portfolioQr } from "@/lib/qr";
+import { currentRates, refreshRates } from "@/lib/rates";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: dict(await currentLocale()).console.nav.settings };
@@ -33,6 +35,34 @@ export default async function SettingsPage() {
   const staffCopy = d.staff;
   const staff = await staffMembers();
   const enrolmentSecret = generateSecret();
+
+  /**
+   * The pages that may appear on the landing page.
+   *
+   * Only published, unsuspended ones are offered: naming a draft would put an
+   * empty slot on the marketing page, and naming a suspended page would put it
+   * back in front of the public from the one screen meant to take it down.
+   */
+  const showcaseOptions = [
+    { value: "", label: t.showcaseAuto },
+    ...(await listPortfolios())
+      .filter((p) => p.published === 1 && p.suspended === 0)
+      .map((p) => ({ value: p.slug, label: p.name ? `${p.slug} — ${p.name}` : p.slug })),
+  ];
+
+  /**
+   * Forced rather than waited for: someone opening this page is checking on the
+   * rates, and "come back tomorrow" is not an answer. It still no-ops within the
+   * day unless the stored figures are actually old.
+   */
+  await refreshRates();
+  const rates = await currentRates();
+  const rateHint = (code: "GBP" | "AUD") => {
+    const reading = rates[code];
+    if (reading.source === "manual") return t.rateManual;
+    if (reading.source === "built-in") return t.rateNever;
+    return fill(t.rateLive, { rate: String(reading.rate), date: reading.asOf });
+  };
 
   const dayOptions = DAYS.map((day) => ({ value: day, label: dayLabel(day, locale) }));
   const timeOptions = TIMES.map((time) => ({ value: time, label: clockLabel(time, locale) }));
@@ -141,6 +171,51 @@ export default async function SettingsPage() {
             { key: "features.support", label: t.supportFeature, type: "boolean", value: settings["features.support"] },
             { key: "features.public_showcase", label: t.showcaseFeature, type: "boolean", value: settings["features.public_showcase"] },
           ]}
+        />
+
+        <SettingsGroup
+          saveLabel={t.save}
+          riyalLabel={t.riyal}
+          title={t.rates}
+          description={t.ratesHint}
+          columns={2}
+          fields={[
+            {
+              key: "pricing.gbp_per_usd",
+              label: t.gbpRate,
+              hint: rateHint("GBP"),
+              type: "text",
+              value: String(settings["pricing.gbp_per_usd"]),
+            },
+            {
+              key: "pricing.aud_per_usd",
+              label: t.audRate,
+              hint: rateHint("AUD"),
+              type: "text",
+              value: String(settings["pricing.aud_per_usd"]),
+            },
+          ]}
+        />
+
+        <SettingsGroup
+          saveLabel={t.save}
+          riyalLabel={t.riyal}
+          title={t.showcase}
+          description={t.showcaseHint}
+          columns={2}
+          fields={[1, 2, 3].map((slot) => ({
+            key: (slot === 1 ? "landing.showcase_slug" : `landing.showcase_slug_${slot}`) as
+              "landing.showcase_slug" | "landing.showcase_slug_2" | "landing.showcase_slug_3",
+            label: fill(t.showcaseSlot, { n: String(slot) }),
+            type: "select" as const,
+            value:
+              slot === 1
+                ? settings["landing.showcase_slug"]
+                : slot === 2
+                  ? settings["landing.showcase_slug_2"]
+                  : settings["landing.showcase_slug_3"],
+            options: showcaseOptions,
+          }))}
         />
 
         <SettingsGroup

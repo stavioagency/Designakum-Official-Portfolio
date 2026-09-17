@@ -35,6 +35,7 @@ export function AuthForm({
   googleReady,
   initialError,
   inviteCode,
+  wantedSlug,
   inviteRequired,
   passwordCopy,
 }: {
@@ -46,6 +47,8 @@ export function AuthForm({
   googleReady: boolean;
   initialError?: string;
   inviteCode?: string;
+  /** The link typed on the landing page, carried through to /welcome. */
+  wantedSlug?: string;
   inviteRequired?: boolean;
 }) {
   const [state, formAction] = useActionState(action, null);
@@ -85,6 +88,7 @@ export function AuthForm({
               <label className="label" htmlFor="name">{d.name}</label>
               <input id="name" name="name" className="field" placeholder={d.namePlaceholder} required />
             </div>
+            {wantedSlug && <input type="hidden" name="wanted" value={wantedSlug} />}
             <div>
               <label className="label" htmlFor="invite">{d.invite}</label>
               <input

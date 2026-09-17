@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Sans_Arabic, Inter } from "next/font/google";
+import { IBM_Plex_Sans_Arabic, Inter, Readex_Pro } from "next/font/google";
 import { BRAND, brandAsset } from "@/lib/brand";
 import { DIR } from "@/lib/i18n";
 import { headers } from "next/headers";
@@ -23,6 +23,22 @@ const arabic = IBM_Plex_Sans_Arabic({
   subsets: ["arabic", "latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-arabic",
+  display: "swap",
+});
+
+/**
+ * One display face, for headlines only.
+ *
+ * The page set Arabic and English headlines in the same text face at the same
+ * weight, which is why the Arabic read as translated rather than designed.
+ * Readex Pro draws both scripts in one family, so a headline in either language
+ * has the same voice instead of two fallbacks pretending to match. Two weights,
+ * and nothing but headings uses it — a display face in body copy is a headache.
+ */
+const display = Readex_Pro({
+  subsets: ["arabic", "latin"],
+  weight: ["500", "700"],
+  variable: "--font-display",
   display: "swap",
 });
 
@@ -95,7 +111,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const page = written === locale ? d : dict(written);
 
   return (
-    <html lang={written} dir={DIR[written]} className={`${arabic.variable} ${latin.variable}`}>
+    <html lang={written} dir={DIR[written]} className={`${arabic.variable} ${latin.variable} ${display.variable}`}>
       <head>{icon && <link rel="icon" href={icon} />}</head>
       <body className="ambient">
         {gate ? (

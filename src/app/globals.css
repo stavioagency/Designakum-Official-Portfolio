@@ -69,6 +69,65 @@ body {
   letter-spacing: -0.01em;
 }
 
+/* Headlines only. See src/app/layout.tsx for why there is a display face at all. */
+.display {
+  font-family: var(--font-display), var(--font-sans);
+  letter-spacing: -0.02em;
+}
+html[lang="en"] .display { font-family: var(--font-display), var(--font-latin), sans-serif; }
+
+/*
+  The address field in the hero: one control that reads as a URL, with the host
+  inside it rather than captioned above it. Always left-to-right, in both
+  languages, because a web address is.
+*/
+.claim-field {
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  background: var(--glass);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.claim-field:focus-within {
+  border-color: color-mix(in oklab, var(--accent-ring) 55%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent-from) 22%, transparent);
+}
+
+/*
+  A glyph that means "the way I am pointing" rather than "left".
+
+  The buttons themselves need no flipping — the row is laid out in the writing
+  direction already, so the first control is on the right in Arabic — but the
+  arrow drawn inside one has to turn round with it.
+*/
+[dir="rtl"] .flip-rtl { transform: scaleX(-1); }
+
+/*
+  A QR code is for a *second* screen. Somebody reading this page on their phone
+  cannot point that phone at itself, so the code is shown to mice and a plain
+  link is shown to fingers. Decided in CSS rather than by sniffing the user
+  agent, so the server renders one page for everyone and the device answers for
+  itself.
+*/
+.touch-only { display: none; }
+@media (pointer: coarse) {
+  .fine-only { display: none; }
+  .touch-only { display: revert; }
+}
+
+/*
+  The page inside the device preview.
+
+  It scrolls with a mouse, and deliberately does not with a finger: on a phone
+  the preview fills the column, so a swipe over it used to scroll the portfolio
+  instead of the page — the visitor is stuck in a shop window they were only
+  walking past. On touch it shows the top of the page and the link underneath
+  opens the real thing.
+*/
+.preview-scroll { overflow-y: auto; }
+@media (pointer: coarse) {
+  .preview-scroll { overflow: hidden; touch-action: pan-y; }
+}
+
 /* Ambient light: a soft accent wash at the top, a cooler pool at the bottom. */
 .ambient::before,
 .ambient::after {

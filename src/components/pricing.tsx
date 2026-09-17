@@ -28,6 +28,21 @@ export interface PricingCopy {
   yearlyCharged: string;
 }
 
+/**
+ * The symbol beside a figure, in whatever money the figure is written in.
+ *
+ * It used to be the riyal mark unconditionally, on lines the currency switch
+ * converts — so a visitor reading dollars was told the saving was in riyals,
+ * and the same figure carried two currencies within one card. The mark is only
+ * correct when the riyal is what is being shown.
+ */
+function Unit({ copy, size }: { copy: PricingCopy; size: string }) {
+  if (copy.unitSymbol == null) {
+    return <Riyal src={copy.riyalSrc} locale={copy.locale} size={size} />;
+  }
+  return <span className="font-semibold">{copy.unitSymbol}</span>;
+}
+
 function Price({
   amount,
   suffix,
@@ -77,6 +92,7 @@ export function Pricing({
   heading = true,
   monthlyCta,
   yearlyCta,
+  aside,
 }: {
   copy: PricingCopy;
   currentPlan?: Plan;
@@ -85,8 +101,22 @@ export function Pricing({
   /** Replaces the default link — used on the billing page, where the CTA starts checkout. */
   monthlyCta?: React.ReactNode;
   yearlyCta?: React.ReactNode;
+  /** Sits under the heading — the landing page puts the currency switch here. */
+  aside?: React.ReactNode;
 }) {
   const { d, locale, riyalSrc } = copy;
+
+  /**
+   * The currency, written out inside a sentence rather than drawn as a mark.
+   *
+   * The line used to say "SAR" in every currency, because the word was baked
+   * into the translation while the number beside it was converted — so a reader
+   * in London was told the yearly total was in riyals. A symbol reads badly
+   * mid-sentence, so this is the code, except for the riyal in Arabic, which
+   * has a written abbreviation everybody uses.
+   */
+  const unitText =
+    copy.displayCurrency === "SAR" && locale === "ar" ? "ر.س" : copy.displayCurrency;
 
   const planCta = (plan: Plan, highlighted: boolean) => {
     if (currentPlan === plan) {
@@ -113,6 +143,9 @@ export function Pricing({
         <header className="text-center">
           <h2 className="text-2xl font-bold sm:text-3xl">{d.title}</h2>
           <p className="mx-auto mt-3 max-w-md text-[14.5px] leading-[1.9] text-mist-400">{d.sub}</p>
+          {/* Before the figures, not after them: a currency chosen underneath
+              the plans is chosen after the decision it changes. */}
+          {aside && <div className="mt-5 flex justify-center">{aside}</div>}
         </header>
       )}
 
@@ -171,18 +204,24 @@ export function Pricing({
             />
           </div>
 
-          <p className="accent-text mt-3 flex items-center gap-1.5 text-[13px] font-semibold">
+          {/* The saving is the whole argument for the yearly plan, and it used
+              to be a line of small print between two other lines of small
+              print. Here it is the second-biggest thing on the card. */}
+          <p
+            className="accent-text mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[19px] font-bold"
+            style={{ lineHeight: 1.25 }}
+          >
             <span>{d.savePrefix}</span>
             <span className="tnum">{copy.saved}</span>
-            <Riyal src={riyalSrc} locale={locale} size="0.95em" />
+            <Unit copy={copy} size="1.05em" />
             <span>{fill(d.savePercent, { percent: copy.savedPercent })}</span>
           </p>
-          <p className="mt-1.5 text-[12.5px] leading-relaxed text-mist-400">
-            {fill(d.yearlyNote, { total: copy.twelveMonths })}
+          <p className="mt-2 text-[12.5px] leading-relaxed text-mist-400">
+            {fill(d.yearlyNote, { total: copy.twelveMonths, currency: unitText })}
           </p>
           <p className="mt-2 flex items-center gap-1.5 text-[12.5px] text-mist-500">
             ≈ <span className="tnum font-semibold text-mist-300">{copy.yearlyPerMonth}</span>
-            <Riyal src={riyalSrc} locale={locale} size="0.85em" />
+            <Unit copy={copy} size="0.85em" />
             <span>/ {d.perMonth}</span>
           </p>
 

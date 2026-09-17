@@ -65,7 +65,11 @@ describe("converting the charge", () => {
   });
 
   test("a rate from settings overrides the built-in one", () => {
-    assert.equal(fromUsd(10, "GBP"), 7.9);
+    // Read from the table rather than copied out of it: the floating fallbacks
+    // get refreshed, and a test that hardcodes today's figure only ever catches
+    // that refresh.
+    const builtIn = CURRENCIES.GBP.perUsd;
+    assert.equal(fromUsd(10, "GBP"), Math.round(10 * builtIn * 100) / 100);
     assert.equal(fromUsd(10, "GBP", { GBP: 0.8 }), 8);
   });
 

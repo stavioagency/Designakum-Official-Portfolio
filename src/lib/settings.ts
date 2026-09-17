@@ -17,11 +17,20 @@ export const SETTING_DEFAULTS = {
   // no MX — so this default put a guaranteed bounce on the support page and in
   // the reply_to of every email the platform sent.
   /**
-   * Which published page the landing page shows. Empty falls back to whichever
-   * one sorts first, which is how the marketing page came to be demonstrating a
-   * portfolio with one link and one project on it.
+   * Which published pages the landing page shows, in this order.
+   *
+   * Empty falls back to whichever one sorts first, which is how the marketing
+   * page came to be demonstrating a portfolio with one link and one project on
+   * it. Three slots because the landing page shows three: one example reads as
+   * one template, and a visitor cannot tell from it whether the product could
+   * look like them.
+   *
+   * The first slot keeps its original name so that a value already saved on a
+   * live platform stays where it is.
    */
   "landing.showcase_slug": "",
+  "landing.showcase_slug_2": "",
+  "landing.showcase_slug_3": "",
 
   "brand.support_email": "support@designakum.com",
 
@@ -36,6 +45,22 @@ export const SETTING_DEFAULTS = {
   // deploy. Zero means "use the value compiled into currency.ts".
   "pricing.gbp_per_usd": 0,
   "pricing.aud_per_usd": 0,
+
+  /**
+   * The last figures the rate feed gave us, and when.
+   *
+   * Cached here rather than in memory because the app runs as many short-lived
+   * functions: an in-process cache would mean every cold start asking the feed
+   * again. Zero means it has never answered, and the built-in constants apply.
+   * See src/lib/rates.ts.
+   */
+  // Typed as number and string rather than as the literals `0` and `""`: unlike
+  // every other setting these are written by the app itself, not only by a form
+  // that casts on the way through.
+  "rates.gbp_per_usd": 0 as number,
+  "rates.aud_per_usd": 0 as number,
+  "rates.updated_at": 0 as number,
+  "rates.as_of": "" as string,
 
   // Written by the app, not by hand: PayPal's product and plan ids, kept so the
   // catalogue is created once. A plan id is stored as "CUR:amount|id" so a price

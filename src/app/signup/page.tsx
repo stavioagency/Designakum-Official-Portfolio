@@ -8,6 +8,7 @@ import { googleConfigured } from "@/lib/google";
 import { currentLocale } from "@/lib/locale";
 import { dict } from "@/lib/i18n";
 import { readSettings } from "@/lib/settings";
+import { slugify } from "@/lib/ids";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -19,12 +20,12 @@ export const dynamic = "force-dynamic";
 export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; invite?: string }>;
+  searchParams: Promise<{ error?: string; invite?: string; slug?: string }>;
 }) {
   const user = await currentUser();
   if (user) redirect(user.role === "client" ? "/dashboard" : "/console");
 
-  const { error, invite } = await searchParams;
+  const { error, invite, slug } = await searchParams;
   const d = dict(await currentLocale());
   const settings = await readSettings();
   const inviteRequired = settings["platform.invite_only"] || !settings["platform.signups_open"];
@@ -49,6 +50,7 @@ export default async function SignupPage({
             googleReady={googleConfigured() && settings["features.google_signin"]}
             initialError={error}
             inviteCode={invite}
+            wantedSlug={slug ? slugify(slug) : undefined}
             inviteRequired={inviteRequired}
           />
         </div>

@@ -25,7 +25,12 @@ export interface Currency {
    * so they are exact and do not go stale — SAR has sat at 3.75 since 1986.
    * Kuwait pegs to an undisclosed basket rather than to the dollar alone, so its
    * rate drifts slightly and is the one here that is genuinely an approximation.
-   * Sterling and the Australian dollar float and are overridable in settings.
+   *
+   * Sterling and the Australian dollar float, so the figures here are only the
+   * floor: the platform prices from the European Central Bank's daily set and
+   * falls back to these when it cannot reach it. They are the ECB's numbers for
+   * 16 September 2026, so a fallback is a stale rate rather than a made-up one.
+   * See src/lib/rates.ts.
    */
   perUsd: number;
   pegged: boolean;
@@ -43,8 +48,8 @@ export const CURRENCIES: Record<CurrencyCode, Currency> = {
   BHD: { code: "BHD", flag: "🇧🇭", decimals: 3, perUsd: 0.376,  pegged: true,  nameEn: "Bahraini dinar",   nameAr: "دينار بحريني" },
   KWD: { code: "KWD", flag: "🇰🇼", decimals: 3, perUsd: 0.307,  pegged: false, nameEn: "Kuwaiti dinar",    nameAr: "دينار كويتي" },
   USD: { code: "USD", flag: "🇺🇸", decimals: 2, perUsd: 1,      pegged: true,  nameEn: "US dollar",        nameAr: "دولار أمريكي" },
-  GBP: { code: "GBP", flag: "🇬🇧", decimals: 2, perUsd: 0.79,   pegged: false, nameEn: "Pound sterling",   nameAr: "جنيه إسترليني" },
-  AUD: { code: "AUD", flag: "🇦🇺", decimals: 2, perUsd: 1.52,   pegged: false, nameEn: "Australian dollar", nameAr: "دولار أسترالي" },
+  GBP: { code: "GBP", flag: "🇬🇧", decimals: 2, perUsd: 0.74317, pegged: false, nameEn: "Pound sterling",   nameAr: "جنيه إسترليني" },
+  AUD: { code: "AUD", flag: "🇦🇺", decimals: 2, perUsd: 1.4021,  pegged: false, nameEn: "Australian dollar", nameAr: "دولار أسترالي" },
 };
 
 /**

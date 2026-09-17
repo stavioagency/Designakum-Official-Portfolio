@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { getPortfolioForUser } from "@/lib/portfolios";
 import { needsOnboarding } from "@/lib/onboarding";
+import { slugify } from "@/lib/ids";
 import { currentLocale } from "@/lib/locale";
 import { dict } from "@/lib/i18n";
 import { requestOrigin } from "@/lib/origin";
@@ -27,7 +28,11 @@ export const dynamic = "force-dynamic";
  * be and asked for the decision before anyone had seen the product. Both routes
  * now land here, so there is one answer to "how do I pick my link?".
  */
-export default async function WelcomePage() {
+export default async function WelcomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ slug?: string }>;
+}) {
   const user = await currentUser();
   if (!user) redirect("/login");
   if (!needsOnboarding(user)) redirect(user.role === "client" ? "/dashboard" : "/console");
@@ -36,6 +41,10 @@ export default async function WelcomePage() {
   if (!portfolio) redirect("/login");
 
   const d = dict(await currentLocale()).welcome;
+  // A name typed on the landing page arrives here as a suggestion. Whether it
+  // is actually free is answered by the field itself, now that there is a
+  // session to ask with.
+  const { slug: wanted } = await searchParams;
   const origin = (await requestOrigin()).replace(/^https?:\/\//, "");
 
   return (
@@ -51,7 +60,7 @@ export default async function WelcomePage() {
             action={claimLinkAction}
             d={d}
             origin={origin}
-            suggestion={portfolio.slug}
+            suggestion={wanted ? slugify(wanted) : portfolio.slug}
           />
         </div>
       </div>

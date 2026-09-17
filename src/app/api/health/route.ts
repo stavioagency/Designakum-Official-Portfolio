@@ -30,10 +30,17 @@ export async function GET() {
     EMAIL_API_KEY: present("EMAIL_API_KEY"),
     PAYPAL_CLIENT_ID: present("PAYPAL_CLIENT_ID"),
     PAYPAL_WEBHOOK_ID: present("PAYPAL_WEBHOOK_ID"),
+    // Not a secret, and the one PayPal setting whose value matters rather than
+    // its presence: live credentials in sandbox mode take no money and look
+    // completely healthy from every other angle.
+    PAYPAL_ENV: process.env.PAYPAL_ENV === "live" ? "live" : "sandbox",
     // Sign-in falls back silently when these are absent, which is exactly the
     // kind of "configured or not?" question this endpoint exists to answer.
     GOOGLE_CLIENT_ID: present("GOOGLE_CLIENT_ID"),
     GOOGLE_CLIENT_SECRET: present("GOOGLE_CLIENT_SECRET"),
+    // Without these a customer's custom domain is recorded and verified but
+    // never served, until somebody attaches it in the hosting dashboard.
+    CUSTOM_DOMAINS_AUTOMATIC: present("VERCEL_TOKEN") && present("VERCEL_PROJECT_ID"),
   };
 
   let database: { ok: boolean; error?: string };

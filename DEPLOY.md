@@ -92,7 +92,67 @@ Then, by hand:
 - Upload an image in the editor — proves storage and the signed URLs work
 - Trigger a password reset — proves email works
 
+## Backups
+
+The Supabase free plan takes none. `.github/workflows/backup.yml` runs a nightly
+`pg_dump` in GitHub Actions, encrypts it with GPG, and keeps it as an artefact
+for 90 days, so the only copy of the data is not the live database and is not in
+the same account as it.
+
+Two repository secrets are needed, under Settings, Secrets and variables,
+Actions:
+
+| Secret | What |
+| --- | --- |
+| `DATABASE_URL` | The **direct** Postgres URI from Supabase, port 5432. The transaction pooler on 6543 cannot serve `pg_dump`. |
+| `BACKUP_PASSPHRASE` | A long random passphrase, kept somewhere other than GitHub. Without it the backups cannot be read, and neither can anyone else read them. |
+
+Until both are set the job logs a warning and takes no backup, rather than
+failing an email into your inbox every night. Run it once by hand from the
+Actions tab to prove it works, and download the artefact to prove you can
+decrypt it:
+
+```
+gpg --decrypt designakum.sql.gpg > designakum.sql
+psql "$DATABASE_URL" < designakum.sql
+```
+
+A backup nobody has restored is a hypothesis. Restore one into a scratch
+database once before launch.
+
+## Custom domains
+
+A customer adding a domain has to end up in two places: this database, and the
+hosting account that answers for the hostname. The second half is
+`src/lib/vercel-domains.ts`, and it is optional:
+
+| Variable | What |
+| --- | --- |
+| `VERCEL_TOKEN` | An API token with access to the project. Server-side only; nothing ships it to a browser. |
+| `VERCEL_PROJECT_ID` | The project id from Settings, General. |
+| `VERCEL_TEAM_ID` | Only when the project belongs to a team rather than a personal account. |
+
+With these set, adding a domain in the customer dashboard registers it with the
+host, and removing it releases it. Without them nothing breaks: the domain is
+recorded and verified exactly as before, and a member of staff attaches it by
+hand in the dashboard. The customer is never shown a message about credentials
+the platform failed to configure.
+
+A domain held by a different hosting account is reported back plainly, because
+that is the one case only the customer can fix.
+
+## Exchange rates
+
+The Gulf currencies are central bank pegs and live in `src/lib/currency.ts`.
+Sterling and the Australian dollar float and are taken from the European Central
+Bank's daily set through `api.frankfurter.dev`, refreshed at most once a day,
+after the response has been sent rather than during it. A figure typed into
+console settings overrides the feed; zero hands it back. Nothing blocks on the
+feed, and a rate outside its historical range is refused rather than priced from.
+
 ## Cloudflare
+
+DNS and email routing stay on Cloudflare. Hosting does not.
 
 Not yet possible without code changes. Three things stand in the way:
 

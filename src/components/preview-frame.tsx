@@ -19,25 +19,40 @@ const DEVICE_WIDTH = 430;
 
 export function PreviewFrame({
   children,
-  /** How tall the device is, before any scaling. */
+  /** How tall the device is. */
   height = "78dvh",
 }: {
   children: React.ReactNode;
   height?: string;
 }) {
-  const [scale, setScale] = useState(1);
+  const [width, setWidth] = useState(DEVICE_WIDTH);
   const shell = useRef<HTMLDivElement>(null);
 
+  /**
+   * The device narrows; the page inside it is never scaled.
+   *
+   * This used to scale the whole frame down with a transform, which on a 375px
+   * screen meant a 430px device at 78% — every glyph resampled, and hairlines
+   * landing between pixels. The page inside is built on container queries, so a
+   * narrower device simply renders a narrower page, crisply, the way an actual
+   * 375px phone would. Real phones run from about 360 to 430 wide, so a frame
+   * anywhere in that range is still an honest picture of the product.
+   *
+   * Measured from the parent, never from ourselves: measuring the shell is a
+   * feedback loop with a wrong stable answer — the frame starts at full size, an
+   * auto-sized grid track grows to fit it, and that widened track then reads
+   * back as the room available, so it stays too big and the page scrolls
+   * sideways.
+   */
   const fit = useCallback(() => {
-    const available = shell.current?.clientWidth ?? 0;
+    const available = shell.current?.parentElement?.clientWidth ?? 0;
     if (!available) return;
-    // Never enlarged: a phone blown up past its own size looks like a mistake.
-    setScale(Math.min(1, available / DEVICE_WIDTH));
+    setWidth(Math.min(DEVICE_WIDTH, available));
   }, []);
 
   useEffect(() => {
     fit();
-    const node = shell.current;
+    const node = shell.current?.parentElement;
     if (!node || typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(fit);
     observer.observe(node);
@@ -46,20 +61,11 @@ export function PreviewFrame({
 
   return (
     <div ref={shell} className="mx-auto w-full">
-      {/* A transform does not affect layout, so the box around the device is
-          sized from the scale — otherwise the rest of the page sits underneath
-          the preview rather than after it. */}
-      <div className="mx-auto overflow-hidden" style={{ width: DEVICE_WIDTH * scale, height }}>
-        <div
-          className="origin-top-left overflow-hidden rounded-[44px] border border-white/12 bg-ink-950 p-2.5 shadow-[0_50px_100px_-45px_rgba(0,0,0,1)]"
-          style={{
-            width: DEVICE_WIDTH,
-            height: `calc(${height} / ${scale})`,
-            transform: `scale(${scale})`,
-          }}
-        >
-          <div className="no-scrollbar h-full overflow-y-auto rounded-[36px]">{children}</div>
-        </div>
+      <div
+        className="mx-auto overflow-hidden rounded-[44px] border border-white/12 bg-ink-950 p-2.5 shadow-[0_50px_100px_-45px_rgba(0,0,0,1)]"
+        style={{ width, height }}
+      >
+        <div className="no-scrollbar preview-scroll h-full rounded-[36px]">{children}</div>
       </div>
     </div>
   );

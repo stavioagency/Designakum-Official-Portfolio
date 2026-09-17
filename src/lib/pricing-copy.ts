@@ -3,6 +3,8 @@ import { brandAsset } from "./brand";
 import { inChargeCurrency, planDefinitions, yearlySaving } from "./billing";
 import { CURRENCIES, formatMoney, fromUsd, isConverted, type CurrencyCode } from "./currency";
 import { readSettings } from "./settings";
+import { rateOverrides, refreshRates } from "./rates";
+import { after } from "next/server";
 import { dict } from "./i18n";
 import type { PricingCopy } from "@/components/pricing";
 import type { Locale } from "./types";
@@ -30,12 +32,20 @@ export async function pricingCopy(locale: Locale, code: CurrencyCode = "SAR"): P
   const monthlyCharge = await inChargeCurrency(plans.monthly.amount);
   const yearlyCharge = await inChargeCurrency(plans.yearly.amount);
 
-  // Sterling and the Australian dollar float; an owner can correct them without
-  // a deploy. The Gulf pegs are set by central banks and are left alone.
-  const rates: Partial<Record<CurrencyCode, number>> = {
-    GBP: settings["pricing.gbp_per_usd"] || undefined,
-    AUD: settings["pricing.aud_per_usd"] || undefined,
-  };
+  // Sterling and the Australian dollar float, so they come from the European
+  // Central Bank's daily set, and an owner's own figure still outranks it. The
+  // Gulf pegs are set by central banks and are left alone. See src/lib/rates.ts.
+  const rates: Partial<Record<CurrencyCode, number>> = await rateOverrides();
+
+  /**
+   * Refreshed after the response has been sent, not before it.
+   *
+   * A price page must not wait on somebody else's server to render. `after`
+   * runs this once the page is on its way, and `refreshRates` returns
+   * immediately unless the stored figures are a day old, so this costs a
+   * settings read that has already happened on all but one request a day.
+   */
+  after(() => refreshRates());
 
   const usdPerHalala = monthlyCharge.amount / plans.monthly.amount;
   const show = (halalas: number) =>
