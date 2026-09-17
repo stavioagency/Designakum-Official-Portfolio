@@ -29,18 +29,25 @@ export type Block =
  * Lifted from globals.css rather than imported: an email cannot carry a
  * stylesheet, so every value has to be written into the markup inline. These are
  * copies, and the comment is the only thing keeping them honest.
+ *
+ * Light, unlike the rest of the platform, and deliberately so. The email used
+ * to carry the product's own dark palette, and Gmail converted it: a dark
+ * message shown on a light ground, with the card turned lavender, the button
+ * turned periwinkle and the white logo left invisible on white. A client that
+ * rewrites your colours is not a bug you can fix from here, so the email is
+ * authored the way clients expect and nothing has a reason to touch it.
  */
 const C = {
-  page: "#07080e", // ink-950
-  card: "#10121d", // ink-850
-  well: "#151824", // ink-800
-  line: "#1c2030", // ink-700
-  bright: "#f6f6fb", // mist-50
-  body: "#b9b9cc", // mist-300
-  muted: "#6e6e85", // mist-500
+  page: "#f4f5f9",
+  card: "#ffffff",
+  well: "#f0f2f8",
+  line: "#dfe3ee",
+  bright: "#0d1020",
+  body: "#414761",
+  muted: "#6e7488",
   accent: "#2563c9", // brand-500
   accentDeep: "#1b4d9b", // brand-600
-  ring: "#7cb0ff", // brand-300
+  ring: "#1b4d9b", // brand-600, for links on a light ground
 } as const;
 
 /**
@@ -129,7 +136,8 @@ export function toHtml(blocks: Block[], options: RenderOptions): string {
   const align = rtl ? "right" : "left";
   const font = rtl ? FONT_AR : FONT_EN;
   const copy = COPY[rtl ? "ar" : "en"];
-  const logoSrc = options.logoSrc ?? `${origin}/brand/wordmark-light.png`;
+  // The blue mark: the fallback has to read on the light ground too.
+  const logoSrc = options.logoSrc ?? `${origin}/brand/wordmark-brand.png`;
 
   const base = `margin:0;font-family:${font};text-align:${align};`;
 

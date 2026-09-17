@@ -48,7 +48,7 @@ const hi = (greeting: string, name: string): Block => ({ type: "h", text: `${gre
 
 const passwordReset: Template<{ name: string; link: string }> = {
   ar: ({ name, link }) => ({
-    subject: "إعادة تعيين كلمة المرور — ديزاينكم",
+    subject: "إعادة تعيين كلمة المرور · ديزاينكم",
     preheader: "الرابط صالح لمدة ساعة واحدة.",
     blocks: [
       hi("مرحبًا", name),
@@ -61,7 +61,7 @@ const passwordReset: Template<{ name: string; link: string }> = {
     ],
   }),
   en: ({ name, link }) => ({
-    subject: "Reset your password — Designakum",
+    subject: "Reset your password · Designakum",
     preheader: "The link works for one hour.",
     blocks: [
       hi("Hi", name),
@@ -69,7 +69,7 @@ const passwordReset: Template<{ name: string; link: string }> = {
       { type: "cta", label: "Set a new password", url: link },
       {
         type: "note",
-        text: "The link works for one hour. If you didn't ask for this, ignore this message — nothing about your account changes.",
+        text: "The link works for one hour. If you didn't ask for this, ignore this message, nothing about your account changes.",
       },
     ],
   }),
@@ -146,7 +146,7 @@ const invitation: Template<{ code: string; signupUrl: string; months: number }> 
         text: `It gives you ${months} month${months === 1 ? "" : "s"} of subscription, free.`,
       },
       { type: "cta", label: "Create my account", url: signupUrl },
-      { type: "note", text: "The code is already in the link — you don't need to type it." },
+      { type: "note", text: "The code is already in the link, you don't need to type it." },
     ],
   }),
 };
@@ -156,7 +156,7 @@ const invitation: Template<{ code: string; signupUrl: string; months: number }> 
 /** To the address being moved *to*. Opening this is what proves it is theirs. */
 const emailChangeVerify: Template<{ name: string; link: string; newEmail: string }> = {
   ar: ({ name, link, newEmail }) => ({
-    subject: "أكّد بريدك الجديد — ديزاينكم",
+    subject: "أكّد بريدك الجديد · ديزاينكم",
     preheader: "الرابط صالح لمدة نصف ساعة.",
     blocks: [
       hi("مرحبًا", name),
@@ -166,12 +166,12 @@ const emailChangeVerify: Template<{ name: string; link: string; newEmail: string
       { type: "cta", label: "أكّد البريد الجديد", url: link },
       {
         type: "note",
-        text: "الرابط صالح لمدة نصف ساعة. إن لم تطلب ذلك فتجاهل هذه الرسالة — لن يُستخدم بريدك في أي حساب.",
+        text: "الرابط صالح لمدة نصف ساعة. إن لم تطلب ذلك فتجاهل هذه الرسالة، لن يُستخدم بريدك في أي حساب.",
       },
     ],
   }),
   en: ({ name, link, newEmail }) => ({
-    subject: "Confirm your new email — Designakum",
+    subject: "Confirm your new email · Designakum",
     preheader: "The link works for thirty minutes.",
     blocks: [
       hi("Hi", name),
@@ -181,7 +181,7 @@ const emailChangeVerify: Template<{ name: string; link: string; newEmail: string
       { type: "cta", label: "Confirm this address", url: link },
       {
         type: "note",
-        text: "The link works for thirty minutes. If you didn't ask for this, ignore this message — your address will not be used on any account.",
+        text: "The link works for thirty minutes. If you didn't ask for this, ignore this message, your address will not be used on any account.",
       },
     ],
   }),
@@ -204,7 +204,7 @@ const emailChangeNotice: Template<{ name: string; newEmail: string; resetUrl: st
       { type: "p", text: "طُلب نقل حسابك في ديزاينكم إلى بريد إلكتروني آخر:" },
       { type: "link", label: "البريد المطلوب", url: newEmail },
       { type: "p", text: "لن يتم النقل إلا بعد تأكيد صاحب البريد الجديد." },
-      { type: "p", text: "إن لم تكن أنت من طلب ذلك، غيّر كلمة مرورك فورًا — الطلب يُلغى تلقائيًا عند تغييرها:" },
+      { type: "p", text: "إن لم تكن أنت من طلب ذلك، غيّر كلمة مرورك فورًا، الطلب يُلغى تلقائيًا عند تغييرها:" },
       { type: "cta", label: "غيّر كلمة المرور", url: resetUrl },
     ],
   }),
@@ -218,7 +218,7 @@ const emailChangeNotice: Template<{ name: string; newEmail: string; resetUrl: st
       { type: "p", text: "Nothing moves until the owner of that address confirms it." },
       {
         type: "p",
-        text: "If this wasn't you, change your password now — doing so cancels the request:",
+        text: "If this wasn't you, change your password now, doing so cancels the request:",
       },
       { type: "cta", label: "Change my password", url: resetUrl },
     ],
@@ -259,7 +259,7 @@ const welcome: Template<{ name: string; portfolioUrl: string; dashboardUrl: stri
       hi("أهلاً", name),
       { type: "p", text: "حسابك جاهز، وصفحتك محجوزة على هذا الرابط:" },
       { type: "link", label: "رابط صفحتك", url: portfolioUrl },
-      { type: "p", text: "ابدأ من لوحة التحكم — أضف أعمالك وصورك وطرق التواصل معك." },
+      { type: "p", text: "ابدأ من لوحة التحكم، أضف أعمالك وصورك وطرق التواصل معك." },
       { type: "cta", label: "افتح لوحة التحكم", url: dashboardUrl },
       {
         type: "note",
@@ -276,7 +276,7 @@ const welcome: Template<{ name: string; portfolioUrl: string; dashboardUrl: stri
       { type: "link", label: "Your page", url: portfolioUrl },
       {
         type: "p",
-        text: "Start in your dashboard — add your work, your images and how people reach you.",
+        text: "Start in your dashboard: add your work, your images and how people reach you.",
       },
       { type: "cta", label: "Open my dashboard", url: dashboardUrl },
       {
@@ -300,7 +300,7 @@ const welcome: Template<{ name: string; portfolioUrl: string; dashboardUrl: stri
  */
 const ticketResolved: Template<{ name: string; subject: string; ticketUrl: string }> = {
   ar: ({ name, subject, ticketUrl }) => ({
-    subject: `تم حل تذكرتك — ${subject}`,
+    subject: `تم حل تذكرتك, ${subject}`,
     preheader: "إن لم تُحل فعلًا، ردّك يعيد فتحها.",
     blocks: [
       hi("مرحبًا", name),
@@ -309,12 +309,12 @@ const ticketResolved: Template<{ name: string; subject: string; ticketUrl: strin
       { type: "cta", label: "عرض التذكرة", url: ticketUrl },
       {
         type: "note",
-        text: "إن كانت المشكلة ما زالت قائمة، ردّ على التذكرة وستُفتح من جديد تلقائيًا — لا حاجة لفتح تذكرة أخرى.",
+        text: "إن كانت المشكلة ما زالت قائمة، ردّ على التذكرة وستُفتح من جديد تلقائيًا، لا حاجة لفتح تذكرة أخرى.",
       },
     ],
   }),
   en: ({ name, subject, ticketUrl }) => ({
-    subject: `Your ticket is resolved — ${subject}`,
+    subject: `Your ticket is resolved, ${subject}`,
     preheader: "If it isn't, replying reopens it.",
     blocks: [
       hi("Hi", name),
@@ -323,7 +323,7 @@ const ticketResolved: Template<{ name: string; subject: string; ticketUrl: strin
       { type: "cta", label: "View the ticket", url: ticketUrl },
       {
         type: "note",
-        text: "If the problem is still there, reply on the ticket and it reopens automatically — you don't need to start a new one.",
+        text: "If the problem is still there, reply on the ticket and it reopens automatically, you don't need to start a new one.",
       },
     ],
   }),
@@ -339,7 +339,7 @@ const subscriptionActivated: Template<{
   portfolioUrl: string;
 }> = {
   ar: ({ name, plan, charged, renewsOn, portfolioUrl }) => ({
-    subject: "تم تفعيل اشتراكك — ديزاينكم",
+    subject: "تم تفعيل اشتراكك · ديزاينكم",
     preheader: "يمكنك نشر صفحتك الآن.",
     blocks: [
       hi("مرحبًا", name),
@@ -357,7 +357,7 @@ const subscriptionActivated: Template<{
     ],
   }),
   en: ({ name, plan, charged, renewsOn, portfolioUrl }) => ({
-    subject: "Your subscription is active — Designakum",
+    subject: "Your subscription is active · Designakum",
     preheader: "You can publish your page now.",
     blocks: [
       hi("Hi", name),
@@ -378,7 +378,7 @@ const subscriptionActivated: Template<{
 
 const paymentFailed: Template<{ name: string; billingUrl: string }> = {
   ar: ({ name, billingUrl }) => ({
-    subject: "تعذّر تحصيل اشتراكك — ديزاينكم",
+    subject: "تعذّر تحصيل اشتراكك · ديزاينكم",
     preheader: "صفحتك ما زالت منشورة، لكن ليس لوقت طويل.",
     blocks: [
       hi("مرحبًا", name),
@@ -392,7 +392,7 @@ const paymentFailed: Template<{ name: string; billingUrl: string }> = {
     ],
   }),
   en: ({ name, billingUrl }) => ({
-    subject: "We couldn't take your payment — Designakum",
+    subject: "We couldn't take your payment · Designakum",
     preheader: "Your page is still up, but not for long.",
     blocks: [
       hi("Hi", name),
@@ -409,7 +409,7 @@ const paymentFailed: Template<{ name: string; billingUrl: string }> = {
 
 const subscriptionEnded: Template<{ name: string; billingUrl: string }> = {
   ar: ({ name, billingUrl }) => ({
-    subject: "انتهى اشتراكك — ديزاينكم",
+    subject: "انتهى اشتراكك · ديزاينكم",
     preheader: "لم يُحذف أي شيء، والصفحة تعود فور التجديد.",
     blocks: [
       hi("مرحبًا", name),
@@ -422,7 +422,7 @@ const subscriptionEnded: Template<{ name: string; billingUrl: string }> = {
     ],
   }),
   en: ({ name, billingUrl }) => ({
-    subject: "Your subscription has ended — Designakum",
+    subject: "Your subscription has ended · Designakum",
     preheader: "Nothing was deleted; the page comes back on renewal.",
     blocks: [
       hi("Hi", name),

@@ -48,7 +48,9 @@ describe("what goes into the markup", () => {
   });
 
   test("the logo is absolute, because a mail client has no page to resolve it against", () => {
-    assert.match(render(), /src="https:\/\/designakum\.com\/brand\/wordmark-light\.png"/);
+    // The blue mark, not the white one: the email is light, and a client that
+    // decides to show it on any other ground still has to be able to see it.
+    assert.match(render(), /src="https:\/\/designakum\.com\/brand\/wordmark-brand\.png"/);
   });
 
   test("the logo is attached, not fetched, when the mailer says so", () => {
@@ -59,7 +61,7 @@ describe("what goes into the markup", () => {
     });
     assert.match(html, /src="cid:designakum-wordmark"/);
     assert.ok(
-      !html.includes("brand/wordmark-light.png"),
+      !html.includes("brand/wordmark-brand.png"),
       "still pointing at the remote copy Outlook refuses to load",
     );
   });
@@ -85,5 +87,38 @@ describe("the plain-text half", () => {
 
   test("it never runs to three blank lines", () => {
     assert.ok(!toText(every).includes("\n\n\n"));
+  });
+});
+
+describe("the ground it is painted on", () => {
+  /**
+   * Authored light on purpose. A dark email is not a style choice a client
+   * respects: Gmail converted ours to light, turned the card lavender and left
+   * a white logo invisible on white. Nothing in here is worth a second round of
+   * that, so the page colour stays light and this says so out loud.
+   */
+  test("the page and card are light", () => {
+    const html = toHtml([{ type: "p", text: "hello" }], {
+      locale: "en",
+      origin: "https://designakum.com",
+    });
+
+    const page = html.match(/<body style="[^"]*background-color:(#[0-9a-f]{6})/i)?.[1];
+    assert.ok(page, "the body has no background colour at all");
+
+    const brightness = (hex: string) => {
+      const n = parseInt(hex.slice(1), 16);
+      return (((n >> 16) & 255) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000;
+    };
+    assert.ok(brightness(page!) > 200, `the email ground is dark again: ${page}`);
+  });
+
+  test("body text is dark enough to read on it", () => {
+    const html = toHtml([{ type: "p", text: "hello" }], {
+      locale: "en",
+      origin: "https://designakum.com",
+    });
+    // No near-white text left over from the dark palette.
+    assert.ok(!/color:#f6f6fb/i.test(html), "text is still the dark theme's near-white");
   });
 });

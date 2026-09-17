@@ -55,8 +55,10 @@ const cases = (locale: "ar" | "en") => ({
   "subscription-active": emailTemplate.subscriptionActivated(locale, {
     name: name[locale],
     plan: locale === "ar" ? "الباقة السنوية" : "Yearly",
-    charged: locale === "ar" ? "٣٤٩ ر.س" : "SAR 349",
-    renewsOn: locale === "ar" ? "١٦ سبتمبر ٢٠٢٧" : "16 September 2027",
+    // Latin digits, as the product actually formats them: sample data that
+    // does not match what is sent is a preview that can mislead you.
+    charged: locale === "ar" ? "349 ر.س" : "SAR 349",
+    renewsOn: locale === "ar" ? "16 سبتمبر 2027" : "16 September 2027",
     portfolioUrl: `${origin}/p/faisal`,
   }),
   "payment-failed": emailTemplate.paymentFailed(locale, {

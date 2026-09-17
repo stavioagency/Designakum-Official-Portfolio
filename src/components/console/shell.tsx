@@ -49,7 +49,17 @@ export function ConsoleShell({
 
   return (
     <div className="relative z-10 min-h-dvh lg:grid lg:grid-cols-[260px_minmax(0,1fr)]">
-      <aside className="sticky top-0 z-40 border-b border-white/8 bg-ink-950/80 backdrop-blur-xl lg:h-dvh lg:border-b-0 lg:border-s lg:border-white/8">
+      {/*
+        A column, not a box with something absolutely pinned to the floor of it.
+
+        The account card used to be `absolute bottom-0`, which is only ever
+        correct while the sidebar is shorter than the screen. It is not: twelve
+        console sections, a dashboard link and a row of controls overflow a
+        laptop, and the card was landing on top of the controls above it. As a
+        flex column the links take the space that is left and scroll, and the
+        card sits after them wherever that happens to be.
+      */}
+      <aside className="sticky top-0 z-40 border-b border-white/8 bg-ink-950/80 backdrop-blur-xl lg:flex lg:h-dvh lg:flex-col lg:border-b-0 lg:border-s lg:border-white/8">
         <div className="flex h-16 items-center justify-between gap-2 px-4 lg:h-auto lg:px-5 lg:py-6">
           <LogoLockup href="/console" size={36} />
 
@@ -76,11 +86,11 @@ export function ConsoleShell({
           </div>
         </div>
 
-        <div className="hidden px-3 pb-3 lg:block lg:px-3">
+        <div className="no-scrollbar hidden px-3 pb-3 lg:block lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:px-3">
           <ConsoleNav items={items} />
         </div>
 
-        <div className="hidden px-3 lg:mt-auto lg:block">
+        <div className="hidden shrink-0 px-3 lg:block">
           <Link
             href="/dashboard"
             className="flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-[13px] text-mist-500 transition hover:bg-white/[0.05] hover:text-white"
@@ -109,7 +119,7 @@ export function ConsoleShell({
           </div>
         </div>
 
-        <div className="hidden lg:absolute lg:inset-x-0 lg:bottom-0 lg:block lg:p-3">
+        <div className="hidden shrink-0 lg:block lg:p-3">
           <div className="panel flex items-center gap-3 p-3">
             <span className="accent-grad grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[13px] font-bold">
               {(user.display_name || user.email).trim().charAt(0).toUpperCase()}
