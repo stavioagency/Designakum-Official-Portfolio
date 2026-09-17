@@ -57,12 +57,19 @@ jobs:
             | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client-17
+          # Installing it is not enough: the runner image ships its own pg_dump
+          # at /usr/bin, and that one is 16, which refuses to dump a 17 server.
+          # This puts the version we just installed ahead of it.
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
 
       - name: Dump
         if: steps.config.outputs.ready == 'yes'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
+          # Printed so a future version mismatch is one line in the log rather
+          # than a puzzle.
+          pg_dump --version
           pg_dump --no-owner --no-privileges --clean --if-exists "$DATABASE_URL" > designakum.sql
           # A dump that is suspiciously small means the connection succeeded and
           # the data did not come with it. Better to fail than to file it.
