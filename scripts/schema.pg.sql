@@ -47,6 +47,8 @@ CREATE TABLE IF NOT EXISTS portfolios (
   theme            TEXT NOT NULL DEFAULT 'brand',
   accent_hex       TEXT NOT NULL DEFAULT '',   -- overrides theme when set
   background_hex   TEXT NOT NULL DEFAULT '',   -- '' means the platform's dark ground
+  works_label      TEXT NOT NULL DEFAULT '',   -- '' means the translated default
+  hide_branding    INTEGER NOT NULL DEFAULT 0, -- honoured only while subscribed
   locale           TEXT NOT NULL DEFAULT 'ar',
   footer_note      TEXT NOT NULL DEFAULT '',
   published        INTEGER NOT NULL DEFAULT 0,

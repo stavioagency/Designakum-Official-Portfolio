@@ -10,6 +10,7 @@
  *
  *   npm run migrate          apply the base schema, then anything pending
  *   npm run migrate -- --dry list what would be applied and stop
+ *   npm run migrate -- --if-configured  skip silently with no DATABASE_URL
  *   npm run migrate:down     revert the most recent migration (needs a .down.sql)
  *
  * A migration that has already been applied is never re-run, and editing one
@@ -40,7 +41,22 @@ const connectionString =
     return undefined;
   })();
 
+/**
+ * `--if-configured` turns a missing database into a skip rather than a failure.
+ *
+ * This runs as part of the build, and `next build` deliberately does not need
+ * database credentials — the pool is built lazily so a machine with no business
+ * holding them can still build. Without this flag, adding migrations to the
+ * build would take that away and fail any build run without a DATABASE_URL.
+ *
+ * A configured database that then fails to migrate is still fatal, which is the
+ * point: a deploy must not ship code whose schema never arrived.
+ */
 if (!connectionString) {
+  if (process.argv.includes("--if-configured")) {
+    console.log("No DATABASE_URL — skipping migrations.");
+    process.exit(0);
+  }
   console.error("DATABASE_URL is not set, and .env.local does not carry one.");
   process.exit(1);
 }

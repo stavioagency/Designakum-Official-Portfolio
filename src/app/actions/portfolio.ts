@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { storeImage } from "@/lib/assets";
 import { canPublish } from "@/lib/billing";
 import { isSafeUrl, socialHref } from "@/lib/safe-url";
-import { all } from "@/lib/db";
+import { all, now, run } from "@/lib/db";
 import {
   TenantError,
   addChild,
@@ -41,6 +41,44 @@ function refresh(slug: string) {
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/preview");
   revalidatePath(`/p/${slug}`);
+}
+
+/**
+ * Turns the "made with Designakum" line off, or back on.
+ *
+ * Its own action rather than a field on the profile form, because the
+ * entitlement has to be enforced somewhere a browser cannot reach around. A
+ * customer without an active subscription is not shown the control, and if the
+ * request arrives anyway it is refused here.
+ *
+ * Note that turning it off is stored even though it is conditional: the public
+ * page checks the subscription again at render time, so a lapse restores the
+ * line without discarding what the customer asked for, and resubscribing puts
+ * their choice back exactly as it was.
+ */
+export async function setBrandingAction(
+  _prev: { ok?: string; error?: string } | null,
+  fd: FormData,
+): Promise<{ ok?: string; error?: string } | null> {
+  try {
+    const { user, id, slug } = await withPortfolio(fd);
+
+    if (!(await canPublish(user))) return { error: (await messages()).brandingNeedsPlan };
+
+    const hide = fd.get("hide") === "1";
+    await run(
+      "UPDATE portfolios SET hide_branding = ?, updated_at = ? WHERE id = ?",
+      hide ? 1 : 0,
+      now(),
+      id,
+    );
+
+    refresh(slug);
+    const m = await messages();
+    return { ok: hide ? m.brandingHidden : m.brandingShown };
+  } catch (error) {
+    return await fail(error);
+  }
 }
 
 async function withPortfolio(fd: FormData): Promise<{ user: User; id: string; slug: string }> {

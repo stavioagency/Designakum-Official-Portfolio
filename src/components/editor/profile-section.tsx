@@ -187,6 +187,16 @@ export function ProfileSection({
           </div>
         </Field>
 
+        <Field label={t.worksLabel} hint={t.worksLabelHint}>
+          <input
+            name="works_label"
+            defaultValue={portfolio.works_label}
+            className="field"
+            maxLength={40}
+            placeholder={t.worksLabelPlaceholder}
+          />
+        </Field>
+
         <Field label={t.background}>
           <p className="mb-2.5 text-[12.5px] leading-relaxed text-mist-400">{t.backgroundHint}</p>
 

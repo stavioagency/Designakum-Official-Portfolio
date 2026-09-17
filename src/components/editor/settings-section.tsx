@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { publishAction, saveSlugAction } from "@/app/actions/portfolio";
 import { changePasswordAction } from "@/app/actions/auth";
+import { setBrandingAction } from "@/app/actions/portfolio";
 import { EmailChange } from "@/components/account/email-change";
 import { Check, Link as LinkIcon } from "@/components/icons";
 import type { Portfolio, User } from "@/lib/types";
@@ -39,6 +40,7 @@ export function SettingsSection({
   const [slugState, saveSlug] = useActionState(saveSlugAction, null);
   const [passwordState, changePassword] = useActionState(changePasswordAction, null);
   const [publishState, publish] = useActionState(publishAction, null);
+  const [brandingState, setBranding] = useActionState(setBrandingAction, null);
   const [copied, setCopied] = useState(false);
 
   const publicUrl = `${origin}/p/${portfolio.slug}`;
@@ -162,6 +164,31 @@ export function SettingsSection({
           {t.accountNote}
         </p>
       </section>
+
+      {/*
+        Only shown to a customer who can actually have it. The server checks the
+        same entitlement again — this is what they see, not what enforces it.
+      */}
+      {canPublish && (
+        <section className="card space-y-4 p-5 sm:p-6">
+          <header>
+            <h2 className="text-lg font-semibold">{t.branding}</h2>
+            <p className="mt-1 text-[13px] leading-relaxed text-mist-400">{t.brandingNote}</p>
+          </header>
+
+          <form action={setBranding} className="flex flex-wrap items-center gap-3">
+            <input type="hidden" name="portfolioId" value={portfolio.id} />
+            <input type="hidden" name="hide" value={portfolio.hide_branding === 1 ? "0" : "1"} />
+            <Submit pendingLabel={copy.common.saving}>
+              {portfolio.hide_branding === 1 ? t.brandingShow : t.brandingHide}
+            </Submit>
+            <span className="text-[12.5px] text-mist-500">
+              {portfolio.hide_branding === 1 ? t.brandingIsHidden : t.brandingIsShown}
+            </span>
+            <Status state={brandingState} />
+          </form>
+        </section>
+      )}
 
       <EmailChange
         currentEmail={user.email}

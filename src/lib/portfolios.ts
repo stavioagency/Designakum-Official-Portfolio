@@ -175,6 +175,7 @@ const PROFILE_FIELDS = [
   "theme",
   "accent_hex",
   "background_hex",
+  "works_label",
   "footer_note",
 ] as const;
 

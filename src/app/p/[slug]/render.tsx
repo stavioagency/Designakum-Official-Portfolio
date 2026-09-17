@@ -143,6 +143,11 @@ export async function PortfolioPage({ slug }: { slug: string }) {
         rules={localized(settings, "rules.portfolio", locale)}
         reportCopy={d.report}
         viewerLocale={locale}
+        // Both halves have to hold: what they asked for, and whether they are
+        // currently entitled to it. `ownerMayPublish` is the live subscription
+        // — the same check that decides the page is public at all — so a lapse
+        // brings the line back on its own.
+        hideBranding={portfolio.hide_branding === 1 && ownerMayPublish}
       />
       {canEdit && (
         <Link

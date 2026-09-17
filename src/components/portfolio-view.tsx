@@ -10,6 +10,7 @@ import type { Dictionary } from "@/lib/i18n";
 import { safeUrl, socialHref } from "@/lib/safe-url";
 import { accentStyle } from "@/lib/accent";
 import { surfaceStyle } from "@/lib/surface";
+import { ProjectDetail } from "./project-detail";
 import type { PortfolioBundle, Locale } from "@/lib/types";
 
 function waHref(number: string) {
@@ -61,6 +62,7 @@ export function PortfolioView({
   rules = "",
   reportCopy,
   viewerLocale,
+  hideBranding = false,
 }: {
   bundle: PortfolioBundle;
   /** True on the real public page — previews must not record analytics. */
@@ -73,6 +75,12 @@ export function PortfolioView({
    */
   reportCopy?: Dictionary["report"];
   viewerLocale?: Locale;
+  /**
+   * Decided by the caller against the live subscription, not by the stored
+   * preference alone — a lapsed account shows the line again without anything
+   * having to reach in and change what they asked for.
+   */
+  hideBranding?: boolean;
 }) {
   const { portfolio, slides, projects, stats, socials } = bundle;
   const locale = portfolio.locale;
@@ -232,7 +240,7 @@ export function PortfolioView({
                 <div className="mb-4 flex items-baseline justify-between">
                   <h2 className="flex items-center gap-2 text-lg font-semibold">
                     <span className="accent-grad h-5 w-1 rounded-full" />
-                    {d.works}
+                    {portfolio.works_label || d.works}
                   </h2>
                   <span className="tnum text-[12.5px] text-mist-500">{fill(d.worksCount, { n: projects.length })}</span>
                 </div>
@@ -270,25 +278,25 @@ export function PortfolioView({
                       </>
                     );
 
-                    const className =
-                      "card card-tight lift group block overflow-hidden";
-
-                    const link = safeUrl(project.link);
-
-                    return link ? (
-                      <a
+                    /**
+                     * The card opens the item rather than leaving for its link.
+                     * A thumbnail and two clipped lines are enough to browse and
+                     * not enough to decide, and the link is still one press away
+                     * inside — where it is labelled, instead of being whatever
+                     * happens when you touch a picture.
+                     */
+                    return (
+                      <div
                         key={project.id}
-                        href={link}
-                        target="_blank"
-                        rel="noreferrer noopener nofollow ugc"
-                        data-track="project"
-                        className={className}
+                        className="card card-tight lift group relative block overflow-hidden"
                       >
                         {Card}
-                      </a>
-                    ) : (
-                      <div key={project.id} className={className}>
-                        {Card}
+                        <ProjectDetail
+                          project={{ ...project, link: safeUrl(project.link) ?? "" }}
+                          openLabel={d.openProject}
+                          closeLabel={d.closeProject}
+                          visitLabel={d.visitProject}
+                        />
                       </div>
                     );
                   })}
@@ -317,7 +325,8 @@ export function PortfolioView({
 
           {/* Every published portfolio is a shop window for the platform, so it
               signs its own work — quietly, under the customer's own copyright
-              line rather than over it. */}
+              line rather than over it. A paying customer may turn it off. */}
+          {!hideBranding && (
           <Link
             href="/"
             aria-label={d.poweredBy}
@@ -326,6 +335,7 @@ export function PortfolioView({
             {d.madeWith}
             <Wordmark height={13} className="opacity-70" />
           </Link>
+          )}
         </footer>
       </main>
     </div>

@@ -16,7 +16,7 @@
     "migrate:down": "node scripts/migrate.mjs --down",
     "bootstrap": "node scripts/bootstrap.mjs",
     "brand:manifest": "node scripts/brand-manifest.mjs",
-    "prebuild": "node scripts/brand-manifest.mjs",
+    "prebuild": "node scripts/brand-manifest.mjs && node scripts/migrate.mjs --if-configured",
     "build:local": "NEXT_DIST_DIR=.next-build next build",
     "start:local": "NEXT_DIST_DIR=.next-build next start -p 3000",
     "pretest": "node scripts/check-dev-server.mjs"

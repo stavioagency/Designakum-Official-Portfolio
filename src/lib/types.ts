@@ -75,6 +75,8 @@ export interface Portfolio {
   /** A custom accent colour. Empty means the theme decides. */
   accent_hex: string;
   background_hex: string;
+  works_label: string;
+  hide_branding: number;
   locale: Locale;
   footer_note: string;
   published: number;
