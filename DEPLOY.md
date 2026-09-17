@@ -138,6 +138,18 @@ recorded and verified exactly as before, and a member of staff attaches it by
 hand in the dashboard. The customer is never shown a message about credentials
 the platform failed to configure.
 
+**The recommendation is to leave them unset.** A Vercel token cannot be scoped
+to a single project, so whatever the application held could also delete the
+project it runs on, and the application is the public web server: the most
+exposed thing in the stack. `.github/workflows/domains.yml` does the same job
+from CI every ten minutes, where the token sits in GitHub's secret store and
+nothing is listening on port 443. It only ever attaches hostnames already
+recorded in our own database, so it cannot be talked into claiming a domain
+nobody asked for.
+
+Either way, **Console → Domains** lists every customer domain and its state, so
+the step can always be done by hand.
+
 A domain held by a different hosting account is reported back plainly, because
 that is the one case only the customer can fix.
 

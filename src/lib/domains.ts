@@ -212,3 +212,23 @@ export async function recordCheck(domain: Domain, result: CheckResult, error: st
     domain.id,
   );
 }
+
+/**
+ * Every customer domain on the platform, for staff.
+ *
+ * Exists because attaching a domain to the hosting account is a step the app
+ * cannot take on its own without holding a credential that can delete the
+ * platform. Staff do it, so staff need to see which domains are waiting.
+ */
+export async function allDomains(): Promise<
+  (Domain & { slug: string; email: string })[]
+> {
+  return await all<Domain & { slug: string; email: string }>(
+    `SELECT d.*, p.slug, u.email
+       FROM domains d
+       JOIN portfolios p ON p.id = d.portfolio_id
+       JOIN users u ON u.id = p.user_id
+      ORDER BY d.created_at DESC
+      LIMIT 200`,
+  );
+}

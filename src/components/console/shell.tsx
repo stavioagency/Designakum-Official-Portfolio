@@ -41,6 +41,7 @@ export function ConsoleShell({
     { href: "/console/announcements", label: nav.announcements, icon: "megaphone", permission: "announcements.manage" },
     { href: "/console/audit", label: nav.audit, icon: "history", permission: "audit.view" },
     { href: "/console/errors", label: nav.errors, icon: "alert", permission: "settings.manage", badge: counts.errors },
+    { href: "/console/domains", label: nav.domains, icon: "globe", permission: "settings.manage" },
     { href: "/console/settings", label: nav.settings, icon: "sliders", permission: "settings.manage" },
   ]
     .filter((item) => can(user, item.permission as Parameters<typeof can>[1]))

@@ -1,0 +1,44 @@
+# Attaches customer custom domains to the hosting account.
+#
+# In CI rather than in the application because a Vercel token cannot be scoped
+# to one project: whatever the app held could also delete the project it runs
+# on. See scripts/sync-domains.mjs.
+#
+# Secrets needed, in Settings, Secrets and variables, Actions:
+#   DATABASE_URL       the direct Postgres URI (port 5432)
+#   VERCEL_TOKEN       an API token for the account that owns the project
+#   VERCEL_PROJECT_ID  Vercel, project, Settings, General
+#   VERCEL_TEAM_ID     only when the project belongs to a team
+#
+# Until they are set the job logs a line and does nothing. A customer's domain
+# is recorded and verified either way; this is the step that makes the host
+# answer for it, and a member of staff can always do it by hand from
+# Console, Domains.
+name: Attach customer domains
+
+on:
+  schedule:
+    # Every ten minutes, which is the longest a customer waits after adding one.
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+# A second run while the first is still going would race it for the same names.
+concurrency:
+  group: attach-domains
+  cancel-in-progress: false
+
+jobs:
+  attach:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install pg --no-save
+      - run: node scripts/sync-domains.mjs
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}

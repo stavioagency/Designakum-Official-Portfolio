@@ -14,6 +14,7 @@ import {
   Sliders,
   Users,
   AlertTriangle,
+  Globe,
 } from "@/components/icons";
 
 const ICONS = {
@@ -28,6 +29,7 @@ const ICONS = {
   history: History,
   sliders: Sliders,
   alert: AlertTriangle,
+  globe: Globe,
 } as const;
 
 export type NavIcon = keyof typeof ICONS;
