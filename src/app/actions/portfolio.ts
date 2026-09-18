@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { storeImage, storeImageSized } from "@/lib/assets";
 import { canPublish } from "@/lib/billing";
 import { isSafeUrl, safeUrl, socialHref } from "@/lib/safe-url";
+import { isButtonKind, isUsableButton } from "@/lib/buttons";
 import { addProjectImage, moveProjectImage, removeProjectImage } from "@/lib/project-images";
 import { all, now, run } from "@/lib/db";
 import {
@@ -29,8 +30,8 @@ export type ActionState = { ok?: string; error?: string } | null;
 
 const str = (fd: FormData, key: string) => String(fd.get(key) ?? "").trim();
 
-type ChildTable = "slides" | "projects" | "stats" | "socials";
-const TABLES: ChildTable[] = ["slides", "projects", "stats", "socials"];
+type ChildTable = "slides" | "projects" | "stats" | "socials" | "buttons";
+const TABLES: ChildTable[] = ["slides", "projects", "stats", "socials", "buttons"];
 
 function table(fd: FormData): ChildTable {
   const t = str(fd, "table") as ChildTable;
@@ -148,8 +149,6 @@ export async function saveProfileAction(_prev: ActionState, fd: FormData): Promi
       tagline: str(fd, "tagline"),
       bio: str(fd, "bio"),
       monogram: str(fd, "monogram").slice(0, 2),
-      whatsapp: str(fd, "whatsapp"),
-      whatsapp_label: str(fd, "whatsapp_label"),
       theme: theme as ThemeKey,
       locale: pageLocale,
       accent_hex: accentHex,
@@ -323,6 +322,9 @@ export async function addItemAction(_prev: ActionState, fd: FormData): Promise<A
       projects: { title: m.newProject, category: "" },
       stats: { label: m.newItem, value: "0", icon: "sparkle" },
       socials: { platform: "instagram", url: "" },
+      // A new button starts as WhatsApp because that is what most of them turn
+      // out to be, and an empty value keeps it off the page until it works.
+      buttons: { kind: "whatsapp", value: "", label: "" },
     };
     await addChild(t, id, user, defaults[t]);
     refresh(slug);
@@ -340,7 +342,7 @@ export async function saveItemAction(_prev: ActionState, fd: FormData): Promise<
     const image = await resolveImage(fd, "image", user);
 
     const fields: Record<string, string> = {};
-    for (const key of ["headline", "subline", "caption", "title", "category", "description", "link", "label", "value", "icon", "platform", "url"]) {
+    for (const key of ["headline", "subline", "caption", "title", "category", "description", "link", "label", "value", "icon", "platform", "url", "kind"]) {
       if (fd.get(key) !== null) fields[key] = str(fd, key);
     }
 
@@ -350,6 +352,23 @@ export async function saveItemAction(_prev: ActionState, fd: FormData): Promise<
     if (fields.link && !isSafeUrl(fields.link)) {
       return { error: m.badUrl };
     }
+    /**
+     * A contact button is checked here rather than only at render, and the two
+     * checks are the same function. A number nobody can dial saves as "saved",
+     * looks right in the editor and is simply missing from the page, which is
+     * the worst of the three possible outcomes.
+     */
+    if (t === "buttons") {
+      const kind = fields.kind ?? "whatsapp";
+      if (!isButtonKind(kind)) return { error: m.badUrl };
+      if (fields.value && !isUsableButton(kind, fields.value)) {
+        return {
+          error:
+            kind === "email" ? m.badEmail : kind === "link" ? m.badUrl : m.badNumber,
+        };
+      }
+    }
+
     if (fields.url !== undefined && fields.url !== "") {
       const platform = fields.platform ?? str(fd, "platform");
       if (!socialHref(platform || "website", fields.url)) {

@@ -28,7 +28,7 @@ import {
   money,
   nf,
 } from "@/components/console/ui";
-import { BarChart, Eye, ExternalLink, Users, Whatsapp } from "@/components/icons";
+import { BarChart, Eye, ExternalLink, Phone, Users } from "@/components/icons";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: dict(await currentLocale()).console.analytics.title };
@@ -60,7 +60,9 @@ export default async function AnalyticsPage({
   const signups = await registrationSeries(days);
   const subscriptions = await subscriptionSeries(days);
 
-  const whatsapp = await eventTotal("whatsapp", days);
+  /* Buttons were WhatsApp only until they were not, and the old rows are the
+     same click. Both kinds are counted under one figure. */
+  const contact = (await eventTotal("whatsapp", days)) + (await eventTotal("contact", days));
   const social = await eventTotal("social", days);
   const projects = await eventTotal("project", days);
 
@@ -73,7 +75,7 @@ export default async function AnalyticsPage({
   const riyalSrc = brandAsset("riyal");
 
   const totalViews = seriesTotal(views);
-  const hasTraffic = totalViews > 0 || whatsapp > 0 || social > 0;
+  const hasTraffic = totalViews > 0 || contact > 0 || social > 0;
 
   return (
     <>
@@ -109,10 +111,10 @@ export default async function AnalyticsPage({
           series={visitors}
         />
         <StatCard
-          label={t.whatsappClicks}
-          value={nf.format(whatsapp)}
+          label={t.contactClicks}
+          value={nf.format(contact)}
           hint={fill(t.socialHint, { n: nf.format(social) })}
-          icon={<Whatsapp className="h-4 w-4" />}
+          icon={<Phone className="h-4 w-4" />}
           tone="good"
         />
         <StatCard

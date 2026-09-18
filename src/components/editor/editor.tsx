@@ -9,13 +9,14 @@ import { ProfileSection } from "./profile-section";
 import { SettingsSection } from "./settings-section";
 import { Field } from "./ui";
 import { ImageField } from "./image-field";
-import { SOCIAL_META } from "@/components/icons";
+import { BUTTON_META, SOCIAL_META, buttonKindLabel } from "@/components/icons";
+import { BUTTON_KINDS, MAX_BUTTONS, isUsableButton } from "@/lib/buttons";
 import { StatIconPicker } from "./stat-icon-picker";
 import type { Locale } from "@/lib/types";
 import type { Dictionary } from "@/lib/i18n";
 import type { PortfolioBundle, SocialPlatform, User } from "@/lib/types";
 
-const TAB_KEYS = ["profile", "slides", "projects", "stats", "socials", "settings"] as const;
+const TAB_KEYS = ["profile", "slides", "projects", "stats", "socials", "buttons", "settings"] as const;
 
 type TabKey = (typeof TAB_KEYS)[number];
 
@@ -50,7 +51,7 @@ export function Editor({
   twoFactor: React.ComponentProps<typeof SettingsSection>["twoFactor"];
 }) {
   const [tab, setTab] = useState<TabKey>("profile");
-  const { portfolio, slides, projects, stats, socials, projectImages } = bundle;
+  const { portfolio, slides, projects, stats, socials, buttons, projectImages } = bundle;
 
   const imageChrome = {
     choose: copy.common.choose,
@@ -113,8 +114,9 @@ export function Editor({
               { tab: "projects", target: "tab-projects", ...copy.tour.steps[2] },
               { tab: "stats", target: "tab-stats", ...copy.tour.steps[3] },
               { tab: "socials", target: "tab-socials", ...copy.tour.steps[4] },
-              { tab: "settings", target: "tab-settings", ...copy.tour.steps[5] },
-              { target: "live-preview", ...copy.tour.steps[6] },
+              { tab: "buttons", target: "tab-buttons", ...copy.tour.steps[5] },
+              { tab: "settings", target: "tab-settings", ...copy.tour.steps[6] },
+              { target: "live-preview", ...copy.tour.steps[7] },
             ]}
           />
         </nav>
@@ -275,6 +277,58 @@ export function Editor({
                   <input name="url" defaultValue={social.url} className="field" dir="ltr" placeholder="https://instagram.com/username" />
                 </Field>
               </div>
+            )}
+          />
+        )}
+
+        {tab === "buttons" && (
+          <CollectionSection
+            table="buttons"
+            portfolioId={portfolio.id}
+            chrome={chrome}
+            items={buttons}
+            heading={copy.buttons.heading}
+            description={copy.buttons.description}
+            addLabel={copy.buttons.add}
+            emptyLabel={copy.buttons.empty}
+            confirmText={copy.buttons.confirm}
+            /* The number is the title, because that is what tells two WhatsApp
+               buttons apart. The label only appears once somebody writes one. */
+            itemTitle={(item) =>
+              item.label || item.value || copy.buttons.untitled
+            }
+            /* The cap is the product decision, so the form stops offering at
+               five rather than letting the server refuse the sixth. */
+            atLimit={buttons.length >= MAX_BUTTONS ? copy.buttons.full : undefined}
+            renderFields={(button) => (
+              <>
+                <div className="grid gap-4 sm:grid-cols-[180px_1fr]">
+                  <Field label={copy.buttons.kind}>
+                    <select name="kind" defaultValue={button.kind} className="field">
+                      {BUTTON_KINDS.map((kind) => (
+                        <option key={kind} value={kind}>
+                          {buttonKindLabel(kind, locale)}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label={copy.buttons.value}>
+                    <input
+                      name="value"
+                      defaultValue={button.value}
+                      className="field"
+                      dir="ltr"
+                      placeholder={BUTTON_META[button.kind]?.placeholder}
+                    />
+                  </Field>
+                </div>
+                <Field label={copy.buttons.label} hint={copy.buttons.labelHint}>
+                  <input name="label" defaultValue={button.label} className="field" />
+                </Field>
+                {!isUsableButton(button.kind, button.value) && (
+                  <p className="text-[12.5px] text-mist-500">{copy.buttons.unused}</p>
+                )}
+              </>
             )}
           />
         )}

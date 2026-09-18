@@ -1,3 +1,7 @@
+import type { ButtonKind } from "./buttons";
+
+export type { ButtonKind };
+
 export type Role = "owner" | "support" | "client";
 export type UserStatus = "active" | "suspended";
 export type Locale = "ar" | "en";
@@ -125,6 +129,20 @@ export interface Stat {
   position: number;
 }
 
+/**
+ * A call to action: message, call, write, book. `kind` decides how `value`
+ * becomes a link, and an empty `label` means the page writes the wording in its
+ * own language rather than leaving a button with nothing on it.
+ */
+export interface PortfolioButton {
+  id: string;
+  portfolio_id: string;
+  kind: ButtonKind;
+  value: string;
+  label: string;
+  position: number;
+}
+
 export interface Social {
   id: string;
   portfolio_id: string;
@@ -152,6 +170,7 @@ export interface PortfolioBundle {
   projects: Project[];
   stats: Stat[];
   socials: Social[];
+  buttons: PortfolioButton[];
   /** A project's own images, keyed by project id, in display order. */
   projectImages: Record<string, ProjectImageRow[]>;
 }

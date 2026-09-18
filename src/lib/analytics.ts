@@ -3,8 +3,14 @@ import { all, get, now, run } from "./db";
 import { newId } from "./ids";
 import { planDefinitions } from "./billing";
 
-export type EventKind = "view" | "whatsapp" | "social" | "project";
-export const EVENT_KINDS: EventKind[] = ["view", "whatsapp", "social", "project"];
+/**
+ * `whatsapp` is historic: contact buttons were WhatsApp and nothing else, and
+ * those rows are real clicks that still count. Everything since is `contact`,
+ * whichever kind of button it was, and the two are added together wherever the
+ * figure is shown.
+ */
+export type EventKind = "view" | "whatsapp" | "contact" | "social" | "project";
+export const EVENT_KINDS: EventKind[] = ["view", "whatsapp", "contact", "social", "project"];
 
 /**
  * Analytics days are cut in the platform's own timezone, not UTC.

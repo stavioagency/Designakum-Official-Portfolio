@@ -4,19 +4,15 @@ import { Wordmark } from "./brand/logo";
 import { ShareButton } from "./share-button";
 import { TrackEvents } from "./track-events";
 import { ReportDialog } from "./report-dialog";
-import { SOCIAL_META, STAT_ICONS, Whatsapp } from "./icons";
+import { BUTTON_META, SOCIAL_META, STAT_ICONS } from "./icons";
 import { DIR, dict, fill } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n";
 import { safeUrl, socialHref } from "@/lib/safe-url";
 import { accentStyle } from "@/lib/accent";
+import { MAX_BUTTONS, buttonHref } from "@/lib/buttons";
 import { surfaceStyle } from "@/lib/surface";
 import { ProjectDetail } from "./project-detail";
 import type { PortfolioBundle, Locale } from "@/lib/types";
-
-function waHref(number: string) {
-  const digits = number.replace(/[^\d]/g, "");
-  return digits ? `https://wa.me/${digits}` : "#";
-}
 
 function Avatar({
   url,
@@ -82,21 +78,29 @@ export function PortfolioView({
    */
   hideBranding?: boolean;
 }) {
-  const { portfolio, slides, projects, stats, socials, projectImages } = bundle;
+  const { portfolio, slides, projects, stats, socials, buttons, projectImages } = bundle;
   const locale = portfolio.locale;
   const d = dict(locale).portfolio;
 
   /**
-   * Two columns only when there is something to put in the second one.
+   * Two columns only when there is work to put in the second one.
    *
-   * Images and projects are optional, and plenty of pages are a name, a few
-   * links and a way to get in touch. Those pages were laid out on a fixed
-   * two-column grid regardless, so on a desktop they rendered as a narrow strip
-   * of content beside an empty half-screen. With nothing for the right column
-   * the page stays a single centred column at the width it already uses on a
-   * phone, which is the same page, read the same way, on any screen.
+   * The projects are what fills a desktop's width. A page with none of them is
+   * a name, a few links and a way to get in touch, and spreading that across
+   * two columns leaves a narrow strip of content beside an empty half-screen.
+   * Featured images alone do not earn the second column either: they sit at the
+   * top of a single column and read as a banner, which is what they are.
+   *
+   * So with no projects the page stays one centred column at the width it uses
+   * on a phone: the same page, read the same way, on any screen.
    */
-  const wide = slides.length > 0 || projects.length > 0;
+  const wide = projects.length > 0;
+
+  /** The buttons that resolve to a real link, five at the most. */
+  const cta = buttons
+    .map((button) => ({ button, href: buttonHref(button.kind, button.value) }))
+    .filter((entry): entry is { button: (typeof buttons)[number]; href: string } => entry.href !== null)
+    .slice(0, MAX_BUTTONS);
 
   return (
     <div
@@ -197,7 +201,10 @@ export function PortfolioView({
             {/* ------------------------------------------------- hero */}
             {slides.length > 0 && (
               <section
-                className="rise min-w-0 @5xl:col-start-2 @5xl:row-start-1"
+                /* The second column only exists when there are projects, so on
+                   a page without them these images stay in the single column
+                   they are drawn in rather than conjuring an empty track. */
+                className={`rise min-w-0${wide ? " @5xl:col-start-2 @5xl:row-start-1" : ""}`}
                 style={{ animationDelay: "80ms" }}
               >
                 <HeroSlider slides={slides} tall />
@@ -206,7 +213,7 @@ export function PortfolioView({
 
             {/* ------------------------------ stats · contact · about */}
             <section
-              className="rise min-w-0 space-y-5 @5xl:col-start-1 @5xl:row-start-2"
+              className={`rise min-w-0 space-y-5${wide ? " @5xl:col-start-1 @5xl:row-start-2" : ""}`}
               style={{ animationDelay: "140ms" }}
             >
               {stats.length > 0 && (
@@ -237,19 +244,41 @@ export function PortfolioView({
                 </div>
               )}
 
-              {portfolio.whatsapp && (
-                <a
-                  href={waHref(portfolio.whatsapp)}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  data-track="whatsapp"
-                  className="btn btn-whatsapp"
-                >
-                  <span style={{ color: "#25D366" }}>
-                    <Whatsapp width={22} height={22} />
-                  </span>
-                  {portfolio.whatsapp_label || d.whatsapp}
-                </a>
+              {/*
+                The call to action, in as many as five parts.
+                A button with nothing usable in it is dropped rather than drawn
+                dead: on a page whose job is getting in touch, a button that
+                goes nowhere costs more than a missing one.
+              */}
+              {cta.length > 0 && (
+                <div className="flex flex-col gap-2.5">
+                  {cta.map(({ button, href }) => {
+                    const meta = BUTTON_META[button.kind] ?? BUTTON_META.link;
+                    const Icon = meta.Icon;
+                    // Only a web link leaves for another site; a phone number and
+                    // an email address are handed to the device instead, and a
+                    // new tab for those opens a blank window behind the dialler.
+                    const external = href.startsWith("http");
+
+                    return (
+                      <a
+                        key={button.id}
+                        href={href}
+                        data-kind={button.kind}
+                        data-track="contact"
+                        className="btn btn-cta"
+                        {...(external
+                          ? { target: "_blank", rel: "noreferrer noopener" }
+                          : null)}
+                      >
+                        <span style={{ color: meta.colour ?? "var(--accent-ring)" }}>
+                          <Icon width={22} height={22} />
+                        </span>
+                        {button.label || d.buttons[button.kind]}
+                      </a>
+                    );
+                  })}
+                </div>
               )}
 
               {portfolio.bio && (
@@ -343,7 +372,7 @@ export function PortfolioView({
 
         <footer className="mt-7 flex flex-col items-center gap-3 text-center">
           <p className="text-[12.5px] text-mist-500">
-            © {portfolio.footer_note || `${d.rights} — ${portfolio.name}`}{" "}
+            © {portfolio.footer_note || `${d.rights} · ${portfolio.name}`}{" "}
             {new Date().getFullYear()}
           </p>
           {reportsOpen && reportCopy && (

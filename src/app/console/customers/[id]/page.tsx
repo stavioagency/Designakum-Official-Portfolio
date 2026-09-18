@@ -79,7 +79,9 @@ export default async function CustomerProfilePage({
 
   const origin = await requestOrigin();
   const views = portfolio ? await eventSeries("view", 30, portfolio.id) : [];
-  const whatsappClicks = portfolio ? await eventTotal("whatsapp", 30, portfolio.id) : 0;
+  const contactClicks = portfolio
+    ? (await eventTotal("whatsapp", 30, portfolio.id)) + (await eventTotal("contact", 30, portfolio.id))
+    : 0;
   const socialClicks = portfolio ? await eventTotal("social", 30, portfolio.id) : 0;
   const riyalSrc = brandAsset("riyal");
 
@@ -152,10 +154,10 @@ export default async function CustomerProfilePage({
                 <Sparkline series={views} height={64} />
                 <div className="flex gap-3">
                   <div className="panel px-3.5 py-2.5 text-center">
-                    <p className="tnum text-[18px] font-bold">{nf.format(whatsappClicks)}</p>
+                    <p className="tnum text-[18px] font-bold">{nf.format(contactClicks)}</p>
                     <p className="mt-1 flex items-center justify-center gap-1 text-[11px] text-mist-500">
                       <Whatsapp className="h-3.5 w-3.5" />
-                      {t.whatsapp}
+                      {t.contact}
                     </p>
                   </div>
                   <div className="panel px-3.5 py-2.5 text-center">

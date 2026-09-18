@@ -10,22 +10,21 @@ import type { Locale, Portfolio } from "./types";
  * In the language the person chose at the gate, not always Arabic: an English
  * sign-up used to land in a dashboard full of Arabic placeholder copy they then
  * had to delete line by line.
+ *
+ * Words only. This used to seed two featured images as well, which were not
+ * images at all: an accent-coloured rectangle with "Welcome" written across it,
+ * on a designer's page, waiting to be found and deleted twice.
  */
 const STARTER: Record<Locale, {
   title: string;
   tagline: string;
   bio: string;
-  slides: [headline: string, subline: string][];
   stats: [label: string, value: string, icon: string][];
 }> = {
   ar: {
     title: "مصمم جرافيك",
     tagline: "خلّك دائمًا مميز مع تصميم يناسبك",
-    bio: "مصمم يهتم بالتفاصيل الصغيرة قبل الكبيرة. أعمل على الهويات البصرية، تصاميم السوشال ميديا، والمطبوعات — بنتيجة نظيفة تخدم رسالتك وتوصلها بوضوح.",
-    slides: [
-      ["أهلاً وسهلاً بكم", ""],
-      ["أعمال تليق بعلامتك", "خلّك دائمًا مميز مع تصميم يناسبك"],
-    ],
+    bio: "مصمم يهتم بالتفاصيل الصغيرة قبل الكبيرة. أعمل على الهويات البصرية، تصاميم السوشال ميديا، والمطبوعات، بنتيجة نظيفة تخدم رسالتك وتوصلها بوضوح.",
     stats: [
       ["التقييم", "4.9", "star"],
       ["الأعمال", "+120", "briefcase"],
@@ -35,11 +34,7 @@ const STARTER: Record<Locale, {
   en: {
     title: "Graphic Designer",
     tagline: "Design that makes your brand impossible to ignore",
-    bio: "A designer who sweats the small details before the big ones. I work on brand identities, social media design and print — clean results that carry your message and land it clearly.",
-    slides: [
-      ["Welcome", ""],
-      ["Work worthy of your brand", "Design that makes your brand impossible to ignore"],
-    ],
+    bio: "A designer who sweats the small details before the big ones. I work on brand identities, social media design and print, with clean results that carry your message and land it clearly.",
     stats: [
       ["Rating", "4.9", "star"],
       ["Projects", "120+", "briefcase"],
@@ -54,18 +49,6 @@ export const starterTitle = (locale: Locale = DEFAULT_LOCALE) => STARTER[locale]
 /** Give a brand-new portfolio something presentable to look at on first login. */
 export async function seedStarterContent(portfolio: Portfolio, locale: Locale = DEFAULT_LOCALE) {
   const copy = STARTER[locale] ?? STARTER[DEFAULT_LOCALE];
-
-  for (const [position, [headline, subline]] of copy.slides.entries()) {
-    await run(
-      `INSERT INTO slides (id, portfolio_id, image_url, headline, subline, caption, position)
-       VALUES (?, ?, '', ?, ?, '', ?)`,
-      newId("sld"),
-      portfolio.id,
-      headline,
-      subline || portfolio.title || copy.title,
-      position,
-    );
-  }
 
   for (const [position, [label, value, icon]] of copy.stats.entries()) {
     await run(
@@ -82,6 +65,19 @@ export async function seedStarterContent(portfolio: Portfolio, locale: Locale = 
   await run(
     "INSERT INTO socials (id, portfolio_id, platform, url, position) VALUES (?, ?, 'instagram', '', 0)",
     newId("soc"),
+    portfolio.id,
+  );
+
+  /**
+   * One empty contact button, waiting for a number.
+   *
+   * Not content, a prompt: the button is the single most valuable thing on a
+   * portfolio page, and an empty row in the editor is how somebody finds out
+   * they can have one. It renders nowhere until it holds a real number.
+   */
+  await run(
+    "INSERT INTO buttons (id, portfolio_id, kind, value, label, position) VALUES (?, ?, 'whatsapp', '', '', 0)",
+    newId("btn"),
     portfolio.id,
   );
 

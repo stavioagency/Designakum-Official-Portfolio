@@ -316,17 +316,26 @@ html[lang="en"] .display { font-family: var(--font-display), var(--font-latin), 
 .btn-danger { background: rgba(244, 63, 94, 0.12); border-color: rgba(244, 63, 94, 0.32); color: #fda4af; }
 .btn-danger:hover:not(:disabled) { background: rgba(244, 63, 94, 0.2); }
 
-.btn-whatsapp {
+/* A contact button on a public page. Full width, because it is the one thing
+   the page is asking the visitor to do. */
+.btn-cta {
   width: 100%;
   padding: 17px 20px;
   font-size: 16px;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--hairline);
-  color: #fff;
+  color: var(--color-mist-50);
 }
-.btn-whatsapp:hover {
+.btn-cta:hover {
   transform: translateY(-2px);
+  background: color-mix(in oklab, var(--accent-ring) 12%, transparent);
+  border-color: color-mix(in oklab, var(--accent-ring) 40%, transparent);
+  box-shadow: 0 18px 46px -24px color-mix(in oklab, var(--accent-ring) 80%, transparent);
+}
+/* WhatsApp lights up in its own green rather than the page's accent: the mark
+   is recognised by that colour before it is recognised by its shape. */
+.btn-cta[data-kind="whatsapp"]:hover {
   background: rgba(37, 211, 102, 0.12);
   border-color: rgba(37, 211, 102, 0.4);
   box-shadow: 0 18px 46px -24px rgba(37, 211, 102, 0.8);

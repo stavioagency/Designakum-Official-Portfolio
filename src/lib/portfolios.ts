@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
-import { DEFAULT_LOCALE, dict } from "./i18n";
+import { DEFAULT_LOCALE, dict, fill } from "./i18n";
+import { MAX_BUTTONS } from "./buttons";
 import { messages } from "./locale";
 import type {
   ProjectImageRow, Locale } from "./types";
@@ -11,6 +12,7 @@ import { DEFAULT_THEME } from "./types";
 import type {
   Portfolio,
   PortfolioBundle,
+  PortfolioButton,
   Project,
   Slide,
   Social,
@@ -85,11 +87,12 @@ async function uncachedLoadBundle(portfolio: Portfolio): Promise<PortfolioBundle
   const child = <T,>(table: string) =>
     all<T>(`SELECT * FROM ${table} WHERE portfolio_id = ? ORDER BY position, seq`, portfolio.id);
 
-  const [slides, projects, stats, socials] = await Promise.all([
+  const [slides, projects, stats, socials, buttons] = await Promise.all([
     child<Slide>("slides"),
     child<Project>("projects"),
     child<Stat>("stats"),
     child<Social>("socials"),
+    child<PortfolioButton>("buttons"),
   ]);
 
   /**
@@ -109,7 +112,7 @@ async function uncachedLoadBundle(portfolio: Portfolio): Promise<PortfolioBundle
     for (const row of rows) (projectImages[row.project_id] ??= []).push(row);
   }
 
-  return { portfolio, slides, projects, stats, socials, projectImages };
+  return { portfolio, slides, projects, stats, socials, buttons, projectImages };
 }
 
 export const loadBundle = cache(uncachedLoadBundle);
@@ -161,18 +164,17 @@ export async function createPortfolio(input: {
   const slug = await uniqueSlug(input.slug || input.name);
   await run(
     `INSERT INTO portfolios
-       (id, user_id, slug, name, title, tagline, bio, monogram, whatsapp_label, theme, locale, footer_note, published, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, '', '', ?, ?, ?, ?, ?, 0, ?, ?)`,
+       (id, user_id, slug, name, title, tagline, bio, monogram, theme, locale, footer_note, published, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, '', '', ?, ?, ?, ?, 0, ?, ?)`,
     id,
     input.userId,
     slug,
     input.name,
     input.title ?? "",
     input.name.trim().charAt(0).toUpperCase(),
-    d.whatsapp,
     DEFAULT_THEME,
     locale,
-    `${d.rights} — ${input.name}`,
+    `${d.rights} · ${input.name}`,
     ts,
     ts,
   );
@@ -188,8 +190,6 @@ const PROFILE_FIELDS = [
   "bio",
   "avatar_url",
   "monogram",
-  "whatsapp",
-  "whatsapp_label",
   "theme",
   "accent_hex",
   "background_hex",
@@ -258,13 +258,14 @@ export async function viewsByDay(portfolioId: string, days = 14) {
 
 /* --------------------------------------------------------------- child tables */
 
-type ChildTable = "slides" | "projects" | "stats" | "socials";
+type ChildTable = "slides" | "projects" | "stats" | "socials" | "buttons";
 
 const COLUMNS: Record<ChildTable, string[]> = {
   slides: ["image_url", "headline", "subline", "caption"],
   projects: ["title", "category", "description", "image_url", "link"],
   stats: ["label", "value", "icon"],
   socials: ["platform", "url"],
+  buttons: ["kind", "value", "label"],
 };
 
 const PREFIX: Record<ChildTable, string> = {
@@ -272,6 +273,17 @@ const PREFIX: Record<ChildTable, string> = {
   projects: "prj",
   stats: "stt",
   socials: "soc",
+  buttons: "btn",
+};
+
+/**
+ * How many rows a collection may hold.
+ *
+ * Enforced here rather than in the form, because the form is a suggestion: the
+ * request that adds the sixth button does not have to come from our page.
+ */
+const LIMITS: Partial<Record<ChildTable, number>> = {
+  buttons: MAX_BUTTONS,
 };
 
 export async function addChild(
@@ -281,6 +293,16 @@ export async function addChild(
   values: Record<string, string> = {},
 ) {
   await assertCanEdit(portfolioId, user);
+
+  const limit = LIMITS[table];
+  if (limit !== undefined) {
+    const count = (await get<{ n: number }>(
+      `SELECT COUNT(*)::int AS n FROM ${table} WHERE portfolio_id = ?`,
+      portfolioId,
+    ))?.n ?? 0;
+    if (count >= limit) throw new TenantError(fill((await messages()).tooManyItems, { n: limit }));
+  }
+
   const cols = COLUMNS[table];
   const id = newId(PREFIX[table]);
   const next =

@@ -73,6 +73,7 @@ export async function exportAccount(user: User) {
     projects: await forEachPortfolio("projects"),
     slides: await forEachPortfolio("slides"),
     socials: await forEachPortfolio("socials"),
+    buttons: await forEachPortfolio("buttons"),
     stats: await forEachPortfolio("stats"),
     domains: ids.length
       ? await all("SELECT * FROM domains WHERE portfolio_id = ANY(?)", ids)

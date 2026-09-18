@@ -10,7 +10,7 @@ import {
 import { ChevronDown, ChevronUp } from "@/components/icons";
 import { AddButton, DeleteSubmit, IconSubmit, Status, Submit } from "./ui";
 
-export type CollectionTable = "slides" | "projects" | "stats" | "socials";
+export type CollectionTable = "slides" | "projects" | "stats" | "socials" | "buttons";
 
 /** The words on the buttons around an item, in the reader's language. */
 export interface CollectionChrome {
@@ -153,6 +153,7 @@ export function CollectionSection<T extends Item>({
   itemTitle,
   renderFields,
   renderAside,
+  atLimit,
   chrome,
 }: {
   table: CollectionTable;
@@ -167,6 +168,8 @@ export function CollectionSection<T extends Item>({
   renderFields: (item: T) => React.ReactNode;
   /** Sits above the form, for controls with actions of their own. */
   renderAside?: (item: T) => React.ReactNode;
+  /** Set when the collection is full: the sentence to show instead of Add. */
+  atLimit?: string;
   chrome: CollectionChrome;
 }) {
   const [addState, add] = useActionState(addItemAction, null);
@@ -199,11 +202,15 @@ export function CollectionSection<T extends Item>({
         </ItemCard>
       ))}
 
-      <form action={add}>
-        <input type="hidden" name="portfolioId" value={portfolioId} />
-        <input type="hidden" name="table" value={table} />
-        <AddButton pendingLabel={chrome.adding}>{addLabel}</AddButton>
-      </form>
+      {atLimit ? (
+        <p className="panel p-4 text-center text-[13px] text-mist-500">{atLimit}</p>
+      ) : (
+        <form action={add}>
+          <input type="hidden" name="portfolioId" value={portfolioId} />
+          <input type="hidden" name="table" value={table} />
+          <AddButton pendingLabel={chrome.adding}>{addLabel}</AddButton>
+        </form>
+      )}
       <Status state={addState} />
     </div>
   );

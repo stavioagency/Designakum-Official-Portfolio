@@ -1,5 +1,5 @@
 import type { SVGProps } from "react";
-import type { SocialPlatform } from "@/lib/types";
+import type { ButtonKind, SocialPlatform } from "@/lib/types";
 
 type P = SVGProps<SVGSVGElement>;
 
@@ -159,6 +159,15 @@ export const SOCIAL_META: Record<
   website: { label: "الموقع", labelEn: "Website", Icon: Globe },
   email: { label: "البريد", labelEn: "Email", Icon: Mail, prefix: "mailto:" },
 };
+
+export const Phone = (p: P) => (
+  <Base {...p}>
+    <path
+      d="M6.4 3.6h2.5l1.3 3.4-1.7 1.4a11.6 11.6 0 0 0 5.4 5.4l1.4-1.7 3.4 1.3v2.5c0 1.2-1 2.2-2.2 2.1C10.4 17.5 6.5 13.6 4.3 5.8A2.1 2.1 0 0 1 6.4 3.6Z"
+      {...stroke}
+    />
+  </Base>
+);
 
 /** The platform's name in the reader's language. */
 export const socialLabel = (platform: SocialPlatform, locale: string) =>
@@ -549,3 +558,33 @@ export const Bell = (p: P) => (
     <path d="M13.7 19.4a2 2 0 0 1-3.4 0" {...stroke} />
   </Base>
 );
+
+/* ------------------------------------------------------------ call to action */
+
+/**
+ * What each kind of contact button looks like and is called.
+ *
+ * WhatsApp keeps its own green because the mark is recognised by its colour
+ * before it is recognised by its shape. The other three are actions rather than
+ * brands, so they take the page's accent and belong to the designer's palette.
+ */
+export const BUTTON_META: Record<
+  ButtonKind,
+  {
+    label: string;
+    labelEn: string;
+    Icon: (p: P) => React.JSX.Element;
+    /** Undefined means the mark follows the page's accent. */
+    colour?: string;
+    /** What the field beside it is asking for. */
+    placeholder: string;
+  }
+> = {
+  whatsapp: { label: "واتساب", labelEn: "WhatsApp", Icon: Whatsapp, colour: "#25D366", placeholder: "966500000000" },
+  call: { label: "اتصال", labelEn: "Phone call", Icon: Phone, placeholder: "+966500000000" },
+  email: { label: "بريد إلكتروني", labelEn: "Email", Icon: Mail, placeholder: "you@studio.com" },
+  link: { label: "رابط", labelEn: "Link", Icon: Link, placeholder: "https://" },
+};
+
+export const buttonKindLabel = (kind: ButtonKind, locale: string) =>
+  locale === "en" ? BUTTON_META[kind].labelEn : BUTTON_META[kind].label;

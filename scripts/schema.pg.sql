@@ -131,6 +131,21 @@ CREATE TABLE IF NOT EXISTS socials (
 );
 CREATE INDEX IF NOT EXISTS idx_socials_portfolio ON socials(portfolio_id, position, seq);
 
+-- The buttons that ask a visitor to do something: message, call, write, book.
+-- `kind` decides how `value` becomes a link and which mark sits on the button;
+-- an empty `label` means the page writes the wording itself, in its own
+-- language. Capped at five in the application.
+CREATE TABLE IF NOT EXISTS buttons (
+  seq          BIGSERIAL,
+  id           TEXT PRIMARY KEY,
+  portfolio_id TEXT NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+  kind         TEXT NOT NULL DEFAULT 'whatsapp',
+  value        TEXT NOT NULL DEFAULT '',
+  label        TEXT NOT NULL DEFAULT '',
+  position     INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_buttons_portfolio ON buttons(portfolio_id, position, seq);
+
 CREATE TABLE IF NOT EXISTS sessions (
   id         TEXT PRIMARY KEY,
   user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

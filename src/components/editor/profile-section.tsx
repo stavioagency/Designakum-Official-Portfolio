@@ -119,15 +119,6 @@ export function ProfileSection({
           <textarea name="bio" defaultValue={portfolio.bio} rows={5} className="field" />
         </Field>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={t.whatsapp} hint={t.whatsappHint}>
-            <input name="whatsapp" defaultValue={portfolio.whatsapp} className="field" dir="ltr" placeholder="966500000000" />
-          </Field>
-          <Field label={t.whatsappLabel}>
-            <input name="whatsapp_label" defaultValue={portfolio.whatsapp_label} className="field" />
-          </Field>
-        </div>
-
         <Field label={t.footer}>
           <input
             name="footer_note"
