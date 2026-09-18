@@ -41,7 +41,9 @@ export function SearchField({
   }, [value]);
 
   return (
-    <div className="relative min-w-[200px] flex-1">
+    /* Its own line on a phone: beside a filter it had about 150px, which is
+       not enough for a search box to show what was typed into it. */
+    <div className="relative w-full min-w-0 flex-1 sm:w-auto sm:min-w-[200px]">
       <Search className="pointer-events-none absolute inset-y-0 my-auto h-4 w-4 text-mist-500 start-3.5" />
       <input
         value={value}
@@ -78,7 +80,10 @@ export function FilterSelect({
   const current = params.get(paramName) ?? options[0]?.value ?? "";
 
   return (
-    <label className="flex items-center gap-2">
+    /* A select is as wide as its longest option unless it is told otherwise,
+       and an option here can be `account.two_factor_enabled`. Left alone it
+       runs off the side of a phone. */
+    <label className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
       <span className="shrink-0 text-[12px] text-mist-500">{label}</span>
       <select
         value={current}
@@ -92,7 +97,7 @@ export function FilterSelect({
           next.delete("page");
           router.replace(`?${next.toString()}`, { scroll: false });
         }}
-        className="field !w-auto !py-2 text-[13px] sm:text-[13px]"
+        className="field min-w-0 !py-2 text-[13px] sm:!w-auto"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>

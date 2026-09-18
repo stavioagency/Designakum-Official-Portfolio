@@ -117,15 +117,20 @@ html[lang="en"] .display { font-family: var(--font-display), var(--font-latin), 
 /*
   The page inside the device preview.
 
-  It scrolls with a mouse, and deliberately does not with a finger: on a phone
-  the preview fills the column, so a swipe over it used to scroll the portfolio
-  instead of the page — the visitor is stuck in a shop window they were only
-  walking past. On touch it shows the top of the page and the link underneath
-  opens the real thing.
+  It scrolls with a finger as well as a mouse. This used to be locked on touch,
+  to stop a swipe over the preview scrolling the portfolio instead of the page,
+  and the cure was worse: on a phone the preview IS the demo, and a demo you
+  cannot scroll shows one screenshot of a page whose whole point is what comes
+  further down.
+
+  Scroll chaining is left on, which is the way out: once the portfolio reaches
+  its end the page underneath carries on, and the gutters either side of the
+  device scroll the page at any time.
 */
-.preview-scroll { overflow-y: auto; }
-@media (pointer: coarse) {
-  .preview-scroll { overflow: hidden; touch-action: pan-y; }
+.preview-scroll {
+  overflow-y: auto;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Ambient light: a soft accent wash at the top, a cooler pool at the bottom. */

@@ -37,18 +37,21 @@ export default async function ErrorsPage() {
         <div className="space-y-3">
           {errors.map((error) => (
             <article key={error.fingerprint} className="card p-5">
-              <div className="flex flex-wrap items-start gap-3">
+              {/* Stacked on a phone, and every value able to break: an area
+                  name and a message both come from whatever threw, so neither
+                  can be assumed short or to contain a space. */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[12px] font-medium uppercase tracking-wide text-mist-500">
+                  <p className="break-all text-[12px] font-medium uppercase tracking-wide text-mist-500">
                     {error.area || "unknown"}
                   </p>
-                  <p className="mt-1 break-words text-[14.5px] font-semibold">{error.message}</p>
+                  <p className="mt-1 [overflow-wrap:anywhere] text-[14.5px] font-semibold">{error.message}</p>
                   <p className="tnum mt-1.5 text-[12.5px] text-mist-500">
                     {error.count}× · {formatDate(Number(error.last_seen), locale)}
                   </p>
                 </div>
 
-                <form action={resolveErrorAction}>
+                <form action={resolveErrorAction} className="shrink-0">
                   <input type="hidden" name="fingerprint" value={error.fingerprint} />
                   <button type="submit" className="btn btn-ghost !px-3 !py-1.5 !text-[12px]">
                     {t.resolve}

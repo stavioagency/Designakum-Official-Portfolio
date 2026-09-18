@@ -48,25 +48,42 @@ export default async function ConsoleDomainsPage() {
         ) : (
           <ul className="divide-y divide-white/6">
             {domains.map((domain) => (
-              <li key={domain.id} className="flex flex-wrap items-center gap-3 px-4 py-3.5">
+              /*
+                Stacked on a phone, one row from `sm` up.
+                An email address is a single unbreakable word, and in a flex
+                track that may shrink below its own content it simply ran out
+                of its box and under the status badge beside it.
+              */
+              <li
+                key={domain.id}
+                className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:flex-wrap sm:items-center"
+              >
                 <div className="min-w-0 flex-1">
-                  <p dir="ltr" className="text-[14px] font-semibold">{domain.hostname}</p>
-                  <p className="mt-0.5 text-[12.5px] text-mist-500">
-                    {domain.email} · /p/{domain.slug} · {formatDate(domain.created_at, locale)}
-                  </p>
+                  <p dir="ltr" className="break-words text-[14px] font-semibold">{domain.hostname}</p>
+                  {/* Each fact its own item, so the line breaks between them
+                      rather than through the middle of an address. */}
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px] text-mist-500">
+                    <span dir="ltr" className="break-all">{domain.email}</span>
+                    <span aria-hidden>·</span>
+                    <span dir="ltr">/p/{domain.slug}</span>
+                    <span aria-hidden>·</span>
+                    <span>{formatDate(domain.created_at, locale)}</span>
+                  </div>
                   {domain.last_error && (
-                    <p className="mt-1 text-[12px] text-rose-300">{domain.last_error}</p>
+                    <p className="mt-1 break-words text-[12px] text-rose-300">{domain.last_error}</p>
                   )}
                 </div>
 
-                <Badge tone={TONE[domain.status]}>{t[domain.status]}</Badge>
+                <div className="flex shrink-0 flex-wrap items-center gap-3">
+                  <Badge tone={TONE[domain.status]}>{t[domain.status]}</Badge>
 
-                <Link
-                  href={`/p/${domain.slug}`}
-                  className="btn btn-ghost !py-2 !text-[12.5px]"
-                >
-                  {t.openPage}
-                </Link>
+                  <Link
+                    href={`/p/${domain.slug}`}
+                    className="btn btn-ghost !py-2 !text-[12.5px]"
+                  >
+                    {t.openPage}
+                  </Link>
+                </div>
               </li>
             ))}
           </ul>

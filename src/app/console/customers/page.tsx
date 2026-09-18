@@ -143,10 +143,13 @@ export default async function CustomersPage({
             <ul className="divide-y divide-white/6">
               {rows.map((row) => (
                 <li key={row.id} className="transition hover:bg-white/[0.02]">
-                  <div className="flex flex-wrap items-center gap-3 px-4 py-3.5 sm:px-5">
+                  {/* Stacked on a phone. Sharing one line with the badges and
+                      the two buttons left the name about 120px, so every
+                      customer in the list read "Alex …" over "alex@d…". */}
+                  <div className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:flex-wrap sm:items-center sm:px-5">
                     <Link
                       href={`/console/customers/${row.id}`}
-                      className="flex min-w-0 flex-1 items-center gap-3"
+                      className="flex min-w-0 items-center gap-3 sm:flex-1"
                     >
                       <span className="accent-grad grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-2xl text-[14px] font-bold">
                         {row.slug && row.portfolio_name ? (
@@ -156,7 +159,7 @@ export default async function CustomersPage({
                         )}
                       </span>
                       <span className="min-w-0">
-                        <span className="flex items-center gap-2">
+                        <span className="flex flex-wrap items-center gap-2">
                           <span className="truncate text-[14.5px] font-semibold">
                             {row.portfolio_name || row.display_name}
                           </span>

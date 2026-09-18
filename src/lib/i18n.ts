@@ -401,7 +401,7 @@ const ar = {
 
     audit: {
       title: "سجل التدقيق",
-      description: "{n} إجراء مسجّل — من نفّذه، وماذا تغيّر، ومتى.",
+      description: "{n} إجراء مسجّل: من نفّذه، وماذا تغيّر، ومتى.",
       searchPlaceholder: "ابحث بالبريد أو الإجراء أو اسم الحساب…",
       action: "الإجراء",
       allActions: "كل الإجراءات",
@@ -1928,7 +1928,7 @@ const en: typeof ar = {
 
     audit: {
       title: "Audit log",
-      description: "{n} recorded actions — who did it, what changed, and when.",
+      description: "{n} recorded actions: who did it, what changed, and when.",
       searchPlaceholder: "Search by email, action or account name…",
       action: "Action",
       allActions: "All actions",

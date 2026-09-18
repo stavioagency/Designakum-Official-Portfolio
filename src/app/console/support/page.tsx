@@ -121,23 +121,29 @@ export default async function SupportQueuePage({
             <ul className="divide-y divide-white/6">
               {rows.map((ticket) => (
                 <li key={ticket.id}>
+                  {/* On a phone the subject shared its line with a status
+                      badge, a priority badge, an assignee and a timestamp, and
+                      was left about 60px: every ticket in the list read as one
+                      clipped word over an email hidden behind the badges. */}
                   <Link
                     href={`/console/support/${ticket.id}`}
-                    className="flex flex-wrap items-center gap-3 px-4 py-3.5 transition hover:bg-white/[0.03] sm:px-5"
+                    className="flex flex-col gap-2 px-4 py-3.5 transition hover:bg-white/[0.03] sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:px-5"
                   >
-                    <Badge tone={STATUS_TONE[ticket.status]}>
-                      {ticketStatusLabel(ticket.status, locale)}
-                    </Badge>
+                    <span className="flex min-w-0 items-start gap-3 sm:contents">
+                      <Badge tone={STATUS_TONE[ticket.status]}>
+                        {ticketStatusLabel(ticket.status, locale)}
+                      </Badge>
 
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[14px] font-semibold">{ticket.subject}</span>
-                      <span className="mt-0.5 flex items-center gap-2 text-[11.5px] text-mist-500">
-                        <span dir="ltr">{ticket.customer_email}</span>
-                        <span>· {ticketCategoryLabel(ticket.category, locale) ?? ticket.category}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[14px] font-semibold">{ticket.subject}</span>
+                        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11.5px] text-mist-500">
+                          <span dir="ltr" className="break-all">{ticket.customer_email}</span>
+                          <span>· {ticketCategoryLabel(ticket.category, locale) ?? ticket.category}</span>
+                        </span>
                       </span>
                     </span>
 
-                    <span className="flex shrink-0 items-center gap-2">
+                    <span className="flex shrink-0 flex-wrap items-center gap-2">
                       {ticket.priority !== "normal" && (
                         <Badge tone={PRIORITY_TONE[ticket.priority]}>
                           {ticketPriorityLabel(ticket.priority, locale)}
