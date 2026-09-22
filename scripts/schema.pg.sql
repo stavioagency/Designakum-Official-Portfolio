@@ -438,3 +438,21 @@ CREATE TABLE IF NOT EXISTS domains (
 
 CREATE INDEX IF NOT EXISTS domains_portfolio_idx ON domains (portfolio_id);
 CREATE INDEX IF NOT EXISTS domains_active_idx ON domains (hostname) WHERE status = 'active';
+
+-- Keep every table locked to Supabase's public REST roles, including tables
+-- added after migration 0018. This file is applied on every deploy, so a new
+-- table cannot ship reachable through the API: see 0018 for the full reasoning.
+do $$
+declare t record;
+declare supabase boolean := exists (select 1 from pg_roles where rolname = 'anon')
+                        and exists (select 1 from pg_roles where rolname = 'authenticated');
+begin
+  for t in select tablename from pg_tables where schemaname = 'public' and not rowsecurity loop
+    execute format('alter table public.%I enable row level security', t.tablename);
+  end loop;
+  if supabase then
+    for t in select tablename from pg_tables where schemaname = 'public' loop
+      execute format('revoke all on table public.%I from anon, authenticated', t.tablename);
+    end loop;
+  end if;
+end $$;
